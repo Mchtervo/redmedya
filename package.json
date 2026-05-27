@@ -2,12 +2,16 @@
   "name": "redmedya",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "dev:local": "next dev",
     "build": "next build",
-    "start": "next start --hostname 0.0.0.0",
-    "start:prod": "npm run build && next start --hostname 0.0.0.0 -p 3000",
+    "postbuild": "node scripts/postbuild.mjs",
+    "start": "node scripts/start.mjs",
+    "start:prod": "npm run build && node scripts/start.mjs",
     "lint": "eslint"
   },
   "dependencies": {
