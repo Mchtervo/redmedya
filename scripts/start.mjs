@@ -1,43 +1,32 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || "3000";
 const hostname = process.env.HOSTNAME || "0.0.0.0";
-const standaloneServer = fileURLToPath(
-  new URL("../.next/standalone/server.js", import.meta.url)
-);
+const standaloneDir = fileURLToPath(new URL("../.next/standalone", import.meta.url));
+const standaloneServer = path.join(standaloneDir, "server.js");
 
-const isProd = process.env.NODE_ENV === "production";
-const hasStandalone = fs.existsSync(standaloneServer);
+/** Build sonrası standalone varsa her zaman onu kullan (next start standalone ile çalışmaz) */
+const useStandalone = fs.existsSync(standaloneServer);
 
-/** next.config output:standalone → next start desteklenmez; node server.js kullan */
-const useStandalone = isProd && hasStandalone;
-
-if (isProd && !hasStandalone) {
+if (!useStandalone) {
   console.error(
-    "[start] Production build missing .next/standalone/server.js — run npm run build first"
+    "[start] .next/standalone/server.js bulunamadı — önce npm run build çalıştırın"
   );
   process.exit(1);
 }
 
-const cmd = useStandalone ? process.execPath : "npx";
-const args = useStandalone
-  ? [standaloneServer]
-  : ["next", "start", "--hostname", hostname, "--port", port];
+console.log(`[start] standalone server → ${hostname}:${port}`);
 
-console.log(
-  useStandalone
-    ? `[start] standalone server on ${hostname}:${port}`
-    : `[start] next dev server on ${hostname}:${port}`
-);
-
-const child = spawn(cmd, args, {
+const child = spawn(process.execPath, ["server.js"], {
+  cwd: standaloneDir,
   stdio: "inherit",
-  shell: !useStandalone && process.platform === "win32",
+  shell: false,
   env: {
     ...process.env,
-    NODE_ENV: process.env.NODE_ENV || (useStandalone ? "production" : "development"),
+    NODE_ENV: "production",
     PORT: port,
     HOSTNAME: hostname,
   },
