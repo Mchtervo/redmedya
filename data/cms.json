@@ -1,0 +1,435 @@
+{
+  "updatedAt": "2026-05-27T16:49:30.397Z",
+  "campaign": {
+    "active": true,
+    "message": "Tüm paketlerde %20 indirim · Dış çekim Foto+Video+Albüm = Drone hediye",
+    "ctaLabel": "Paket oluştur",
+    "ctaHref": "/paket-olustur"
+  },
+  "bundleDiscounts": [
+    {
+      "minServices": 1,
+      "percent": 20,
+      "message": "Tüm paketlerde %20 indirim"
+    }
+  ],
+  "coupons": [
+    {
+      "id": "c-red2026",
+      "code": "RED2026",
+      "type": "PERCENTAGE",
+      "value": 10,
+      "isActive": true,
+      "description": "Erken rezervasyon %10"
+    },
+    {
+      "id": "c-vip5000",
+      "code": "VIP5000",
+      "type": "FIXED",
+      "value": 5000,
+      "isActive": true,
+      "description": "5.000₺ sabit indirim"
+    }
+  ],
+  "services": [
+    {
+      "id": "foto-dis-cekim",
+      "slug": "foto-dis-cekim",
+      "name": "Fotoğraf — Dış Çekim",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "dis-cekim",
+      "sortOrder": 1,
+      "isActive": true,
+      "badge": "most-chosen",
+      "isPopular": true,
+      "recommendation": "En çok tercih edilen dış mekân çekimi."
+    },
+    {
+      "id": "video-dis-cekim",
+      "slug": "video-dis-cekim",
+      "name": "Video Klip — Dış Çekim",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "dis-cekim",
+      "sortOrder": 11,
+      "isActive": true,
+      "badge": "popular",
+      "upsellHint": "Dış çekim foto + video + albüm ile drone hediye"
+    },
+    {
+      "id": "drone-dis-cekim",
+      "slug": "drone-dis-cekim",
+      "name": "Drone — Dış Çekim",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "dis-cekim",
+      "sortOrder": 21,
+      "isActive": true,
+      "upsellHint": "Dış çekim foto + video + albüm seçildiğinde ücretsiz hediye"
+    },
+    {
+      "id": "foto-gelin-alma",
+      "slug": "foto-gelin-alma",
+      "name": "Fotoğraf — Gelin Alma",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "gelin-alma",
+      "sortOrder": 2,
+      "isActive": true,
+      "isPopular": true
+    },
+    {
+      "id": "video-gelin-alma",
+      "slug": "video-gelin-alma",
+      "name": "Video Klip — Gelin Alma",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "gelin-alma",
+      "sortOrder": 12,
+      "isActive": true
+    },
+    {
+      "id": "drone-gelin-alma",
+      "slug": "drone-gelin-alma",
+      "name": "Drone — Gelin Alma",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "gelin-alma",
+      "sortOrder": 22,
+      "isActive": true
+    },
+    {
+      "id": "foto-kina",
+      "slug": "foto-kina",
+      "name": "Fotoğraf — Kına",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "kina",
+      "sortOrder": 3,
+      "isActive": true
+    },
+    {
+      "id": "video-kina",
+      "slug": "video-kina",
+      "name": "Video Klip — Kına",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "kina",
+      "sortOrder": 13,
+      "isActive": true
+    },
+    {
+      "id": "drone-kina",
+      "slug": "drone-kina",
+      "name": "Drone — Kına",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "kina",
+      "sortOrder": 23,
+      "isActive": true
+    },
+    {
+      "id": "foto-kuafor-hazirlik",
+      "slug": "foto-kuafor-hazirlik",
+      "name": "Fotoğraf — Kuaför & Hazırlık",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "kuafor-hazirlik",
+      "sortOrder": 4,
+      "isActive": true
+    },
+    {
+      "id": "video-kuafor-hazirlik",
+      "slug": "video-kuafor-hazirlik",
+      "name": "Video Klip — Kuaför & Hazırlık",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "kuafor-hazirlik",
+      "sortOrder": 14,
+      "isActive": true
+    },
+    {
+      "id": "drone-kuafor-hazirlik",
+      "slug": "drone-kuafor-hazirlik",
+      "name": "Drone — Kuaför & Hazırlık",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "kuafor-hazirlik",
+      "sortOrder": 24,
+      "isActive": true
+    },
+    {
+      "id": "foto-nikah",
+      "slug": "foto-nikah",
+      "name": "Fotoğraf — Nikah",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "nikah",
+      "sortOrder": 5,
+      "isActive": true
+    },
+    {
+      "id": "video-nikah",
+      "slug": "video-nikah",
+      "name": "Video Klip — Nikah",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "nikah",
+      "sortOrder": 15,
+      "isActive": true
+    },
+    {
+      "id": "drone-nikah",
+      "slug": "drone-nikah",
+      "name": "Drone — Nikah",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "nikah",
+      "sortOrder": 25,
+      "isActive": true
+    },
+    {
+      "id": "foto-nisan",
+      "slug": "foto-nisan",
+      "name": "Fotoğraf — Nişan",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "nisan",
+      "sortOrder": 6,
+      "isActive": true
+    },
+    {
+      "id": "video-nisan",
+      "slug": "video-nisan",
+      "name": "Video Klip — Nişan",
+      "description": "Sinematik kurgu · o etkinliğe özel klip teslimi",
+      "price": 5000,
+      "category": "video",
+      "occasion": "nisan",
+      "sortOrder": 16,
+      "isActive": true
+    },
+    {
+      "id": "drone-nisan",
+      "slug": "drone-nisan",
+      "name": "Drone — Nişan",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "nisan",
+      "sortOrder": 26,
+      "isActive": true
+    },
+    {
+      "id": "foto-salon",
+      "slug": "foto-salon",
+      "name": "Fotoğraf — Salon / Düğün",
+      "description": "Poz sınırı yok · o etkinliğe ait tüm kareler teslim",
+      "price": 5000,
+      "category": "foto",
+      "occasion": "salon",
+      "sortOrder": 7,
+      "isActive": true
+    },
+    {
+      "id": "video-salon",
+      "slug": "video-salon",
+      "name": "Sinematik Klip Çekimi",
+      "description": "Düğün başından pasta kesiminin bitimine kadar · salon girişinden özel sinematik klip çekimi ve kurgu",
+      "price": 10000,
+      "category": "video",
+      "occasion": "salon",
+      "sortOrder": 17,
+      "isActive": true,
+      "badge": "best-value",
+      "isPopular": true
+    },
+    {
+      "id": "drone-salon",
+      "slug": "drone-salon",
+      "name": "Drone — Salon / Düğün",
+      "description": "Havadan sinematik görüntüler · o etkinliğe özel drone çekimi",
+      "price": 4000,
+      "category": "extra",
+      "occasion": "salon",
+      "sortOrder": 27,
+      "isActive": true
+    },
+    {
+      "id": "omuz-gelin-alma",
+      "slug": "omuz-gelin-alma",
+      "name": "Omuz Kamerası — Gelin Alma",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "gelin-alma",
+      "sortOrder": 27,
+      "isActive": true
+    },
+    {
+      "id": "omuz-kina",
+      "slug": "omuz-kina",
+      "name": "Omuz Kamerası — Kına",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "kina",
+      "sortOrder": 28,
+      "isActive": true
+    },
+    {
+      "id": "omuz-kuafor-hazirlik",
+      "slug": "omuz-kuafor-hazirlik",
+      "name": "Omuz Kamerası — Kuaför & Hazırlık",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "kuafor-hazirlik",
+      "sortOrder": 29,
+      "isActive": true
+    },
+    {
+      "id": "omuz-nikah",
+      "slug": "omuz-nikah",
+      "name": "Omuz Kamerası — Nikah",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "nikah",
+      "sortOrder": 30,
+      "isActive": true
+    },
+    {
+      "id": "omuz-nisan",
+      "slug": "omuz-nisan",
+      "name": "Omuz Kamerası — Nişan",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "nisan",
+      "sortOrder": 31,
+      "isActive": true
+    },
+    {
+      "id": "omuz-salon",
+      "slug": "omuz-salon",
+      "name": "Omuz Kamerası — Salon / Düğün",
+      "description": "O etkinliğe özel omuz kamera video çekimi · baştan sona ham ve kurgulu teslim",
+      "price": 6500,
+      "category": "video",
+      "occasion": "salon",
+      "sortOrder": 32,
+      "isActive": true
+    },
+    {
+      "id": "buyuk-album",
+      "slug": "buyuk-album",
+      "name": "Büyük Albüm",
+      "description": "30×60 cm · 5 yaprak (10 sayfa) veya 10 yaprak (20 sayfa) · lüks A kalite baskı",
+      "price": 2500,
+      "category": "album",
+      "pricingType": "pages",
+      "pageOptions": [
+        10,
+        20
+      ],
+      "sortOrder": 90,
+      "isActive": true
+    },
+    {
+      "id": "aile-albumu",
+      "slug": "aile-albumu",
+      "name": "Aile Albümü",
+      "description": "İsteğe bağlı · adet başına lüks mini albüm",
+      "price": 0,
+      "category": "album",
+      "pricingType": "quantity",
+      "unitPrice": 1000,
+      "maxQuantity": 2,
+      "sortOrder": 91,
+      "isActive": true
+    },
+    {
+      "id": "canvas-50x70",
+      "slug": "canvas-50x70",
+      "name": "Canvas Tablo 50×70 cm",
+      "description": "Premium canvas baskı",
+      "price": 1000,
+      "category": "album",
+      "sortOrder": 92,
+      "isActive": true
+    },
+    {
+      "id": "canvas-70x100",
+      "slug": "canvas-70x100",
+      "name": "Canvas Tablo 70×100 cm",
+      "description": "Büyük format canvas",
+      "price": 1500,
+      "category": "album",
+      "sortOrder": 93,
+      "isActive": true
+    },
+    {
+      "id": "klip-gelin-alma",
+      "slug": "klip-gelin-alma",
+      "name": "Gelin Alma Merasimi Klip Çekimi",
+      "description": "Gelin alma anının sinematik klip çekimi ve kurgusu · merasim boyunca özel kurgu",
+      "badge": "popular",
+      "isPopular": true,
+      "upsellHint": "Dış çekim veya foto+video+albüm paketinde kampanyayla 3.500₺",
+      "price": 5000,
+      "campaignPrice": 3500,
+      "excludeFromBundleDiscount": true,
+      "category": "video",
+      "occasion": "gelin-alma",
+      "sortOrder": 15,
+      "isActive": true
+    },
+    {
+      "id": "klip-salon-giris",
+      "slug": "klip-salon-giris",
+      "name": "Salon Girişi & İlk Dans Klip Çekimi",
+      "description": "Salon girişi ve ilk dans anlarının sinematik klip çekimi ve kurgusu",
+      "badge": "most-chosen",
+      "isPopular": true,
+      "upsellHint": "Size özel kampanya — şimdi ekle 3.500₺ · 1.500₺ kara gir",
+      "price": 5000,
+      "campaignPrice": 3500,
+      "excludeFromBundleDiscount": true,
+      "category": "video",
+      "occasion": "salon",
+      "sortOrder": 16,
+      "isActive": true
+    },
+    {
+      "id": "klip-kuafor-hazirlik",
+      "slug": "klip-kuafor-hazirlik",
+      "name": "Kuaför & Hazırlık Klip Çekimi",
+      "description": "Kuaför ve hazırlık anlarının sinematik klip çekimi ve kurgusu",
+      "price": 5000,
+      "campaignPrice": 3500,
+      "excludeFromBundleDiscount": true,
+      "category": "video",
+      "occasion": "kuafor-hazirlik",
+      "sortOrder": 17,
+      "isActive": true
+    }
+  ]
+}

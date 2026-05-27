@@ -1,0 +1,32 @@
+[
+  {
+    "sessionId": "sess-1779899924240-2iljtqp",
+    "createdAt": "2026-05-27T16:38:44.391Z",
+    "updatedAt": "2026-05-27T18:44:50.563Z",
+    "customer": {
+      "firstName": "MÜCAHİT",
+      "lastName": "EROVA",
+      "phone": "05441523418",
+      "weddingDate": "2026-05-28",
+      "note": ""
+    },
+    "selectedIds": [
+      "foto-dis-cekim"
+    ],
+    "lineDetails": [
+      {
+        "label": "Fotoğraf — Dış Çekim",
+        "price": 5000,
+        "isGift": false
+      }
+    ],
+    "lineSummary": [
+      "Fotoğraf — Dış Çekim"
+    ],
+    "subtotal": 5000,
+    "total": 4000,
+    "count": 1,
+    "whatsappClicked": true,
+    "leadId": "lead-1779900615326"
+  }
+]

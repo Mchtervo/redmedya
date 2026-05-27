@@ -1,65 +1,73 @@
-import Image from "next/image";
+import type { Metadata } from "next";
+import dynamic from "next/dynamic";
+import { siteConfig } from "@/config/site";
+import { ANKARA_SEO_KEYWORDS } from "@/config/seo-keywords";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Ankara Düğün Fotoğrafçısı & Sinematik Düğün Videosu",
+  description:
+    "RED MEDIA (REDMEDYA) — Ankara'da düğün fotoğrafçısı, gelin alma, dış çekim, salon ve kına için sinematik video. Online paket oluşturucu ile anında fiyat.",
+  keywords: [...ANKARA_SEO_KEYWORDS],
+  alternates: { canonical: siteConfig.url },
+  openGraph: {
+    title: "RED MEDIA | Ankara Düğün Fotoğrafçısı",
+    description:
+      "Dış çekim, gelin alma klibi, drone ve albüm — tek ekranda paketinizi oluşturun.",
+    url: siteConfig.url,
+    images: ["/logo-redmedya.png"],
+  },
+};
+import { IntroLoader } from "@/components/layout/intro-loader";
+import { Navbar } from "@/components/layout/navbar";
+import { HeroSection } from "@/components/home/hero-section";
+import { HomePageExtras } from "@/components/home/home-page-extras";
+import { CoupleCaseStudies } from "@/components/home/couple-case-studies";
+import { UpcomingWeddingsSection } from "@/components/home/upcoming-weddings-section";
+import { SocialTrustSection } from "@/components/home/social-trust-section";
+import { StudioShowcase } from "@/components/home/studio-showcase";
+import { TestimonialsTabs } from "@/components/home/testimonials-tabs";
+import { ReservationCta } from "@/components/home/reservation-cta";
+import { FaqSection } from "@/components/home/faq-section";
+import { ContactSection } from "@/components/home/contact-section";
+import { Footer } from "@/components/layout/footer";
+
+const CinematicGallery = dynamic(
+  () =>
+    import("@/components/home/cinematic-gallery").then((m) => ({
+      default: m.CinematicGallery,
+    })),
+  { loading: () => <div className="section-light h-96 animate-pulse bg-rm-cream" /> }
+);
+
+const StickyActions = dynamic(
+  () =>
+    import("@/components/layout/sticky-actions").then((m) => ({
+      default: m.StickyActions,
+    }))
+);
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <>
+      <IntroLoader />
+      <Navbar />
+      <main>
+        <HeroSection />
+        <HomePageExtras />
+        <StudioShowcase />
+        <CinematicGallery />
+        <SocialTrustSection />
+        <CoupleCaseStudies />
+        <UpcomingWeddingsSection />
+        <TestimonialsTabs />
+        <ReservationCta />
+        <FaqSection />
+        <ContactSection />
       </main>
-    </div>
+      <Footer />
+      <div className="hidden lg:block">
+        <StickyActions />
+      </div>
+    </>
   );
 }

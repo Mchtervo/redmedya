@@ -1,0 +1,59 @@
+/* REDMEDYA.CO — Phase 2 Premium Design Tokens */
+
+:root {
+  --rm-black: #060606;
+  --rm-black-soft: #0e0e0e;
+  --rm-black-elevated: #141414;
+  --rm-off-white: #f5f2eb;
+  --rm-cream: #ebe6dc;
+  --rm-champagne: #c4a052;
+  --rm-champagne-light: #e2cfa0;
+  --rm-champagne-dark: #8a6d32;
+  --rm-warm-glow: rgba(196, 160, 82, 0.12);
+  --rm-gray-100: #e5e2db;
+  --rm-gray-200: #b8b5ae;
+  --rm-gray-300: #7a7874;
+  --rm-gray-400: #4a4846;
+  --rm-gray-500: #2a2928;
+
+  --background: var(--rm-black);
+  --foreground: var(--rm-off-white);
+  --muted: var(--rm-gray-300);
+  --accent: var(--rm-champagne);
+  --accent-foreground: var(--rm-black);
+  --card: rgba(14, 14, 14, 0.78);
+  --card-border: rgba(196, 160, 82, 0.14);
+  --glass: rgba(6, 6, 6, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.06);
+
+  --text-display: clamp(3rem, 9vw, 7.5rem);
+  --text-editorial: clamp(2.25rem, 5.5vw, 5rem);
+  --text-h1: clamp(2rem, 4vw, 3.75rem);
+  --text-h2: clamp(1.5rem, 3vw, 2.75rem);
+  --text-h3: clamp(1.25rem, 2vw, 1.875rem);
+  --text-body: clamp(0.9375rem, 1.5vw, 1.125rem);
+  --text-small: 0.8125rem;
+  --text-caption: 0.6875rem;
+
+  --section-py: clamp(5rem, 14vw, 11rem);
+  --section-py-sm: clamp(3rem, 8vw, 6rem);
+  --container-max: 1440px;
+  --container-px: clamp(1.25rem, 5vw, 3rem);
+  --editorial-gap: clamp(2rem, 6vw, 5rem);
+
+  --ease-luxury: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-cinematic: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 200ms;
+  --duration-normal: 450ms;
+  --duration-slow: 900ms;
+
+  --shadow-glow: 0 0 80px rgba(196, 160, 82, 0.12);
+  --shadow-luxury: 0 40px 80px -24px rgba(0, 0, 0, 0.7);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --blur-glass: 24px;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+}

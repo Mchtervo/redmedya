@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# REDMEDYA.CO — Ultra Premium Wedding Platform
 
-## Getting Started
+Ankara merkezli premium düğün fotoğrafçılığı markası için dönüşüm odaklı Next.js platformu.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, SSR)
+- **React 19** + **TypeScript**
+- **Tailwind CSS v4** + custom design tokens
+- **Framer Motion** — cinematic animations
+- **Zustand** — package builder & cart state
+- **Prisma** + **PostgreSQL** (Supabase uyumlu)
+- **Radix UI** — accessible primitives (shadcn-style)
+
+## Başlangıç
 
 ```bash
+cd redmedya
+cp .env.example .env
+# DATABASE_URL ve Meta Pixel ID'yi doldurun
+npm install
+npx prisma generate
+npx prisma migrate dev   # DB hazır olduğunda
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Proje Yapısı
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/              # Routes (homepage, paket-olustur, admin, api)
+├── components/
+│   ├── ui/           # Design system primitives
+│   ├── layout/       # Navbar, footer, sticky actions
+│   ├── home/         # Homepage sections
+│   ├── package/      # Package builder + cart
+│   ├── analytics/    # Meta Pixel
+│   └── seo/          # JSON-LD
+├── config/           # Site config, default services
+├── lib/              # Prisma, WhatsApp, Meta Pixel utils
+├── stores/           # Zustand package store
+└── styles/           # Design tokens
+prisma/schema.prisma  # Full data model
+```
 
-## Learn More
+## Özellikler (Faz 1)
 
-To learn more about Next.js, take a look at the following resources:
+- [x] Premium design system (champagne / black palette)
+- [x] Cinematic hero + intro loader
+- [x] Floating navbar (scroll blur)
+- [x] Stats + animated counters
+- [x] Netflix-style stories slider
+- [x] Testimonials section
+- [x] Package builder + sticky cart
+- [x] Bundle discounts + coupon (demo codes)
+- [x] WhatsApp reservation message builder
+- [x] Meta Pixel event hooks
+- [x] Conversion toasts / social proof
+- [x] SEO (metadata, sitemap, robots, schema)
+- [x] Mobile sticky WhatsApp + call
+- [ ] Admin panel (skeleton ready)
+- [ ] VIP couple portal
+- [ ] İyzico / Stripe checkout
+- [ ] Blog CMS pages
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Demo Kupon Kodları
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `RED2026` — %10 indirim
+- `VIP5000` — 5000₺ sabit indirim
 
-## Deploy on Vercel
+## Meta Pixel Events
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`ViewContent`, `AddToCart`, `PackageBuild`, `ServiceSelect`, `InitiateCheckout`, `Lead`, `WhatsAppClick`, `DiscountUse`, `FormStart`, `FormComplete`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lisans
+
+Özel proje — REDMEDYA.CO

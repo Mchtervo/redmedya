@@ -1,0 +1,16 @@
+{
+  "name": "REDMEDYA — Ankara Düğün Fotoğrafçısı",
+  "short_name": "REDMEDYA",
+  "icons": [
+    {
+      "src": "/logo-redmedya.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#060606",
+  "background_color": "#060606",
+  "display": "standalone",
+  "lang": "tr"
+}

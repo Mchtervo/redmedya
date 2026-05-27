@@ -1,0 +1,36 @@
+/** Ankara düğün / video aramaları — metadata ve landing sayfalarında ortak */
+export const ANKARA_SEO_KEYWORDS = [
+  "ankara düğün fotoğrafçısı",
+  "ankara düğün fotoğrafçısı fiyatları",
+  "ankara düğün videosu",
+  "ankara düğün klibi",
+  "ankara gelin alma çekimi",
+  "ankara gelin alma klibi",
+  "gelin alma klip ankara",
+  "ankara dış çekim",
+  "ankara dış çekim fiyatları",
+  "ankara kına çekimi",
+  "ankara salon düğün çekimi",
+  "ankara sinematik düğün videosu",
+  "ankara drone düğün çekimi",
+  "ankara wedding photographer",
+  "ankara wedding videographer",
+  "düğün fotoğrafçısı ankara",
+  "düğün videosu ankara",
+  "red media ankara",
+  "redmedya",
+  "redmedya.co",
+] as const;
+
+export const ANKARA_DISTRICTS = [
+  "Çankaya",
+  "Keçiören",
+  "Yenimahalle",
+  "Mamak",
+  "Etimesgut",
+  "Sincan",
+  "Pursaklar",
+  "Altındağ",
+  "Gölbaşı",
+  "Polatlı",
+] as const;
