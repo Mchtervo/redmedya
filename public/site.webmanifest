@@ -3,7 +3,12 @@
   "short_name": "REDMEDYA",
   "icons": [
     {
-      "src": "/logo-redmedya.png",
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
