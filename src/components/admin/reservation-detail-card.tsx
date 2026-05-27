@@ -23,19 +23,26 @@ type ReservationDetailCardProps = {
   reservation: ReservationRecord;
   onUpdated?: (r: ReservationRecord) => void;
   onDeleted?: () => void;
+  /** URL ?edit=1 veya eksik telefon uyarısından gelince form açık başlar */
+  startInEditMode?: boolean;
 };
 
 export function ReservationDetailCard({
   reservation,
   onUpdated,
   onDeleted,
+  startInEditMode = false,
 }: ReservationDetailCardProps) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(startInEditMode);
   const [form, setForm] = useState<ReservationEditorState>(() =>
     reservationToEditorState(reservation)
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (startInEditMode) setEditing(true);
+  }, [reservation.id, startInEditMode]);
 
   useEffect(() => {
     if (!editing) setForm(reservationToEditorState(reservation));

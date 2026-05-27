@@ -42,13 +42,14 @@ export function IntroLoader() {
         />
 
         <motion.div
-          className="relative z-10 text-center"
+          className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center px-6 text-center"
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.05, filter: "blur(12px)" }}
           transition={{ duration: 0.9, ease: EASE_LUXURY }}
         >
           <motion.div
+            className="flex w-full justify-center"
             initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, ease: EASE_LUXURY }}
@@ -56,7 +57,7 @@ export function IntroLoader() {
             <BrandLogo href="" size="intro" variant="on-dark" priority />
           </motion.div>
           <motion.div
-            className="mx-auto mt-8 h-px bg-gradient-to-r from-transparent via-rm-champagne to-transparent"
+            className="mx-auto mt-8 h-px w-[120px] max-w-full bg-gradient-to-r from-transparent via-rm-champagne to-transparent"
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 120, opacity: 1 }}
             transition={{ delay: 0.6, duration: 1, ease: EASE_CINEMATIC }}

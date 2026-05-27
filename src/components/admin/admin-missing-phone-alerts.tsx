@@ -62,7 +62,7 @@ export function AdminMissingPhoneAlerts() {
                   )}
                 </span>
                 <Link
-                  href={`/admin?tab=calendar&res=${r.id}`}
+                  href={`/admin?tab=calendar&res=${r.id}&edit=1`}
                   className="shrink-0 rounded bg-amber-500/20 px-3 py-1.5 text-xs font-bold tracking-wide text-amber-100 uppercase hover:bg-amber-500/30"
                 >
                   Düzenle →

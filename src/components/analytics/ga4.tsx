@@ -1,25 +1,26 @@
 import Script from "next/script";
+import { GA_MEASUREMENT_ID } from "@/lib/gtag";
 
-/** Google Analytics 4 — ölçüm kimliği */
-const GA_ID =
-  process.env.NEXT_PUBLIC_GA4_ID?.trim() || "G-YXDNEBTFMN";
-
+/**
+ * Google Analytics 4 — root layout (App Router).
+ * İlk page_view GA4PageTracker tarafından gönderilir (SPA çift sayım önlenir).
+ */
 export function GA4() {
-  if (!GA_ID) return null;
+  if (!GA_MEASUREMENT_ID) return null;
 
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
         strategy="afterInteractive"
       />
-      <Script id="ga4-init" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${GA_ID}', {
-            send_page_view: true,
+          gtag('config', '${GA_MEASUREMENT_ID}', {
+            send_page_view: false,
             currency: 'TRY',
             anonymize_ip: true,
             allow_google_signals: true
@@ -29,5 +30,3 @@ export function GA4() {
     </>
   );
 }
-
-export { GA_ID };

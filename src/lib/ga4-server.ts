@@ -1,7 +1,7 @@
-const DEFAULT_GA4_ID = "G-YXDNEBTFMN";
+import { GA_MEASUREMENT_ID } from "@/lib/gtag";
 
 function measurementId(): string {
-  return process.env.NEXT_PUBLIC_GA4_ID?.trim() || DEFAULT_GA4_ID;
+  return GA_MEASUREMENT_ID;
 }
 
 function apiSecret(): string | undefined {

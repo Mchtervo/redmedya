@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Phone } from "lucide-react";
+import { siteConfig } from "@/config/site";
 import { usePackageTotals } from "@/hooks/use-package-totals";
 import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
-import { formatPrice } from "@/lib/utils";
+import { formatPhoneForWhatsApp, formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { usePackageStore } from "@/stores/package-store";
 
@@ -26,18 +28,35 @@ export function PackageMobileBar() {
     openWhatsApp({ contentName: "package_mobile_bar" });
   };
 
+  const telUrl = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
+
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-40 border-t border-white/10 bg-rm-black/95 px-4 py-3 backdrop-blur-md lg:hidden">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-rm-gray-500">
+    <div
+      className="fixed right-0 bottom-0 left-0 z-40 border-t border-white/10 bg-rm-black/95 backdrop-blur-xl lg:hidden"
+      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+    >
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] tracking-wider text-rm-gray-500 uppercase">
             Toplam · {count} hizmet
           </p>
-          <p className="text-2xl font-semibold tabular-nums text-rm-champagne">
+          <p className="text-lg font-semibold leading-tight tabular-nums text-rm-champagne">
             {formatPrice(total)}
           </p>
         </div>
-        <Button variant="whatsapp" rounded="full" onClick={goWhatsApp} className="px-6">
+        <a
+          href={telUrl}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rm-champagne/30 text-rm-champagne"
+          aria-label="Ara"
+        >
+          <Phone className="h-4 w-4" strokeWidth={1.5} />
+        </a>
+        <Button
+          variant="whatsapp"
+          rounded="full"
+          onClick={goWhatsApp}
+          className="h-10 shrink-0 px-4 text-xs"
+        >
           Teklif Al
         </Button>
       </div>

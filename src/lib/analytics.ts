@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
 import { trackMetaEvent, trackCustomEvent } from "@/lib/meta-pixel";
+import { gtagEvent } from "@/lib/gtag";
 
 export type AnalyticsEvent =
   | "campaign_klip_add"
@@ -11,28 +12,9 @@ export type AnalyticsEvent =
 
 type Params = Record<string, string | number | boolean | undefined>;
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-    dataLayer?: unknown[];
-  }
-}
-
-const GA4_ID =
-  process.env.NEXT_PUBLIC_GA4_ID?.trim() || "G-YXDNEBTFMN";
-
 export function trackGA4(event: string, params?: Params): void {
   if (typeof window === "undefined") return;
-  if (!GA4_ID || !window.gtag) return;
-  try {
-    window.gtag("event", event, {
-      send_to: GA4_ID,
-      currency: "TRY",
-      ...params,
-    });
-  } catch {
-    /* ignore */
-  }
+  gtagEvent(event, params);
 }
 
 /** Meta Pixel + GA4 + özel Meta olayları */

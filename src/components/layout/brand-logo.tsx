@@ -36,7 +36,8 @@ export function BrandLogo({
       priority={priority}
       className={cn(
         dim.className,
-        "object-contain object-left",
+        "object-contain",
+        size === "intro" ? "mx-auto object-center" : "object-left",
         variant === "on-dark" && "brightness-110",
         className
       )}

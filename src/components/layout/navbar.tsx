@@ -14,6 +14,7 @@ import { EASE_LUXURY } from "@/lib/animations";
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminAuthed, setAdminAuthed] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -28,7 +29,15 @@ export function Navbar() {
     };
   }, [mobileOpen]);
 
+  useEffect(() => {
+    fetch("/api/admin/session")
+      .then((r) => r.json())
+      .then((d) => setAdminAuthed(Boolean(d.authenticated)))
+      .catch(() => setAdminAuthed(false));
+  }, [mobileOpen]);
+
   const lightNav = scrolled;
+  const girisHref = adminAuthed ? "/admin" : "/admin/login";
 
   return (
     <>
@@ -65,7 +74,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <SiteSearch light={lightNav} />
-            <AdminLoginButton light={lightNav} />
+            <AdminLoginButton light={lightNav} className="hidden lg:block" />
 
             <Link
               href="/paket-olustur"
@@ -116,6 +125,19 @@ export function Navbar() {
                   </Link>
                 </motion.li>
               ))}
+              <motion.li
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: navLinks.length * 0.04, ease: EASE_LUXURY }}
+              >
+                <Link
+                  href={girisHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-black/5 py-4 text-lg font-medium text-rm-black"
+                >
+                  Giriş
+                </Link>
+              </motion.li>
               <Link
                 href="/paket-olustur"
                 onClick={() => setMobileOpen(false)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { ReservationRecord } from "@/types/reservations";
 import { formatPrice } from "@/lib/utils";
@@ -31,7 +31,9 @@ export function AdminCalendarPanel() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const highlightId = searchParams.get("res");
+  const editParam = searchParams.get("edit") === "1";
   const newDateParam = searchParams.get("newDate");
+  const detailRef = useRef<HTMLDivElement>(null);
   const [list, setList] = useState<ReservationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ReservationRecord | null>(null);
@@ -65,6 +67,16 @@ export function AdminCalendarPanel() {
   }, [load]);
 
   useAdminDataSync(load);
+
+  useEffect(() => {
+    if (!selected || !editParam) return;
+    requestAnimationFrame(() => {
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    const q = new URLSearchParams(searchParams.toString());
+    q.delete("edit");
+    router.replace(`/admin?${q.toString()}`, { scroll: false });
+  }, [selected, editParam, router, searchParams]);
 
   const openCreate = useCallback((weddingDate?: string) => {
     if (weddingDate) setCalendarAnchor(weddingDate.slice(0, 10));
@@ -273,10 +285,15 @@ export function AdminCalendarPanel() {
           )}
         </div>
 
-        <div className="xl:sticky xl:top-28 xl:self-start">
+        <div
+          ref={detailRef}
+          id="admin-reservation-detail"
+          className="xl:sticky xl:top-28 xl:self-start"
+        >
           {selected ? (
             <ReservationDetailCard
               reservation={selected}
+              startInEditMode={editParam}
               onUpdated={(r) => {
                 setSelected(r);
                 load();

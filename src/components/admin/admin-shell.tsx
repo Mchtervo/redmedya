@@ -30,7 +30,9 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   const navigate = (id: AdminTabId) => {
     const q = new URLSearchParams({ tab: id });
     const res = searchParams.get("res");
+    const edit = searchParams.get("edit");
     if (id === "calendar" && res) q.set("res", res);
+    if (id === "calendar" && edit) q.set("edit", edit);
     router.push(`/admin?${q.toString()}`);
     setMobileNav(false);
   };

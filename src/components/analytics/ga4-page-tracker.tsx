@@ -1,30 +1,30 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { gtagPageView } from "@/lib/gtag";
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-  }
-}
-
-/** SPA sayfa geçişlerinde GA4 page_view */
-export function GA4PageTracker() {
+function GA4PageTrackerInner() {
   const pathname = usePathname();
-  const prev = useRef<string | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
-    if (prev.current === pathname) return;
-    prev.current = pathname;
 
-    window.gtag?.("event", "page_view", {
-      page_path: pathname,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
-  }, [pathname]);
+    const query = searchParams.toString();
+    const path = query ? `${pathname}?${query}` : pathname;
+
+    gtagPageView(path);
+  }, [pathname, searchParams]);
 
   return null;
+}
+
+/** App Router route değişimlerinde GA4 page_view */
+export function GA4PageTracker() {
+  return (
+    <Suspense fallback={null}>
+      <GA4PageTrackerInner />
+    </Suspense>
+  );
 }
