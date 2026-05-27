@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const port = process.env.PORT || "3000";
@@ -7,19 +8,36 @@ const standaloneServer = fileURLToPath(
   new URL("../.next/standalone/server.js", import.meta.url)
 );
 
-/** Hostinger LiteSpeed reverse proxy expects the app on process.env.PORT */
-const useStandalone = process.env.START_STANDALONE === "1";
+const isProd = process.env.NODE_ENV === "production";
+const hasStandalone = fs.existsSync(standaloneServer);
+
+/** next.config output:standalone → next start desteklenmez; node server.js kullan */
+const useStandalone = isProd && hasStandalone;
+
+if (isProd && !hasStandalone) {
+  console.error(
+    "[start] Production build missing .next/standalone/server.js — run npm run build first"
+  );
+  process.exit(1);
+}
 
 const cmd = useStandalone ? process.execPath : "npx";
 const args = useStandalone
   ? [standaloneServer]
   : ["next", "start", "--hostname", hostname, "--port", port];
 
+console.log(
+  useStandalone
+    ? `[start] standalone server on ${hostname}:${port}`
+    : `[start] next dev server on ${hostname}:${port}`
+);
+
 const child = spawn(cmd, args, {
   stdio: "inherit",
-  shell: process.platform === "win32",
+  shell: !useStandalone && process.platform === "win32",
   env: {
     ...process.env,
+    NODE_ENV: process.env.NODE_ENV || (useStandalone ? "production" : "development"),
     PORT: port,
     HOSTNAME: hostname,
   },
