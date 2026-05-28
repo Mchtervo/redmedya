@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { WeddingDatePicker } from "@/components/ui/wedding-date-picker";
 import { trackMetaEvent } from "@/lib/meta-pixel";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
+import { trackAnalytics } from "@/lib/analytics";
+import { getPackageSessionId } from "@/lib/package-session-id";
+import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
+import {
+  buildWhatsAppInquiryMessage,
+  buildWhatsAppMessage,
+  getWhatsAppUrl,
+} from "@/lib/whatsapp";
 import { X, Tag, ShoppingBag, Check, MessageCircle } from "lucide-react";
 import { CartCampaignKlips } from "@/components/package/cart-campaign-klips";
 import { CartSavingsBreakdown } from "@/components/package/cart-savings-breakdown";
@@ -25,6 +32,8 @@ type CartSummaryProps = {
 export function CartSummary({ className, compact }: CartSummaryProps) {
   const customer = usePackageStore((s) => s.customer);
   const coupon = usePackageStore((s) => s.coupon);
+  const bundleDiscounts = usePackageStore((s) => s.bundleDiscounts);
+  const selectedIds = usePackageStore((s) => s.selectedIds);
   const setCustomer = usePackageStore((s) => s.setCustomer);
   const applyCouponCode = usePackageStore((s) => s.applyCouponCode);
   const clearCoupon = usePackageStore((s) => s.clearCoupon);
@@ -44,7 +53,6 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
   } = usePackageTotals();
 
   const { settings } = useSiteSettings();
-  const { openWhatsApp } = useWhatsAppLead();
 
   const [couponError, setCouponError] = useState("");
   const [showForm, setShowForm] = useState(!compact);
@@ -89,13 +97,93 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
     else toggleService(id);
   };
 
-  const handleWhatsApp = () => {
-    if (!customer.firstName?.trim() || !customer.phone?.trim()) {
+  const hasContact =
+    Boolean(customer.firstName?.trim()) && Boolean(customer.phone?.trim());
+
+  const whatsAppMessage =
+    hasContact && lineItems.length > 0
+      ? buildWhatsAppMessage({
+          customer,
+          lineItems,
+          subtotal,
+          bundleDiscount: bundle.amount,
+          couponDiscount,
+          total,
+          couponCode: coupon?.code,
+          bundlePercent: bundleDiscounts[0]?.percent ?? 20,
+        })
+      : buildWhatsAppInquiryMessage(hasContact ? customer : undefined);
+
+  const whatsAppHref = getWhatsAppUrl(whatsAppMessage);
+
+  const handleWhatsAppClick = (
+    event: React.MouseEvent<HTMLAnchorElement>
+  ) => {
+    if (!hasContact) {
+      event.preventDefault();
       setShowForm(true);
       trackMetaEvent("FormStart");
+      trackMetaEvent("InitiateCheckout", {
+        content_name: "cart_needs_contact",
+        value: total,
+        num_items: count,
+      });
       return;
     }
-    openWhatsApp({ contentName: "package_whatsapp", requireContact: true });
+    trackAnalytics("whatsapp_click", {
+      content_name: "package_whatsapp",
+      value: total,
+      num_items: count,
+    });
+    trackAnalytics("package_complete", {
+      content_name: "package_whatsapp",
+      value: total,
+      items: count,
+      cart_summary: lineItems.map((l) => l.name).join(" | ").slice(0, 300),
+    });
+
+    const sessionId = getPackageSessionId();
+    const metaAttribution = readMetaAttributionFromDocument();
+
+    fetch("/api/public/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "package_whatsapp",
+        sessionId,
+        metaAttribution,
+        customer,
+        couponCode: coupon?.code,
+        cart: {
+          selectedIds,
+          lineSummary: lineItems.map((l) => l.name),
+          subtotal,
+          total,
+          count,
+        },
+        lineDetails: lineItems.map((l) => ({
+          serviceId: l.id,
+          label: l.name,
+          price: l.lineTotal,
+          quantity: l.quantity > 0 ? l.quantity : undefined,
+          unitPrice:
+            l.pricingType === "quantity"
+              ? Number(l.unitPrice) || undefined
+              : undefined,
+          selectedPages:
+            l.pricingType === "pages" && l.selectedPages
+              ? l.selectedPages
+              : undefined,
+          listPrice:
+            l.pricingType === "pages"
+              ? Number(l.price) || undefined
+              : undefined,
+          isGift: l.isGift,
+        })),
+        bundleDiscount: bundle.amount,
+        couponDiscount,
+      }),
+    }).catch(() => {});
   };
 
   return (
@@ -358,12 +446,18 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
           </div>
         )}
 
-        <Button
-          variant="whatsapp"
-          className="group mt-5 h-auto w-full py-5 text-sm font-bold tracking-wide shadow-[0_10px_35px_rgba(37,211,102,0.35)]"
-          rounded="full"
-          onClick={handleWhatsApp}
-          disabled={lineItems.length === 0}
+        <a
+          href={whatsAppHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleWhatsAppClick}
+          aria-disabled={lineItems.length === 0}
+          className={cn(
+            "group mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-5 text-sm font-bold tracking-wide text-white shadow-[0_10px_35px_rgba(37,211,102,0.35)] transition-colors",
+            lineItems.length === 0
+              ? "pointer-events-none cursor-not-allowed opacity-40"
+              : "hover:bg-[#20bd5a]"
+          )}
         >
           <MessageCircle className="h-4 w-4" strokeWidth={2} />
           Rezervasyonu WhatsApp ile onayla
@@ -373,7 +467,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
           >
             →
           </span>
-        </Button>
+        </a>
 
         {lineItems.length > 0 && (
           <ul className="mt-3 space-y-1 text-[10px] text-rm-gray-500">

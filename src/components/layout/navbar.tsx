@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { navLinks } from "@/config/site";
@@ -11,7 +12,15 @@ import { AdminLoginButton } from "@/components/layout/admin-login-button";
 import { cn } from "@/lib/utils";
 import { EASE_LUXURY } from "@/lib/animations";
 
+/**
+ * Hero görüntülenen sayfalarda (sadece anasayfa) navbar şeffaf başlayıp
+ * scroll'a göre opaklaşır. Diğer tüm sayfalarda (paket, galeri, vip, vs.)
+ * her zaman koyu opak — yoksa içerik üstüne yapışıp menü okunmuyor.
+ */
+const HERO_TRANSPARENT_PATHS = ["/"];
+
 export function Navbar() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
@@ -36,6 +45,9 @@ export function Navbar() {
       .catch(() => setAdminAuthed(false));
   }, [mobileOpen]);
 
+  const allowTransparent = HERO_TRANSPARENT_PATHS.includes(pathname);
+  /** Hero sayfaları dışında her zaman koyu opak başlık. */
+  const solidNav = !allowTransparent || scrolled;
   const lightNav = scrolled;
   const girisHref = adminAuthed ? "/admin" : "/admin/login";
 
@@ -46,7 +58,9 @@ export function Navbar() {
           "fixed top-0 right-0 left-0 z-50 transition-all duration-300",
           lightNav
             ? "border-b border-black/5 bg-white/90 py-3 shadow-[0_1px_20px_rgba(0,0,0,0.04)] backdrop-blur-xl"
-            : "bg-gradient-to-b from-rm-black/40 to-transparent py-5"
+            : solidNav
+              ? "border-b border-white/8 bg-rm-black/85 py-4 shadow-[0_2px_20px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+              : "bg-gradient-to-b from-rm-black/40 to-transparent py-5"
         )}
       >
         <nav className="section-container flex items-center justify-between gap-4">
