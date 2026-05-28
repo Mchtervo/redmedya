@@ -60,10 +60,13 @@ function SectionTitle({
 }) {
   return (
     <header className="mb-8">
-      <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
-        {eyebrow}
-      </p>
-      <h2 className="mt-3 font-editorial text-[clamp(1.75rem,4vw,2.5rem)] leading-tight text-rm-off-white">
+      <div className="flex items-center gap-2.5">
+        <span className="h-px w-8 bg-rm-champagne" />
+        <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
+          {eyebrow}
+        </p>
+      </div>
+      <h2 className="mt-3 font-editorial text-[clamp(1.75rem,4vw,2.75rem)] leading-tight text-rm-off-white">
         {title}
       </h2>
       {subtitle && (
@@ -180,19 +183,19 @@ function KlipOption({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "relative col-span-full flex flex-col rounded-sm border p-4 text-left transition-all sm:p-5",
+        "group relative col-span-full flex flex-col overflow-hidden rounded-xl border p-5 text-left transition-all",
         showHeroPrice &&
-          "border-2 border-emerald-400/70 bg-gradient-to-br from-emerald-500/25 via-emerald-500/10 to-rm-champagne/5 shadow-[0_0_48px_rgba(52,211,153,0.22)] ring-2 ring-emerald-400/35",
+          "border-emerald-400/50 bg-emerald-500/[0.07] shadow-[0_0_40px_-10px_rgba(52,211,153,0.35)] ring-1 ring-emerald-400/20",
         showActiveCampaign &&
-          "border-2 border-emerald-500/60 bg-gradient-to-br from-emerald-500/20 to-rm-champagne/10 shadow-[0_0_32px_rgba(52,211,153,0.18)]",
+          "border-emerald-500/50 bg-emerald-500/[0.06] shadow-[0_0_30px_-10px_rgba(52,211,153,0.25)]",
         !campaignLive &&
           (active
-            ? "border-rm-champagne/50 bg-rm-champagne/10"
-            : "border-rm-champagne/25 bg-rm-champagne/5 hover:border-rm-champagne/40")
+            ? "border-rm-champagne/50 bg-rm-champagne/[0.06] shadow-[0_0_30px_-10px_rgba(196,160,82,0.25)]"
+            : "border-rm-champagne/20 bg-rm-champagne/[0.03] hover:-translate-y-0.5 hover:border-rm-champagne/40")
       )}
     >
-      {campaignEligible && (
-        <span className="absolute -top-2.5 right-4 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold tracking-wide text-rm-black uppercase shadow-lg shadow-emerald-500/30">
+      {campaignEligible && !active && (
+        <span className="absolute top-3 right-3 rounded-full bg-emerald-500 px-3 py-1 text-[9px] font-bold tracking-[0.15em] text-rm-black uppercase shadow-[0_4px_15px_rgba(52,211,153,0.4)]">
           Foto + video → 3.500₺
         </span>
       )}
@@ -200,65 +203,69 @@ function KlipOption({
       <div className="flex items-start justify-between gap-3">
         <div
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all",
             campaignEligible
-              ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-300"
-              : "border-rm-champagne/35 bg-rm-champagne/15 text-rm-champagne"
+              ? "bg-emerald-500 text-rm-black shadow-[0_4px_12px_rgba(52,211,153,0.3)]"
+              : active
+                ? "bg-rm-champagne text-rm-black shadow-[0_4px_12px_rgba(196,160,82,0.25)]"
+                : "bg-rm-champagne/15 text-rm-champagne"
           )}
         >
-          <Film className="h-4 w-4" strokeWidth={1.25} />
+          <Film className="h-4 w-4" strokeWidth={1.75} />
         </div>
         <span
           className={cn(
-            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all",
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
             active
-              ? "border-rm-champagne bg-rm-champagne text-rm-black"
-              : "border-white/20 bg-transparent"
+              ? campaignLive
+                ? "border-emerald-400 bg-emerald-400 text-rm-black"
+                : "border-rm-champagne bg-rm-champagne text-rm-black"
+              : "border-white/20"
           )}
         >
-          {active && <Check className="h-3 w-3" strokeWidth={2.5} />}
+          {active && <Check className="h-3 w-3" strokeWidth={3} />}
         </span>
       </div>
 
-      <p className="mt-3 text-sm font-semibold text-rm-off-white">{service.name}</p>
-      <p className="mt-1.5 text-xs leading-relaxed text-rm-gray-400">
+      <p className="mt-4 text-sm font-semibold text-rm-off-white">{service.name}</p>
+      <p className="mt-1 text-xs leading-relaxed text-rm-gray-400">
         {service.description}
       </p>
 
       {showHeroPrice && (
         <div
-          className="mt-4 rounded-md border-2 border-emerald-400/50 bg-emerald-500/15 px-4 py-3"
+          className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4"
           role="status"
         >
-          <p className="text-sm font-bold text-emerald-200">
-            Kampanya aktif — otomatik {formatPrice(promo)}
-          </p>
-          <p className="mt-1 text-xs text-emerald-300/90">
-            Fotoğraf + video seçtiniz. Bu klip{" "}
-            <strong className="text-emerald-200">{formatPrice(promo)}</strong>
-            &apos;ye düştü ({formatPrice(list)} yerine).
-          </p>
-          <div className="mt-3 flex flex-wrap items-end gap-3">
-            <span className="font-display text-[clamp(2rem,6vw,2.75rem)] leading-none font-medium tabular-nums text-emerald-300">
-              {formatPrice(promo)}
-            </span>
-            <span className="pb-1 font-display text-xl text-rm-gray-500 line-through">
-              {formatPrice(list)}
-            </span>
-            <span className="mb-1 rounded-sm bg-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-100 uppercase">
-              {formatPrice(CAMPAIGN_KLIP_SAVINGS)} tasarruf
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 items-center gap-1 rounded-full bg-emerald-500 px-2 text-[9px] font-bold tracking-wider text-rm-black uppercase">
+              ⚡ Aktif kampanya
             </span>
           </div>
-          <p className="mt-3 text-xs font-semibold text-emerald-200/95">
-            Tıklayın — sepete kampanya fiyatıyla eklenir
+          <div className="mt-3 flex flex-wrap items-baseline gap-2.5">
+            <span className="font-editorial text-3xl leading-none tabular-nums text-emerald-300">
+              {formatPrice(promo)}
+            </span>
+            <span className="text-base text-rm-gray-500 line-through">
+              {formatPrice(list)}
+            </span>
+            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-200 uppercase">
+              -{formatPrice(CAMPAIGN_KLIP_SAVINGS)}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-emerald-200/90">
+            Foto + video seçtiniz → otomatik indirim uygulandı. Eklemek için tıklayın.
           </p>
         </div>
       )}
 
       {showActiveCampaign && (
-        <p className="mt-3 rounded-md border-2 border-emerald-400/40 bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-200">
-          ✓ {formatPrice(promo)} kampanya fiyatı — sepette görünür
-        </p>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2">
+          <Check className="h-4 w-4 text-emerald-300" strokeWidth={2.5} />
+          <span className="text-xs font-semibold text-emerald-200">
+            Kampanya fiyatı uygulandı — {formatPrice(promo)}
+          </span>
+        </div>
       )}
 
       {active && campaignEligible && !isCampaignPrice && (
@@ -267,30 +274,14 @@ function KlipOption({
         </p>
       )}
 
-      {!showHeroPrice && (
-        <div className="mt-3 flex flex-wrap items-baseline gap-2">
-          {showActiveCampaign ? (
-            <>
-              <span className="font-display text-2xl tabular-nums text-emerald-300">
-                {formatPrice(promo)}
-              </span>
-              <span className="text-sm text-rm-gray-500 line-through">
-                {formatPrice(list)}
-              </span>
-              <span className="text-[10px] font-bold text-emerald-400 uppercase">
-                Kampanya
-              </span>
-            </>
-          ) : (
-            <span className="font-display text-xl tabular-nums text-rm-champagne">
-              {formatPrice(list)}
-            </span>
-          )}
-        </div>
+      {!showHeroPrice && !showActiveCampaign && (
+        <p className="mt-4 border-t border-white/[0.06] pt-3 font-editorial text-2xl tabular-nums text-rm-champagne">
+          {formatPrice(list)}
+        </p>
       )}
 
-      {service.upsellHint && !showHeroPrice && (
-        <p className="mt-2 text-[11px] text-rm-champagne/80">{service.upsellHint}</p>
+      {service.upsellHint && !showHeroPrice && !showActiveCampaign && (
+        <p className="mt-2 text-[11px] text-rm-champagne/70">{service.upsellHint}</p>
       )}
     </button>
   );
@@ -492,28 +483,34 @@ function CollapsibleBlock({
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
         className={cn(
-          "mb-4 flex w-full items-end justify-between gap-3 rounded-sm border px-5 py-4 text-left transition-colors md:px-6",
+          "group mb-4 flex w-full items-end justify-between gap-3 rounded-2xl border px-6 py-5 text-left transition-all md:px-7 md:py-6",
           active
-            ? "border-rm-champagne/25 bg-white/[0.03]"
-            : "border-white/[0.08] bg-rm-black-elevated/40 hover:border-white/15"
+            ? "border-rm-champagne/30 bg-rm-champagne/[0.04] shadow-[0_0_40px_-15px_rgba(196,160,82,0.25)]"
+            : "border-white/[0.06] bg-rm-black-elevated/40 hover:border-white/12 hover:bg-rm-black-elevated/60"
         )}
       >
         <div>
-          <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
-            Baskı
-          </p>
+          <div className="flex items-center gap-2.5">
+            <span className="h-px w-6 bg-rm-champagne" />
+            <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
+              Baskı &amp; Hediyelik
+            </p>
+          </div>
           <h2 className="mt-2 font-editorial text-[clamp(1.5rem,3.5vw,2rem)] leading-tight text-rm-off-white">
             {title}
           </h2>
           <p className="mt-2 text-sm text-rm-gray-400">{subtitle}</p>
         </div>
-        <ChevronDown
+        <span
           className={cn(
-            "mb-1 h-5 w-5 shrink-0 text-rm-gray-400 transition-transform duration-300",
-            open && "rotate-180 text-rm-champagne"
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-300",
+            open
+              ? "rotate-180 border-rm-champagne bg-rm-champagne text-rm-black"
+              : "border-white/15 bg-white/[0.03] text-rm-gray-400 group-hover:border-white/30 group-hover:text-rm-off-white"
           )}
-          strokeWidth={1.5}
-        />
+        >
+          <ChevronDown className="h-4 w-4" strokeWidth={2} />
+        </span>
       </button>
       <div
         className={cn(
@@ -545,47 +542,49 @@ function ProductRow({
   return (
     <div
       className={cn(
-        "border-b border-white/[0.06] last:border-b-0",
+        "border-b border-white/[0.06] transition-colors last:border-b-0",
         selected && "bg-rm-champagne/[0.04]"
       )}
     >
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start gap-4 px-5 py-5 text-left transition-colors hover:bg-white/[0.02] md:px-6"
+        className="flex w-full items-start gap-4 px-5 py-5 text-left transition-colors hover:bg-white/[0.02] md:px-7"
       >
         <span
           className={cn(
-            "mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+            "mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
             selected ? "border-rm-champagne bg-rm-champagne" : "border-white/20"
           )}
         >
-          {selected && <Check className="h-3 w-3 text-rm-black" strokeWidth={2.5} />}
+          {selected && <Check className="h-3 w-3 text-rm-black" strokeWidth={3} />}
         </span>
         <div
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all",
             selected
-              ? "border-rm-champagne/35 bg-rm-champagne/12 text-rm-champagne"
-              : "border-white/10 bg-white/[0.03] text-rm-gray-500"
+              ? "bg-rm-champagne text-rm-black shadow-[0_4px_12px_rgba(196,160,82,0.25)]"
+              : "bg-white/[0.05] text-rm-gray-400"
           )}
         >
-          <Icon className="h-5 w-5" strokeWidth={1.25} />
+          <Icon className="h-5 w-5" strokeWidth={1.5} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-lg text-rm-off-white">{service.name}</p>
+          <p className="font-editorial text-lg text-rm-off-white">{service.name}</p>
           {service.description && (
-            <p className="mt-1.5 text-sm leading-relaxed text-rm-gray-400">
+            <p className="mt-1 text-sm leading-relaxed text-rm-gray-400">
               {service.description}
             </p>
           )}
           {service.upsellHint && (
-            <p className="mt-2 text-xs text-rm-champagne/80">{service.upsellHint}</p>
+            <p className="mt-2 inline-block rounded-full bg-rm-champagne/10 px-2.5 py-0.5 text-[11px] text-rm-champagne/90">
+              {service.upsellHint}
+            </p>
           )}
         </div>
         <div className="shrink-0 pt-1 text-right">
           {priceLabel ?? (
-            <span className="font-display text-xl tabular-nums text-rm-champagne">
+            <span className="font-editorial text-xl tabular-nums text-rm-champagne">
               {formatPrice(service.price)}
             </span>
           )}
@@ -624,33 +623,38 @@ function BuyukAlbumBlock({
       }
     >
       {selected && (
-        <div className="border-t border-white/[0.06] px-5 pb-5 md:px-6">
-          <p className="mb-3 text-[10px] font-medium tracking-[0.2em] text-rm-gray-500 uppercase">
-            Yaprak · sayfa
+        <div className="border-t border-white/[0.06] px-5 pb-5 md:px-7">
+          <p className="mb-3 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+            Sayfa adedi
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             {options.map((p) => {
               const pageCount = p as BuyukAlbumPages;
               const price = lineTotalFor(service, 1, p);
+              const isActive = pages === p;
               return (
                 <button
                   key={p}
                   type="button"
                   onClick={() => onPagesChange(p)}
                   className={cn(
-                    "rounded-sm border px-4 py-3 text-left transition-all",
-                    pages === p
-                      ? "border-rm-champagne/50 bg-rm-champagne/10"
-                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                    "relative overflow-hidden rounded-xl border-2 px-4 py-3 text-left transition-all",
+                    isActive
+                      ? "border-rm-champagne bg-rm-champagne/10 shadow-[0_0_20px_-5px_rgba(196,160,82,0.3)]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
                   )}
                 >
-                  <span className="text-sm font-medium leading-snug text-rm-off-white">
-                    {buyukAlbumPageOptionLabel(pageCount)}
-                  </span>
-                  {p === 20 && (
-                    <span className="ml-2 text-[10px] text-rm-champagne">+50%</span>
-                  )}
-                  <p className="mt-1 text-sm tabular-nums text-rm-champagne">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-rm-off-white">
+                      {buyukAlbumPageOptionLabel(pageCount)}
+                    </span>
+                    {p === 20 && (
+                      <span className="rounded-full bg-rm-champagne/20 px-2 py-0.5 text-[9px] font-bold text-rm-champagne">
+                        +50%
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1.5 font-editorial text-lg tabular-nums text-rm-champagne">
                     {formatPrice(price)}
                   </p>
                 </button>
@@ -832,7 +836,7 @@ export function ServiceGrid() {
             (aile ? (quantities[aile.id] ?? 0) > 0 : false)
           }
         >
-          <div className="overflow-hidden rounded-sm border border-white/[0.08] bg-rm-black-elevated/40">
+          <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-rm-black-elevated/40">
             {buyukAlbum && (
               <BuyukAlbumBlock
                 service={buyukAlbum}
@@ -854,27 +858,33 @@ export function ServiceGrid() {
             {aile && (
               <div
                 className={cn(
-                  "border-t border-white/[0.06] px-5 py-5 md:px-6",
+                  "border-t border-white/[0.06] px-5 py-5 md:px-7",
                   aileQty > 0 && "bg-rm-champagne/[0.04]",
                   !buyukSelected && "opacity-90"
                 )}
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-white/[0.03] text-rm-gray-500">
-                      <BookOpen className="h-5 w-5" strokeWidth={1.25} />
+                    <div
+                      className={cn(
+                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all",
+                        aileQty > 0
+                          ? "bg-rm-champagne text-rm-black shadow-[0_4px_12px_rgba(196,160,82,0.25)]"
+                          : "bg-white/[0.05] text-rm-gray-400"
+                      )}
+                    >
+                      <BookOpen className="h-5 w-5" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <p className="font-display text-lg text-rm-off-white">
+                      <p className="font-editorial text-lg text-rm-off-white">
                         {aile.name}
                       </p>
-                      <p className="mt-1.5 text-sm leading-relaxed text-rm-gray-400">
+                      <p className="mt-1 text-sm leading-relaxed text-rm-gray-400">
                         {aile.description}
                       </p>
                       {!buyukSelected && (
-                        <p className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-200/90">
-                          Önce büyük albümü seçin — aile albümü büyük albümle birlikte
-                          eklenir.
+                        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-200">
+                          ⚠ Önce büyük albümü seçin
                         </p>
                       )}
                       <p className="mt-2 text-xs text-rm-gray-500">
@@ -883,29 +893,33 @@ export function ServiceGrid() {
                     </div>
                   </div>
                   {aileQty > 0 && (
-                    <p className="font-display text-xl tabular-nums text-rm-champagne">
+                    <p className="font-editorial text-xl tabular-nums text-rm-champagne">
                       {formatPrice(aileUnit * aileQty)}
                     </p>
                   )}
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                  {([0, 1, 2] as const).map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      disabled={!buyukSelected && q > 0}
-                      onClick={() => setServiceQuantity(aile.id, q)}
-                      className={cn(
-                        "rounded-sm border py-2.5 text-xs font-medium transition-all",
-                        !buyukSelected && q > 0 && "cursor-not-allowed opacity-40",
-                        aileQty === q
-                          ? "border-rm-champagne/50 bg-rm-champagne/10 text-rm-off-white"
-                          : "border-white/10 text-rm-gray-400 hover:border-white/20 hover:text-rm-off-white"
-                      )}
-                    >
-                      {q === 0 ? "İstemiyorum" : `${q} adet`}
-                    </button>
-                  ))}
+                  {([0, 1, 2] as const).map((q) => {
+                    const disabled = !buyukSelected && q > 0;
+                    const isActive = aileQty === q;
+                    return (
+                      <button
+                        key={q}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setServiceQuantity(aile.id, q)}
+                        className={cn(
+                          "rounded-xl border-2 py-2.5 text-xs font-semibold transition-all",
+                          disabled && "cursor-not-allowed opacity-40",
+                          isActive
+                            ? "border-rm-champagne bg-rm-champagne/10 text-rm-off-white shadow-[0_0_20px_-8px_rgba(196,160,82,0.4)]"
+                            : "border-white/10 text-rm-gray-400 hover:border-white/25 hover:text-rm-off-white"
+                        )}
+                      >
+                        {q === 0 ? "İstemiyorum" : `${q} adet`}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

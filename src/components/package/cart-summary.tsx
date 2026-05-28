@@ -121,50 +121,69 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
 
       <div className="flex flex-1 flex-col p-5">
         {lineItems.length === 0 ? (
-          <p className="py-6 text-center text-sm text-rm-gray-400">
-            Soldan hizmet seçin — fiyat burada görünür.
-          </p>
+          <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] py-8 text-center">
+            <ShoppingBag
+              className="mx-auto h-7 w-7 text-rm-gray-600"
+              strokeWidth={1.25}
+            />
+            <p className="mt-3 text-sm text-rm-gray-400">
+              Soldan hizmet seçin
+            </p>
+            <p className="mt-0.5 text-[11px] text-rm-gray-600">
+              Fiyat burada canlı güncellenir
+            </p>
+          </div>
         ) : (
-          <ul className="max-h-48 space-y-2 overflow-x-hidden overflow-y-auto">
+          <ul className="max-h-56 space-y-1.5 overflow-x-hidden overflow-y-auto pr-1">
             {lineItems.map((s) => (
               <li
                 key={s.id}
-                className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-3 py-2.5 text-sm"
+                className="group/line flex items-center justify-between gap-2 rounded-xl border border-white/[0.04] bg-white/[0.03] px-3 py-2.5 text-sm transition-colors hover:border-white/10 hover:bg-white/[0.05]"
               >
-                <span className="min-w-0 truncate text-rm-gray-100">
-                  {s.name}
-                  {s.isGift && (
-                    <span className="ml-1 text-[10px] font-bold text-emerald-400">
-                      HEDİYE
-                    </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-rm-off-white">
+                    {s.name}
+                    {s.quantity > 1 && (
+                      <span className="ml-1 text-rm-gray-500">×{s.quantity}</span>
+                    )}
+                  </p>
+                  {(s.isGift || s.isCampaignPrice || s.excludeFromBundleDiscount) && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {s.isGift && (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold tracking-wider text-emerald-300 uppercase">
+                          🎁 Hediye
+                        </span>
+                      )}
+                      {s.isCampaignPrice && (
+                        <span className="rounded-full bg-rm-champagne/15 px-2 py-0.5 text-[9px] font-bold tracking-wider text-rm-champagne uppercase">
+                          ⚡ Kampanya
+                        </span>
+                      )}
+                      {!s.isCampaignPrice && s.excludeFromBundleDiscount && (
+                        <span className="rounded-full bg-white/5 px-2 py-0.5 text-[9px] font-medium tracking-wider text-rm-gray-500 uppercase">
+                          %20 hariç
+                        </span>
+                      )}
+                    </div>
                   )}
-                  {s.isCampaignPrice && (
-                    <span className="ml-1 text-[10px] font-bold text-rm-champagne">
-                      KAMPANYA · %20 hariç
-                    </span>
-                  )}
-                  {!s.isCampaignPrice && s.excludeFromBundleDiscount && (
-                    <span className="ml-1 text-[10px] text-rm-gray-500">%20 hariç</span>
-                  )}
-                  {s.quantity > 1 ? ` ×${s.quantity}` : ""}
-                </span>
+                </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {s.isGift || s.isCampaignPrice ? (
                     <span className="text-right">
                       <span
                         className={cn(
-                          "block font-medium tabular-nums",
+                          "block text-sm font-semibold tabular-nums",
                           s.isGift ? "text-emerald-400" : "text-rm-champagne"
                         )}
                       >
                         {formatPrice(s.lineTotal)}
                       </span>
-                      <span className="text-[10px] text-rm-gray-500 line-through">
+                      <span className="text-[10px] text-rm-gray-600 line-through">
                         {formatPrice(s.originalLineTotal ?? 0)}
                       </span>
                     </span>
                   ) : (
-                    <span className="font-medium tabular-nums text-rm-champagne">
+                    <span className="text-sm font-semibold tabular-nums text-rm-champagne">
                       {formatPrice(s.lineTotal)}
                     </span>
                   )}
@@ -172,10 +191,10 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                     <button
                       type="button"
                       onClick={() => removeLine(s.id, s.pricingType)}
-                      className="text-rm-gray-500 hover:text-rm-off-white"
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-rm-gray-600 transition-colors hover:bg-red-500/15 hover:text-red-300"
                       aria-label="Kaldır"
                     >
-                      <X size={14} />
+                      <X size={13} strokeWidth={2} />
                     </button>
                   )}
                 </div>
@@ -217,36 +236,47 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
 
         {!compact && (
           <>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-5 flex gap-2">
               <Input
                 id="coupon-input"
                 placeholder="İndirim kodu"
-                className="flex-1 border-white/15 bg-white/5"
+                className="h-11 flex-1 rounded-xl border-white/10 bg-white/[0.03]"
               />
-              <Button type="button" variant="outline" size="icon" onClick={applyCoupon}>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={applyCoupon}
+                className="h-11 w-11 rounded-xl"
+              >
                 <Tag size={16} />
               </Button>
             </div>
             {couponError && (
-              <p className="mt-1 text-xs text-red-400">{couponError}</p>
+              <p className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {couponError}
+              </p>
             )}
 
             <div className="mt-6 space-y-3">
-              <p className="text-xs font-medium tracking-wide text-rm-champagne uppercase">
-                İletişim bilgileri
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="h-1 w-6 rounded-full bg-rm-champagne" />
+                <p className="text-[10px] font-semibold tracking-[0.25em] text-rm-champagne uppercase">
+                  İletişim bilgileri
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   placeholder="Ad *"
                   value={customer.firstName}
                   onChange={(e) => setCustomer({ firstName: e.target.value })}
-                  className="border-white/15 bg-white/5"
+                  className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
                 />
                 <Input
                   placeholder="Soyad"
                   value={customer.lastName}
                   onChange={(e) => setCustomer({ lastName: e.target.value })}
-                  className="border-white/15 bg-white/5"
+                  className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
                 />
               </div>
               <Input
@@ -254,7 +284,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                 type="tel"
                 value={customer.phone}
                 onChange={(e) => setCustomer({ phone: e.target.value })}
-                className="border-white/15 bg-white/5"
+                className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
               />
               <WeddingDatePicker
                 value={customer.weddingDate}
@@ -265,7 +295,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                 placeholder="Not (isteğe bağlı)"
                 value={customer.note}
                 onChange={(e) => setCustomer({ note: e.target.value })}
-                className="min-h-[72px] border-white/15 bg-white/5"
+                className="min-h-[72px] rounded-xl border-white/10 bg-white/[0.03]"
               />
             </div>
           </>
