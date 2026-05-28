@@ -66,37 +66,42 @@ export function AdminRehberPanel() {
   if (loading) return <p className="text-sm text-rm-gray-400">Yükleniyor…</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <form
         onSubmit={addManual}
-        className="rounded-xl border border-white/10 bg-rm-black-elevated p-5"
+        className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6"
       >
-        <h3 className="font-display text-lg text-rm-off-white">Manuel kişi ekle</h3>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="flex items-center gap-2">
+          <span className="h-1 w-8 rounded-full bg-rm-champagne" />
+          <h3 className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
+            Manuel kişi ekle
+          </h3>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <Input
             placeholder="Ad"
             value={form.firstName}
             onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-            className="border-white/15 bg-white/5"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03]"
           />
           <Input
             placeholder="Soyad"
             value={form.lastName}
             onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-            className="border-white/15 bg-white/5"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03]"
           />
           <Input
             placeholder="Telefon *"
             value={form.phone}
             onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="border-white/15 bg-white/5 sm:col-span-2"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03] sm:col-span-2"
             required
           />
           <Input
             type="date"
             value={form.weddingDate}
             onChange={(e) => setForm((f) => ({ ...f, weddingDate: e.target.value }))}
-            className="border-white/15 bg-white/5"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03]"
           />
           <Input
             placeholder="Çekim alanı"
@@ -104,64 +109,79 @@ export function AdminRehberPanel() {
             onChange={(e) =>
               setForm((f) => ({ ...f, shootingLocation: e.target.value }))
             }
-            className="border-white/15 bg-white/5"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03]"
           />
           <Input
             placeholder="Not"
             value={form.note}
             onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-            className="border-white/15 bg-white/5 sm:col-span-2"
+            className="h-11 rounded-lg border-white/10 bg-white/[0.03] sm:col-span-2"
           />
         </div>
         <button
           type="submit"
-          className="mt-4 bg-rm-champagne px-5 py-2 text-xs font-bold tracking-wide text-rm-black uppercase"
+          className="mt-5 rounded-full bg-rm-champagne px-6 py-2.5 text-[11px] font-bold tracking-[0.15em] text-rm-black uppercase transition-colors hover:bg-rm-champagne-light"
         >
-          Ekle
+          Kayıt ekle →
         </button>
       </form>
 
-      <p className="text-sm text-rm-gray-400">
-        {contacts.length} kişi · Rezervasyon kayıtları otomatik senkron
-      </p>
+      <div className="flex items-center justify-between rounded-xl border border-white/8 bg-rm-black-elevated/40 px-4 py-3">
+        <p className="text-sm text-rm-gray-400">
+          <span className="font-semibold text-rm-champagne">{contacts.length}</span>{" "}
+          kişi · rezervasyonlar otomatik senkron
+        </p>
+      </div>
 
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {contacts.map((c) => (
           <li
             key={c.id}
-            className="rounded-xl border border-white/10 bg-rm-black-elevated px-4 py-3"
+            className="group rounded-xl border border-white/8 bg-rm-black-elevated/60 px-5 py-4 transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated"
           >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p className="font-medium text-rm-off-white">
-                  {c.firstName} {c.lastName}
-                </p>
-                <p className="text-sm text-rm-gray-400">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-rm-off-white">
+                    {c.firstName} {c.lastName}
+                  </p>
+                  <span
+                    className={
+                      c.source === "reservation"
+                        ? "rounded-full border border-emerald-500/30 px-2 py-0.5 text-[9px] font-semibold tracking-wider text-emerald-300 uppercase"
+                        : "rounded-full border border-white/15 px-2 py-0.5 text-[9px] font-semibold tracking-wider text-rm-gray-500 uppercase"
+                    }
+                  >
+                    {c.source === "reservation" ? "Rezervasyon" : "Manuel"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-rm-gray-400">
                   {c.phone}
-                  {c.weddingDate && ` · ${c.weddingDate}`}
+                  {c.weddingDate && (
+                    <span className="text-rm-gray-500"> · {c.weddingDate}</span>
+                  )}
                 </p>
                 {c.shootingLocation && (
-                  <p className="mt-1 text-xs text-rm-gray-500">📍 {c.shootingLocation}</p>
+                  <p className="mt-1.5 text-xs text-rm-gray-500">
+                    📍 {c.shootingLocation}
+                  </p>
                 )}
                 {c.shootingNote && (
                   <p className="text-xs text-rm-gray-500">{c.shootingNote}</p>
                 )}
-                <span className="text-[10px] tracking-wider text-rm-gray-600 uppercase">
-                  {c.source === "reservation" ? "Rezervasyon" : "Manuel"}
-                </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setEditContact(c)}
-                  className="text-xs text-rm-champagne underline"
+                  className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-rm-off-white uppercase transition-colors hover:border-rm-champagne/40 hover:text-rm-champagne"
                 >
                   Düzenle
                 </button>
                 {c.reservationId && (
                   <a
                     href={`/admin?tab=calendar&res=${c.reservationId}`}
-                    className="text-xs text-rm-gray-400 underline"
+                    className="rounded-full border border-emerald-500/25 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-emerald-300 uppercase transition-colors hover:bg-emerald-500/10"
                   >
                     Takvim
                   </a>
@@ -169,7 +189,7 @@ export function AdminRehberPanel() {
                 <button
                   type="button"
                   onClick={() => remove(c.id)}
-                  className="text-xs text-red-400/80"
+                  className="rounded-full border border-red-500/25 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-red-300 uppercase transition-colors hover:bg-red-500/10"
                 >
                   Sil
                 </button>

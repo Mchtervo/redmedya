@@ -46,11 +46,15 @@ export function TestimonialsTabs() {
   const current = list[index % list.length];
 
   return (
-    <section id="yorumlar" className="section-dark py-16 md:py-24">
+    <section id="yorumlar" className="section-dark py-20 md:py-28">
       <div className="section-container">
         <div className="text-center">
-          <h2 className="font-display text-3xl text-rm-off-white md:text-4xl">
-            Her ilişkinin eşsizliği kendisine özel
+          <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
+            Mutlu çiftlerimiz
+          </p>
+          <h2 className="mx-auto mt-4 max-w-2xl font-editorial text-[clamp(1.75rem,4vw,3rem)] leading-[1.05] text-rm-off-white">
+            Her ilişkinin eşsizliği{" "}
+            <span className="italic text-rm-champagne-light">kendisine özel</span>
           </h2>
         </div>
 
@@ -63,10 +67,10 @@ export function TestimonialsTabs() {
                 setTab(t);
                 setIndex(0);
               }}
-              className={`rounded-full px-6 py-2.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
+              className={`rounded-full px-5 py-2 text-[10px] font-semibold tracking-[0.2em] uppercase transition-all ${
                 tab === t
-                  ? "bg-rm-champagne text-rm-black"
-                  : "border border-white/15 text-rm-gray-400 hover:text-rm-off-white"
+                  ? "bg-rm-champagne text-rm-black shadow-[0_4px_20px_rgba(196,160,82,0.25)]"
+                  : "border border-white/15 text-rm-gray-400 hover:border-white/30 hover:text-rm-off-white"
               }`}
             >
               {t}
@@ -74,7 +78,7 @@ export function TestimonialsTabs() {
           ))}
         </div>
 
-        <div className="relative mx-auto mt-12 max-w-4xl">
+        <div className="relative mx-auto mt-14 max-w-4xl">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${tab}-${index}`}
@@ -82,27 +86,34 @@ export function TestimonialsTabs() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.45, ease: EASE_LUXURY }}
-              className="grid items-center gap-8 md:grid-cols-[200px_1fr]"
+              className="grid items-center gap-10 rounded-3xl border border-white/8 bg-rm-black-elevated/40 p-8 backdrop-blur-sm md:grid-cols-[220px_1fr] md:p-12"
             >
               {isCouples && "image" in current && (
-                <div className="relative mx-auto aspect-[3/4] w-full max-w-[200px] overflow-hidden rounded-lg">
+                <div className="relative mx-auto aspect-[3/4] w-full max-w-[220px] overflow-hidden rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]">
                   <Image
                     src={(current as (typeof couples)[0]).image}
                     alt={current.name}
                     fill
                     className="object-cover"
-                    sizes="200px"
+                    sizes="220px"
                   />
                 </div>
               )}
               <div className="text-center md:text-left">
-                <Quote className="mx-auto h-8 w-8 text-rm-champagne/50 md:mx-0" />
-                <p className="mt-4 text-lg leading-relaxed text-rm-gray-200 md:text-xl">
+                <Quote className="mx-auto h-9 w-9 text-rm-champagne/40 md:mx-0" />
+                <p className="mt-5 font-editorial text-xl leading-relaxed text-rm-off-white md:text-2xl">
                   &ldquo;{current.text}&rdquo;
                 </p>
-                <p className="mt-6 font-display text-2xl text-rm-champagne">{current.name}</p>
+                <div className="mt-7 flex items-center justify-center gap-3 md:justify-start">
+                  <div className="h-px w-8 bg-rm-champagne" />
+                  <p className="text-sm font-semibold tracking-wider text-rm-champagne uppercase">
+                    {current.name}
+                  </p>
+                </div>
                 {!isCouples && (
-                  <p className="mt-1 text-xs text-rm-gray-500">Google Yorum</p>
+                  <p className="mt-1.5 text-[10px] tracking-[0.2em] text-rm-gray-500 uppercase">
+                    Google Yorumu
+                  </p>
                 )}
               </div>
             </motion.div>
@@ -111,7 +122,7 @@ export function TestimonialsTabs() {
           <button
             type="button"
             onClick={() => setIndex((i) => (i - 1 + list.length) % list.length)}
-            className="absolute top-1/2 -left-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated md:-left-14"
+            className="absolute top-1/2 -left-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/80 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 md:-left-16"
             aria-label="Önceki"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -119,11 +130,27 @@ export function TestimonialsTabs() {
           <button
             type="button"
             onClick={() => setIndex((i) => (i + 1) % list.length)}
-            className="absolute top-1/2 -right-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated md:-right-14"
+            className="absolute top-1/2 -right-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/80 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 md:-right-16"
             aria-label="Sonraki"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
+
+          <div className="mt-6 flex justify-center gap-1.5">
+            {list.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setIndex(i)}
+                aria-label={`Yorum ${i + 1}`}
+                className={`h-1 rounded-full transition-all ${
+                  i === index % list.length
+                    ? "w-8 bg-rm-champagne"
+                    : "w-1.5 bg-white/20 hover:bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

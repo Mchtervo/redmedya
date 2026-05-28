@@ -143,39 +143,46 @@ export function AdminOverviewPanel({
               }}
             />
 
-            <div className="rounded-xl border border-white/10 bg-rm-black-elevated/60 p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg text-rm-off-white">
+            <div className="rounded-xl border border-white/10 bg-rm-black-elevated/60 p-6">
+              <div className="flex items-center justify-between border-b border-white/8 pb-4">
+                <h3 className="font-editorial text-lg text-rm-off-white">
                   Yaklaşan düğünler
                 </h3>
                 <button
                   type="button"
                   onClick={() => onNavigate("calendar")}
-                  className="text-xs text-rm-champagne hover:underline"
+                  className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase hover:underline"
                 >
                   Takvime git →
                 </button>
               </div>
               {upcoming.length === 0 ? (
-                <p className="mt-6 text-sm text-rm-gray-500">
+                <p className="mt-8 text-center text-sm text-rm-gray-500">
                   Henüz onaylı rezervasyon yok.
                 </p>
               ) : (
-                <ul className="mt-4 space-y-2">
+                <ul className="mt-4 divide-y divide-white/5">
                   {upcoming.map((r) => (
                     <li
                       key={r.id}
-                      className="rounded-lg border border-white/8 bg-white/[0.02] px-4 py-3"
+                      className="flex items-center justify-between gap-3 py-3.5"
                     >
-                      <p className="font-medium text-rm-off-white">
-                        {formatCustomerName(r.customer)}
-                      </p>
-                      <p className="text-xs text-rm-gray-500">
-                        {formatWeddingDateDisplay(r.customer.weddingDate)}
-                      </p>
-                      <p className="mt-1 text-sm text-rm-champagne">
-                        Kalan {formatPrice(r.remainingAmount)}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-rm-off-white">
+                          {formatCustomerName(r.customer)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-rm-gray-500">
+                          {formatWeddingDateDisplay(r.customer.weddingDate)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
+                          Kalan
+                        </p>
+                        <p className="text-sm font-semibold tabular-nums text-rm-champagne">
+                          {formatPrice(r.remainingAmount)}
+                        </p>
+                      </div>
                     </li>
                   ))}
                 </ul>

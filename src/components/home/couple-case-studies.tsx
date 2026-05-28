@@ -21,29 +21,31 @@ function CaseStudyCard({ cs }: { cs: CaseStudy }) {
   const hasBreakdown = (cs.subtotal ?? 0) > cs.total || savings > 0;
 
   return (
-    <article className="flex h-full flex-col rounded-sm border border-white/10 bg-rm-black-elevated p-6 md:p-8">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-7 transition-all hover:-translate-y-1 hover:border-rm-champagne/25 hover:bg-rm-black-elevated md:p-8">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-display text-2xl text-rm-off-white">{cs.couple}</h3>
+        <h3 className="font-editorial text-2xl text-rm-off-white">{cs.couple}</h3>
         {cs.location && (
-          <span className="text-xs text-rm-gray-500">{cs.location}</span>
+          <span className="text-[10px] tracking-[0.2em] text-rm-gray-500 uppercase">
+            {cs.location}
+          </span>
         )}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-4 border-y border-white/8 py-4">
         {hasBreakdown && cs.subtotal != null && cs.subtotal > cs.total && (
-          <p className="text-sm text-rm-gray-500 line-through">
-            Liste + ara toplam {formatPrice(cs.subtotal)}
+          <p className="text-xs text-rm-gray-500 line-through">
+            Liste {formatPrice(cs.subtotal)}
           </p>
         )}
-        <p className="font-display text-3xl text-rm-champagne">
+        <p className="mt-0.5 flex items-baseline gap-2 font-editorial text-3xl text-rm-champagne">
           {formatPrice(cs.total)}
-          <span className="ml-2 text-sm font-normal text-rm-gray-500">
-            ödenecek paket
+          <span className="text-[10px] font-sans tracking-[0.2em] text-rm-gray-500 uppercase">
+            ödenecek
           </span>
         </p>
         {savings > 0 && (
-          <p className="mt-1 text-sm font-medium text-emerald-400/95">
-            Toplam {formatPrice(savings)} kazanç (paket %20 + kampanya + hediye)
+          <p className="mt-1.5 text-xs font-medium text-emerald-400/95">
+            {formatPrice(savings)} kazanç · paket + kampanya + hediye
           </p>
         )}
       </div>

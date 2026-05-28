@@ -11,25 +11,73 @@ export function ContactSection() {
   const { openWhatsApp } = useWhatsAppLead();
   const tel = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
 
+  type ContactItem = {
+    icon: typeof MapPin;
+    label: string;
+    value: string;
+    href?: string;
+    external?: boolean;
+  };
+
+  const items: ContactItem[] = [
+    { icon: MapPin, label: "Adres", value: siteConfig.address },
+    {
+      icon: Phone,
+      label: "Telefon / WhatsApp",
+      value: siteConfig.displayPhone,
+      href: tel,
+    },
+    {
+      icon: Mail,
+      label: "E-posta",
+      value: siteConfig.email,
+      href: `mailto:${siteConfig.email}`,
+    },
+    {
+      icon: AtSign,
+      label: "Instagram",
+      value: "@redmedia.co",
+      href: siteConfig.instagram,
+      external: true,
+    },
+    {
+      icon: ExternalLink,
+      label: "Düğün.com",
+      value: "RedMedia.co — Ankara",
+      href: siteConfig.dugun,
+      external: true,
+    },
+  ];
+
   return (
-    <section id="iletisim" className="section-light section-padding border-t border-black/5">
-      <div className="section-container">
+    <section
+      id="iletisim"
+      className="section-padding relative overflow-hidden bg-rm-black-soft"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-0 right-0 h-96 w-96 rounded-full bg-rm-champagne/[0.04] blur-3xl"
+      />
+      <div className="section-container relative">
         <SectionReveal>
-          <div className="editorial-grid items-start">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
             <div>
-              <p className="text-[10px] tracking-[0.4em] text-rm-champagne uppercase">
+              <p className="text-[10px] font-semibold tracking-[0.4em] text-rm-champagne uppercase">
                 İletişim
               </p>
-              <h2 className="mt-6 font-display text-[clamp(2rem,5vw,3.5rem)] leading-tight text-rm-black">
-                Daha fazla soru?
-                <br />
-                Hemen yanıtlayalım.
+              <h2 className="mt-5 font-editorial text-[clamp(2rem,5vw,3.5rem)] leading-[1.05] text-rm-off-white">
+                Daha fazla soru?{" "}
+                <span className="italic text-rm-champagne-light">
+                  Hemen yanıtlayalım
+                </span>
+                .
               </h2>
               <p className="mt-6 max-w-md text-sm leading-relaxed text-rm-gray-400">
-                Paket oluşturucuda hizmetlerinizi seçin, iletişim bilgilerinizi girin — WhatsApp
-                mesajınız sepet özetiyle birlikte otomatik hazırlanır.
+                Paket oluşturucuda hizmetlerinizi seçin, iletişim bilgilerinizi
+                girin — WhatsApp mesajınız sepet özetiyle birlikte otomatik
+                hazırlanır.
               </p>
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-10 flex flex-wrap gap-3">
                 <GlassCta
                   type="button"
                   variant="whatsapp"
@@ -44,76 +92,40 @@ export function ContactSection() {
               </div>
             </div>
 
-            <ul className="space-y-6 lg:pt-8">
-              <li className="flex gap-4">
-                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne" />
-                <div>
-                  <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                    Adres
-                  </p>
-                  <p className="mt-1 text-sm text-rm-gray-200">{siteConfig.address}</p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <Phone className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne" />
-                <div>
-                  <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                    Telefon / WhatsApp
-                  </p>
-                  <a
-                    href={tel}
-                    className="mt-1 block text-sm text-rm-gray-200 hover:text-rm-champagne"
-                  >
-                    {siteConfig.displayPhone}
-                  </a>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne" />
-                <div>
-                  <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                    E-posta
-                  </p>
-                  <a
-                    href={`mailto:${siteConfig.email}`}
-                    className="mt-1 block text-sm text-rm-gray-200 hover:text-rm-champagne"
-                  >
-                    {siteConfig.email}
-                  </a>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <AtSign className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne" />
-                <div>
-                  <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                    Instagram
-                  </p>
-                  <a
-                    href={siteConfig.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 block text-sm text-rm-gray-200 hover:text-rm-champagne"
-                  >
-                    @redmedia.co
-                  </a>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <ExternalLink className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne" />
-                <div>
-                  <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                    Düğün.com
-                  </p>
-                  <a
-                    href={siteConfig.dugun}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 block text-sm text-rm-gray-200 hover:text-rm-champagne"
-                  >
-                    RedMedia.co — Ankara
-                  </a>
-                </div>
-              </li>
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:pt-6">
+              {items.map((item) => {
+                const Icon = item.icon;
+                const content = (
+                  <div className="flex h-full items-start gap-4 rounded-2xl border border-white/8 bg-rm-black-elevated/40 p-5 transition-all hover:-translate-y-0.5 hover:border-rm-champagne/25 hover:bg-rm-black-elevated">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rm-champagne/10 text-rm-champagne">
+                      <Icon className="h-4 w-4" strokeWidth={1.5} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-gray-500 uppercase">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 truncate text-sm text-rm-off-white">
+                        {item.value}
+                      </p>
+                    </div>
+                  </div>
+                );
+                return (
+                  <li key={item.label}>
+                    {item.href ? (
+                      <a
+                        href={item.href}
+                        target={item.external ? "_blank" : undefined}
+                        rel={item.external ? "noopener noreferrer" : undefined}
+                      >
+                        {content}
+                      </a>
+                    ) : (
+                      content
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </SectionReveal>

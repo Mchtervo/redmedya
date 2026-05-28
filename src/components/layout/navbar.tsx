@@ -45,25 +45,28 @@ export function Navbar() {
         className={cn(
           "fixed top-0 right-0 left-0 z-50 transition-all duration-300",
           lightNav
-            ? "border-b border-black/5 bg-white/95 py-3 shadow-sm backdrop-blur-md"
-            : "bg-transparent py-5"
+            ? "border-b border-black/5 bg-white/90 py-3 shadow-[0_1px_20px_rgba(0,0,0,0.04)] backdrop-blur-xl"
+            : "bg-gradient-to-b from-rm-black/40 to-transparent py-5"
         )}
       >
-        <nav className="section-container flex items-center justify-between">
+        <nav className="section-container flex items-center justify-between gap-4">
           <BrandLogo
             variant={lightNav ? "default" : "on-dark"}
             size="nav"
             priority
           />
 
-          <ul className="hidden items-center gap-8 lg:flex">
+          <ul className="hidden items-center gap-7 lg:flex">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   className={cn(
-                    "text-xs font-semibold tracking-wide uppercase transition-colors hover:text-rm-champagne-dark",
-                    lightNav ? "text-rm-gray-400" : "text-white/90"
+                    "relative text-[11px] font-semibold tracking-[0.18em] uppercase transition-colors",
+                    "after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-rm-champagne after:transition-all hover:after:w-full",
+                    lightNav
+                      ? "text-rm-gray-300 hover:text-rm-black"
+                      : "text-white/80 hover:text-white"
                   )}
                 >
                   {link.label}
@@ -79,22 +82,28 @@ export function Navbar() {
             <Link
               href="/paket-olustur"
               className={cn(
-                "hidden px-5 py-2.5 text-xs font-bold tracking-wide uppercase transition-colors md:inline-block",
+                "hidden items-center gap-1.5 rounded-full px-5 py-2.5 text-[11px] font-bold tracking-[0.15em] uppercase transition-all md:inline-flex",
                 lightNav
-                  ? "bg-rm-champagne text-rm-black hover:opacity-90"
-                  : "bg-white text-rm-black hover:bg-rm-cream"
+                  ? "bg-rm-black text-rm-off-white hover:bg-rm-black-elevated"
+                  : "bg-rm-champagne text-rm-black shadow-[0_4px_20px_rgba(196,160,82,0.3)] hover:bg-rm-champagne-light"
               )}
             >
               Rezervasyon
+              <span aria-hidden>→</span>
             </Link>
 
             <button
               type="button"
-              className={cn("lg:hidden", lightNav ? "text-rm-black" : "text-white")}
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors lg:hidden",
+                lightNav
+                  ? "text-rm-black hover:bg-black/5"
+                  : "text-white hover:bg-white/10"
+              )}
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Menü"
             >
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </nav>
@@ -106,9 +115,9 @@ export function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-white pt-24 lg:hidden"
+            className="fixed inset-0 z-40 overflow-y-auto bg-rm-black pt-24 lg:hidden"
           >
-            <ul className="flex flex-col gap-1 px-6">
+            <ul className="flex flex-col px-6 pb-12">
               {navLinks.map((link, i) => (
                 <motion.li
                   key={link.href}
@@ -119,9 +128,10 @@ export function Navbar() {
                   <Link
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="block border-b border-black/5 py-4 text-lg font-medium text-rm-black"
+                    className="flex items-center justify-between border-b border-white/10 py-5 font-editorial text-2xl text-rm-off-white"
                   >
                     {link.label}
+                    <span aria-hidden className="text-rm-champagne/60">→</span>
                   </Link>
                 </motion.li>
               ))}
@@ -133,17 +143,18 @@ export function Navbar() {
                 <Link
                   href={girisHref}
                   onClick={() => setMobileOpen(false)}
-                  className="block border-b border-black/5 py-4 text-lg font-medium text-rm-black"
+                  className="flex items-center justify-between border-b border-white/10 py-5 font-editorial text-2xl text-rm-off-white"
                 >
                   Giriş
+                  <span aria-hidden className="text-rm-champagne/60">→</span>
                 </Link>
               </motion.li>
               <Link
                 href="/paket-olustur"
                 onClick={() => setMobileOpen(false)}
-                className="mt-6 block bg-rm-champagne py-4 text-center text-xs font-bold tracking-wide text-rm-black uppercase"
+                className="mt-10 block rounded-full bg-rm-champagne py-4 text-center text-xs font-bold tracking-[0.2em] text-rm-black uppercase shadow-[0_8px_30px_rgba(196,160,82,0.3)]"
               >
-                Online rezervasyon
+                Online rezervasyon →
               </Link>
             </ul>
           </motion.div>

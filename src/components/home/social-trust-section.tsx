@@ -16,47 +16,51 @@ export function SocialTrustSection() {
         <DugunAwardBanner />
 
         <SectionReveal>
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div className="rounded-sm border border-rm-champagne/25 bg-white p-6 shadow-sm md:p-8">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="group relative overflow-hidden rounded-2xl border border-rm-champagne/20 bg-white p-7 transition-all hover:-translate-y-1 hover:border-rm-champagne/40 hover:shadow-[0_20px_50px_-15px_rgba(196,160,82,0.25)] md:p-9">
               <div className="flex items-center gap-2 text-rm-champagne-dark">
-                <Star className="h-5 w-5 fill-current" />
-                <span className="text-xs font-bold tracking-wider uppercase">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rm-champagne/15">
+                  <Star className="h-4 w-4 fill-current" />
+                </span>
+                <span className="text-[10px] font-semibold tracking-[0.25em] uppercase">
                   Düğün.com
                 </span>
               </div>
-              <p className="mt-4 text-lg leading-relaxed text-rm-gray-700">
+              <p className="mt-5 font-editorial text-xl leading-relaxed text-rm-gray-700 md:text-2xl">
                 {settings.social.dugunHighlight}
               </p>
               <Link
                 href={siteConfig.dugun}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-rm-champagne-dark hover:underline"
+                className="mt-6 inline-flex items-center gap-2 text-xs font-semibold tracking-[0.15em] text-rm-champagne-dark uppercase transition-colors hover:text-rm-black"
               >
-                Profilimizi görüntüleyin
-                <ExternalLink className="h-4 w-4" />
+                Profili görüntüleyin
+                <ExternalLink className="h-3.5 w-3.5" />
               </Link>
             </div>
 
-            <div className="rounded-sm border border-black/8 bg-rm-cream p-6 md:p-8">
+            <div className="group relative overflow-hidden rounded-2xl border border-black/[0.06] bg-rm-cream p-7 transition-all hover:-translate-y-1 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] md:p-9">
               <div className="flex items-center gap-2">
-                <Share2 className="h-5 w-5 text-rm-champagne-dark" />
-                <span className="text-xs font-bold tracking-wider text-rm-gray-600 uppercase">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rm-black/8 text-rm-black">
+                  <Share2 className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-semibold tracking-[0.25em] text-rm-gray-600 uppercase">
                   Instagram
                 </span>
               </div>
-              <p className="mt-4 text-lg leading-relaxed text-rm-gray-700">
+              <p className="mt-5 font-editorial text-xl leading-relaxed text-rm-gray-700 md:text-2xl">
                 {settings.social.instagramCta}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link
                   href={siteConfig.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full bg-rm-black px-5 py-2.5 text-sm font-semibold text-rm-off-white hover:bg-rm-black-elevated"
+                  className="inline-flex items-center gap-2 rounded-full bg-rm-black px-5 py-2.5 text-xs font-semibold tracking-[0.1em] text-rm-off-white uppercase transition-colors hover:bg-rm-black-elevated"
                 >
                   @redmedia.co
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
                 {settings.social.instagramPostUrls
                   .filter((u) => u !== siteConfig.instagram)
@@ -67,7 +71,7 @@ export function SocialTrustSection() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-rm-champagne-dark underline"
+                      className="inline-flex items-center gap-1 text-xs font-semibold tracking-[0.1em] text-rm-champagne-dark uppercase hover:underline"
                     >
                       Son paylaşım
                       <ExternalLink className="h-3 w-3" />

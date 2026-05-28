@@ -37,16 +37,21 @@ export function AdminOperationsPanel() {
   const couponRows = Object.entries(settings.couponUsage ?? {});
 
   return (
-    <div className="space-y-10">
-      <div className="flex justify-end">
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Kaydediliyor…" : "Operasyonu kaydet"}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between rounded-xl border border-white/8 bg-rm-black-elevated/40 px-4 py-3">
+        <p className="text-sm text-rm-gray-400">Site operasyonu &amp; içerik ayarları</p>
+        <Button onClick={save} disabled={saving} className="rounded-full">
+          {saving ? "Kaydediliyor…" : "Kaydet →"}
         </Button>
       </div>
-      {msg && <p className="text-sm text-rm-champagne">{msg}</p>}
+      {msg && (
+        <p className="rounded-lg border border-rm-champagne/30 bg-rm-champagne/[0.06] px-4 py-3 text-sm text-rm-champagne">
+          {msg}
+        </p>
+      )}
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Kontenjan uyarısı</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Kontenjan uyarısı</h2>
         <label className="mt-4 flex items-center gap-2 text-sm text-rm-gray-300">
           <input
             type="checkbox"
@@ -74,7 +79,7 @@ export function AdminOperationsPanel() {
                 },
               })
             }
-            className="border-white/15 bg-white/5"
+            className="rounded-lg border-white/10 bg-white/[0.03]"
           />
           <Input
             placeholder="bu ay"
@@ -85,16 +90,16 @@ export function AdminOperationsPanel() {
                 capacity: { ...settings.capacity, monthLabel: e.target.value },
               })
             }
-            className="border-white/15 bg-white/5"
+            className="rounded-lg border-white/10 bg-white/[0.03]"
           />
         </div>
       </section>
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Dolu tarihler</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Dolu tarihler</h2>
         <p className="mt-1 text-xs text-rm-gray-500">YYYY-MM-DD, virgülle ayırın</p>
         <Textarea
-          className="mt-3 min-h-[80px] border-white/15 bg-white/5 font-mono text-sm"
+          className="mt-3 min-h-[80px] rounded-lg border-white/10 bg-white/[0.03] font-mono text-sm"
           value={settings.blockedDates.join(", ")}
           onChange={(e) =>
             setSettings({
@@ -108,8 +113,8 @@ export function AdminOperationsPanel() {
         />
       </section>
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Sezon fiyatı</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Sezon fiyatı</h2>
         {settings.seasonalRules.map((rule, i) => (
           <div key={rule.id} className="mt-4 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-4">
             <Input
@@ -119,7 +124,7 @@ export function AdminOperationsPanel() {
                 seasonalRules[i] = { ...rule, name: e.target.value };
                 setSettings({ ...settings, seasonalRules });
               }}
-              className="border-white/15 bg-white/5"
+              className="rounded-lg border-white/10 bg-white/[0.03]"
             />
             <Input
               type="number"
@@ -130,7 +135,7 @@ export function AdminOperationsPanel() {
                 seasonalRules[i] = { ...rule, startMonth: Number(e.target.value) };
                 setSettings({ ...settings, seasonalRules });
               }}
-              className="border-white/15 bg-white/5"
+              className="rounded-lg border-white/10 bg-white/[0.03]"
             />
             <Input
               type="number"
@@ -141,7 +146,7 @@ export function AdminOperationsPanel() {
                 seasonalRules[i] = { ...rule, endMonth: Number(e.target.value) };
                 setSettings({ ...settings, seasonalRules });
               }}
-              className="border-white/15 bg-white/5"
+              className="rounded-lg border-white/10 bg-white/[0.03]"
             />
             <Input
               type="number"
@@ -152,14 +157,14 @@ export function AdminOperationsPanel() {
                 seasonalRules[i] = { ...rule, pricePercent: Number(e.target.value) };
                 setSettings({ ...settings, seasonalRules });
               }}
-              className="border-white/15 bg-white/5"
+              className="rounded-lg border-white/10 bg-white/[0.03]"
             />
           </div>
         ))}
       </section>
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Kupon kullanımı</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Kupon kullanımı</h2>
         <table className="mt-4 w-full text-left text-sm">
           <thead>
             <tr className="text-rm-gray-500">
@@ -178,8 +183,8 @@ export function AdminOperationsPanel() {
         </table>
       </section>
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Çift hikayeleri</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Çift hikayeleri</h2>
         {settings.caseStudies.map((cs, i) => (
           <CaseStudyEditor
             key={cs.id}
@@ -193,10 +198,10 @@ export function AdminOperationsPanel() {
         ))}
       </section>
 
-      <section className="rounded-sm border border-white/10 p-5">
-        <h2 className="font-display text-xl text-rm-off-white">Sosyal metinler</h2>
+      <section className="rounded-xl border border-white/8 bg-rm-black-elevated/60 p-6">
+        <h2 className="font-editorial text-xl text-rm-off-white">Sosyal metinler</h2>
         <Textarea
-          className="mt-3 border-white/15 bg-white/5"
+          className="mt-3 rounded-lg border-white/10 bg-white/[0.03]"
           value={settings.social.dugunHighlight}
           onChange={(e) =>
             setSettings({
@@ -206,7 +211,7 @@ export function AdminOperationsPanel() {
           }
         />
         <Textarea
-          className="mt-3 border-white/15 bg-white/5"
+          className="mt-3 rounded-lg border-white/10 bg-white/[0.03]"
           value={settings.social.instagramCta}
           onChange={(e) =>
             setSettings({
@@ -232,7 +237,7 @@ function CaseStudyEditor({
       <Input
         value={study.couple}
         onChange={(e) => onChange({ couple: e.target.value })}
-        className="border-white/15 bg-white/5"
+        className="rounded-lg border-white/10 bg-white/[0.03]"
       />
       <div className="grid gap-2 sm:grid-cols-2">
         <Input
@@ -240,7 +245,7 @@ function CaseStudyEditor({
           placeholder="Ödenecek toplam"
           value={study.total}
           onChange={(e) => onChange({ total: Number(e.target.value) })}
-          className="border-white/15 bg-white/5"
+          className="rounded-lg border-white/10 bg-white/[0.03]"
         />
         <Input
           type="number"
@@ -249,7 +254,7 @@ function CaseStudyEditor({
           onChange={(e) =>
             onChange({ subtotal: Number(e.target.value) || undefined })
           }
-          className="border-white/15 bg-white/5"
+          className="rounded-lg border-white/10 bg-white/[0.03]"
         />
         <Input
           type="number"
@@ -258,7 +263,7 @@ function CaseStudyEditor({
           onChange={(e) =>
             onChange({ packageDiscount: Number(e.target.value) || undefined })
           }
-          className="border-white/15 bg-white/5"
+          className="rounded-lg border-white/10 bg-white/[0.03]"
         />
         <Input
           type="number"
@@ -267,7 +272,7 @@ function CaseStudyEditor({
           onChange={(e) =>
             onChange({ campaignSavings: Number(e.target.value) || undefined })
           }
-          className="border-white/15 bg-white/5"
+          className="rounded-lg border-white/10 bg-white/[0.03]"
         />
         <Input
           type="number"
@@ -276,20 +281,21 @@ function CaseStudyEditor({
           onChange={(e) =>
             onChange({ giftSavings: Number(e.target.value) || undefined })
           }
-          className="border-white/15 bg-white/5"
+          className="rounded-lg border-white/10 bg-white/[0.03]"
         />
       </div>
       <Textarea
         value={study.items.join("\n")}
         onChange={(e) => onChange({ items: e.target.value.split("\n").filter(Boolean) })}
-        className="min-h-[80px] border-white/15 bg-white/5 text-sm"
+        className="min-h-[80px] rounded-lg border-white/10 bg-white/[0.03] text-sm"
         placeholder="Her satır bir hizmet"
       />
       <Textarea
         value={study.quote ?? ""}
         onChange={(e) => onChange({ quote: e.target.value })}
-        className="border-white/15 bg-white/5 text-sm"
+        className="rounded-lg border-white/10 bg-white/[0.03] text-sm"
       />
     </div>
   );
 }
+
