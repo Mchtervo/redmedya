@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { CampaignWelcomeModal } from "@/components/package/campaign-welcome-modal";
-import { PackagePromoBar } from "@/components/package/package-promo-bar";
 import { PackageMobileBar } from "@/components/package/package-mobile-bar";
 import { ConversionToast } from "@/components/package/conversion-toast";
 import { PackageCampaignBanner } from "@/components/package/package-campaign-banner";
@@ -94,7 +93,6 @@ export function PackageBuilderClient() {
 
           <div className="grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-14 xl:grid-cols-[1fr_400px]">
             <div id="paket-hizmetler" className="min-w-0 scroll-mt-32">
-              <PackagePromoBar />
               <PackageCampaignBanner />
               <ServiceGrid />
             </div>

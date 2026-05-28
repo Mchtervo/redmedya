@@ -33,45 +33,27 @@ export function PackageCampaignBanner() {
 
   if (!klipEligible && !droneEligible) return null;
 
+  const items: string[] = [];
+  if (droneEligible) items.push("Drone hediye eklendi");
+  if (klipEligible && offers.length > 0) {
+    items.push(
+      `Sinematik klipler ${formatPrice(CAMPAIGN_KLIP_PRICE)} (${formatPrice(
+        CAMPAIGN_KLIP_SAVINGS
+      )} tasarruf)`
+    );
+  }
+  if (items.length === 0) return null;
+
   return (
     <div
       role="status"
-      className="mb-8 rounded-lg border border-rm-champagne/45 bg-gradient-to-r from-rm-champagne/15 via-rm-champagne/8 to-transparent px-4 py-4 md:px-5"
+      className="mb-8 flex items-center gap-3 rounded-md border border-rm-champagne/35 bg-rm-champagne/[0.06] px-4 py-3"
     >
-      <div className="flex gap-3">
-        <Zap
-          className="mt-0.5 h-5 w-5 shrink-0 text-rm-champagne"
-          fill="currentColor"
-        />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-rm-off-white">
-            Size özel fırsatlar açıldı
-          </p>
-          {droneEligible && (
-            <p className="mt-1 text-xs text-emerald-400/95">
-              Dış çekim foto + video + albüm → drone çekimi hediye (otomatik
-              eklenir).
-            </p>
-          )}
-          {klipEligible && offers.length > 0 && (
-            <p className="mt-1 text-xs text-emerald-300/95">
-              <strong className="text-emerald-200">Foto + video seçildi</strong> —
-              sinematik klipler otomatik{" "}
-              <strong className="text-emerald-200">
-                {formatPrice(CAMPAIGN_KLIP_PRICE)}
-              </strong>
-              &apos;ye indi (liste {formatPrice(5000)}). İlgili etkinlikte yeşil
-              karttan ekleyin; {formatPrice(CAMPAIGN_KLIP_SAVINGS)} tasarruf.
-            </p>
-          )}
-          {klipEligible && offers.length === 0 && (
-            <p className="mt-1 text-xs text-emerald-400/90">
-              Kampanya klipleriniz seçildi — sol tarafta ilgili etkinlikte işaretli
-              görünür.
-            </p>
-          )}
-        </div>
-      </div>
+      <Zap className="h-4 w-4 shrink-0 text-rm-champagne" fill="currentColor" />
+      <p className="text-xs text-rm-gray-200 md:text-sm">
+        <span className="font-semibold text-rm-champagne">Aktif fırsatlar:</span>{" "}
+        {items.join(" · ")}
+      </p>
     </div>
   );
 }
