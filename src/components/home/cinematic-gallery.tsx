@@ -42,41 +42,42 @@ export function CinematicGallery() {
   const mobilePreview = galleryItems.slice(0, MOBILE_PREVIEW_COUNT);
 
   return (
-    <section id="galeri" className="section-light section-padding relative overflow-hidden">
+    <section id="galeri" className="section-light relative overflow-hidden py-20 md:py-28">
       <div className="section-container relative">
         <SectionReveal>
-          <div className="text-center">
-            <p className="text-xs font-semibold tracking-[0.25em] text-rm-champagne-dark uppercase">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne-dark uppercase">
               Gerçek çekimlerimizden bir seçki
             </p>
-            <h2 className="mt-4 font-display text-2xl text-rm-black md:text-5xl">
-              1000+ çiftimizle ömür boyu yaşayan anılar
+            <h2 className="mt-4 font-editorial text-[clamp(2rem,5vw,3.75rem)] leading-[1.05] text-rm-black">
+              <span className="font-display tabular-nums text-rm-champagne-dark">1000+</span>{" "}
+              çiftimizle ömür boyu{" "}
+              <span className="italic">yaşayan anılar</span>
             </h2>
-            <p className="mx-auto mt-4 hidden max-w-xl text-sm text-rm-gray-400 md:block">
-              2 saniyede otomatik geçiş · sol/sağ oklar
-            </p>
           </div>
         </SectionReveal>
 
         {/* Mobil: 5 önizleme */}
-        <div className="mt-8 columns-2 gap-2 px-1 md:hidden">
+        <div className="mt-10 columns-2 gap-2 px-1 md:hidden">
           {mobilePreview.map((item, i) => (
             <MobilePreviewImage key={item.id} item={item} index={i} />
           ))}
         </div>
-        <div className="mt-8 md:hidden">
+        <div className="mt-6 md:hidden">
           <Link
             href="/galeri"
-            className="flex w-full items-center justify-center gap-2 bg-rm-champagne py-4 text-xs font-bold tracking-[0.15em] text-rm-black uppercase transition-opacity active:opacity-90"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-rm-champagne py-4 text-xs font-bold tracking-[0.2em] text-rm-black uppercase shadow-[0_8px_30px_rgba(196,160,82,0.25)] transition-all active:scale-95"
           >
-            Devamını gör
-            <span className="text-rm-black/60">({galleryItems.length} fotoğraf)</span>
+            Tümünü gör
+            <span className="text-rm-black/60">({galleryItems.length})</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+      </div>
 
-        {/* Masaüstü: slayt */}
-        <div className="mt-12 hidden md:mt-16 md:block">
+      {/* Masaüstü: tam boy slayt */}
+      <div className="mt-12 hidden md:mt-14 md:block">
+        <div className="mx-auto w-full max-w-[1600px] px-4 md:px-8">
           <GallerySlider
             onImageClick={setLightboxIndex}
             showViewAll
