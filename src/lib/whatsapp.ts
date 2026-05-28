@@ -44,29 +44,31 @@ export function buildWhatsAppMessage(input: WhatsAppMessageInput): string {
     .join("\n");
 
   const lines = [
+    "*REZERVASYON ONAY TALEBİ*",
     "Merhaba REDMEDYA ekibi,",
+    "Web sitenizden paket oluşturdum, aşağıdaki detaylarla rezervasyonumu onaylamak istiyorum:",
     "",
-    "Web sitemizden rezervasyon / teklif talebim:",
-    "",
-    `👤 ${[customer.firstName, customer.lastName].filter(Boolean).join(" ")}`,
-    `📞 ${customer.phone}`,
+    "*🧑 Kişisel bilgiler*",
+    `Ad Soyad: ${[customer.firstName, customer.lastName].filter(Boolean).join(" ")}`,
+    `Telefon: ${customer.phone}`,
     customer.weddingDate
-      ? `📅 Düğün Tarihi: ${formatWeddingDateDisplay(customer.weddingDate)}`
+      ? `Düğün tarihi: ${formatWeddingDateDisplay(customer.weddingDate)}`
       : "",
-    customer.note ? `📝 Not: ${customer.note}` : "",
+    customer.note ? `Not: ${customer.note}` : "",
     "",
-    "— Paket özeti —",
+    "*🎬 Seçilen hizmetler*",
     serviceLines || "(Henüz hizmet seçilmedi)",
     "",
-    `Ara Toplam: ${formatPrice(subtotal)}`,
+    "*💰 Fiyat özeti*",
+    `Ara toplam: ${formatPrice(subtotal)}`,
     bundleDiscount > 0
-      ? `Paket İndirimi (%${bundlePercent ?? 20}): -${formatPrice(bundleDiscount)}`
+      ? `Paket indirimi (%${bundlePercent ?? 20}): -${formatPrice(bundleDiscount)}`
       : "",
-    couponDiscount > 0 ? `Kupon İndirimi: -${formatPrice(couponDiscount)}` : "",
-    couponCode ? `Kupon Kodu: ${couponCode}` : "",
-    `*TOPLAM: ${formatPrice(total)}*`,
+    couponDiscount > 0 ? `Kupon indirimi: -${formatPrice(couponDiscount)}` : "",
+    couponCode ? `Kupon kodu: ${couponCode}` : "",
+    `*ÖDENECEK TOPLAM: ${formatPrice(total)}*`,
     "",
-    "Detaylı bilgi ve müsaitlik için dönüş bekliyorum. Teşekkürler!",
+    "Tarihimi kesinleştirip kapora bilgilerini paylaşır mısınız? Teşekkürler!",
   ].filter(Boolean);
 
   return lines.join("\n");

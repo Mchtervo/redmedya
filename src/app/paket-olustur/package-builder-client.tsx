@@ -71,38 +71,50 @@ export function PackageBuilderClient() {
       <FilmGrain />
       <CampaignWelcomeModal />
       <Navbar />
-      <main className="relative min-h-screen bg-rm-black pt-28 md:pt-32">
+      <main className="relative min-h-screen bg-rm-black pt-24 md:pt-32">
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-b from-rm-champagne/[0.06] to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-rm-champagne/[0.08] via-rm-champagne/[0.02] to-transparent"
           aria-hidden
         />
+        <div
+          className="pointer-events-none absolute top-40 -left-32 h-96 w-96 rounded-full bg-rm-champagne/[0.04] blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute top-60 -right-32 h-96 w-96 rounded-full bg-rm-champagne/[0.03] blur-3xl"
+          aria-hidden
+        />
+
         <div className="section-container relative">
-          <header className="mb-12 max-w-3xl md:mb-16">
-            <p className="text-[10px] font-semibold tracking-[0.4em] text-rm-champagne uppercase">
-              Paket oluşturucu
-            </p>
-            <h1 className="mt-5 font-editorial text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.95] text-rm-off-white">
+          <header className="mb-10 max-w-3xl md:mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-rm-champagne/25 bg-rm-champagne/[0.06] px-4 py-1.5 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rm-champagne" />
+              <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
+                Paket oluşturucu · canlı fiyat
+              </p>
+            </div>
+            <h1 className="mt-6 font-editorial text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.95] text-rm-off-white">
               Kendi sinematik
-              <span className="block italic text-rm-champagne">paketinizi tasarlayın</span>
+              <span className="mt-1 block italic text-rm-champagne">paketinizi tasarlayın</span>
             </h1>
-            <p className="mt-6 max-w-lg text-sm leading-relaxed text-rm-gray-400">
-              Etkinlik ve ürünleri seçin; her hizmetin kapsamı açıklamasında yer alır. Toplam canlı
-              güncellenir, teklifi WhatsApp ile iletin.
+            <p className="mt-6 max-w-lg text-sm leading-relaxed text-rm-gray-400 md:text-base">
+              Etkinlik ve ürünleri seçin; her hizmetin kapsamı açıklamasında yer alır.
+              Toplam canlı güncellenir, rezervasyonunuzu WhatsApp ile tek tıkla onaylayın.
             </p>
           </header>
 
-          <div className="grid gap-12 lg:grid-cols-[1fr_380px] lg:gap-14 xl:grid-cols-[1fr_400px]">
+          <div className="grid gap-10 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_420px] xl:gap-14">
             <div id="paket-hizmetler" className="min-w-0 scroll-mt-32">
               <PackageCampaignBanner />
               <ServiceGrid />
             </div>
 
-            <div id="paket-ozeti" className="lg:sticky lg:top-28 lg:self-start">
+            <div id="paket-ozeti" className="lg:sticky lg:top-24 lg:self-start">
               <CartSummary className="hidden lg:flex" />
             </div>
           </div>
 
-          <div className="mt-12 lg:hidden">
+          <div className="mt-10 lg:hidden">
             <CartSummary />
           </div>
         </div>

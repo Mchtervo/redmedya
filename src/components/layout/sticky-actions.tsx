@@ -12,26 +12,40 @@ export function StickyActions() {
   const telUrl = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
 
   return (
-    <div className="fixed right-6 bottom-6 z-50 flex flex-col gap-3">
+    <div className="fixed right-5 bottom-5 z-50 flex flex-col items-end gap-3">
       <motion.a
         href={telUrl}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.4 }}
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.96 }}
         onClick={() => trackMetaEvent("Lead", { content_name: "phone_click" })}
-        className="flex h-11 w-11 items-center justify-center rounded-full glass-premium text-rm-champagne"
-        aria-label="Ara"
+        className="group flex h-11 items-center gap-2 overflow-hidden rounded-full bg-rm-black/85 px-3 text-rm-champagne shadow-[0_8px_25px_rgba(0,0,0,0.35)] ring-1 ring-rm-champagne/25 backdrop-blur-md transition-all hover:px-4"
+        aria-label={`Ara ${siteConfig.displayPhone}`}
       >
-        <Phone size={18} />
+        <Phone size={16} strokeWidth={1.75} />
+        <span className="max-w-0 overflow-hidden text-[12px] font-semibold tracking-wider whitespace-nowrap transition-all duration-300 group-hover:max-w-[160px] group-hover:pr-1">
+          {siteConfig.displayPhone}
+        </span>
       </motion.a>
+
       <motion.button
         type="button"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.96 }}
         onClick={() => openWhatsApp({ contentName: "sticky_whatsapp" })}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_32px_rgba(37,211,102,0.35)]"
-        aria-label="WhatsApp"
+        className="group relative flex h-14 items-center gap-2.5 overflow-hidden rounded-full bg-[#25D366] px-4 text-white shadow-[0_10px_35px_rgba(37,211,102,0.4)] transition-all hover:bg-[#1FB957] hover:px-5"
+        aria-label="WhatsApp ile yaz"
       >
-        <MessageCircle size={24} />
+        <span className="absolute inset-0 animate-ping rounded-full bg-[#25D366] opacity-20" />
+        <MessageCircle size={22} strokeWidth={1.75} className="relative" />
+        <span className="relative max-w-0 overflow-hidden text-[13px] font-bold tracking-wide whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px] group-hover:pr-1">
+          WhatsApp ile yaz
+        </span>
       </motion.button>
     </div>
   );

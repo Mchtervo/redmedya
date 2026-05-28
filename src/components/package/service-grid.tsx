@@ -105,47 +105,49 @@ function MediaOption({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "group relative flex flex-col rounded-sm border p-4 text-left transition-all duration-300 sm:p-5",
+        "group relative flex flex-col overflow-hidden rounded-xl border p-5 text-left transition-all duration-300",
         active
-          ? "border-rm-champagne/45 bg-rm-champagne/[0.08] shadow-[0_0_32px_rgba(196,160,82,0.08)]"
-          : "border-white/[0.08] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]"
+          ? "border-rm-champagne/50 bg-rm-champagne/[0.08] shadow-[0_0_32px_-8px_rgba(196,160,82,0.3)]"
+          : "border-white/[0.07] bg-white/[0.02] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.04]"
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border transition-colors",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all",
             active
-              ? "border-rm-champagne/40 bg-rm-champagne/15 text-rm-champagne"
-              : "border-white/10 bg-white/[0.03] text-rm-gray-500 group-hover:text-rm-gray-300"
+              ? "bg-rm-champagne text-rm-black shadow-[0_4px_12px_rgba(196,160,82,0.25)]"
+              : "bg-white/[0.05] text-rm-gray-400 group-hover:bg-white/10 group-hover:text-rm-off-white"
           )}
         >
-          <Icon className="h-4 w-4" strokeWidth={1.25} />
+          <Icon className="h-4 w-4" strokeWidth={1.75} />
         </div>
         <span
           className={cn(
-            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all",
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
             active
               ? "border-rm-champagne bg-rm-champagne text-rm-black"
-              : "border-white/20 bg-transparent"
+              : "border-white/20 bg-transparent group-hover:border-white/40"
           )}
         >
-          {active && <Check className="h-3 w-3" strokeWidth={2.5} />}
+          {active && <Check className="h-3 w-3" strokeWidth={3} />}
         </span>
       </div>
-      <p className="mt-4 text-sm font-medium leading-snug text-rm-off-white">{title}</p>
+      <p className="mt-4 text-sm font-semibold leading-snug text-rm-off-white">
+        {title}
+      </p>
       <p className="mt-1.5 text-xs leading-relaxed text-rm-gray-400">
         {service.description}
       </p>
       {isGift && active ? (
-        <div className="mt-4">
-          <p className="font-display text-xl text-emerald-400/90">Ücretsiz</p>
-          <p className="text-xs text-rm-gray-500 line-through">
-            {formatPrice(service.price)}
+        <div className="mt-4 border-t border-emerald-500/20 pt-3">
+          <p className="font-editorial text-2xl text-emerald-400">Ücretsiz</p>
+          <p className="text-[11px] text-rm-gray-500 line-through">
+            normal {formatPrice(service.price)}
           </p>
         </div>
       ) : (
-        <p className="mt-4 font-display text-xl tabular-nums text-rm-champagne">
+        <p className="mt-4 border-t border-white/[0.06] pt-3 font-editorial text-2xl tabular-nums text-rm-champagne">
           {formatPrice(service.price)}
         </p>
       )}
@@ -336,26 +338,26 @@ function OccasionAccordion({
     <article
       id={`occasion-${row.id}`}
       className={cn(
-        "scroll-mt-32 rounded-sm border transition-colors",
+        "group scroll-mt-32 overflow-hidden rounded-2xl border transition-all duration-300",
         active
-          ? "border-rm-champagne/25 bg-white/[0.03]"
-          : "border-white/[0.08] bg-rm-black-elevated/50"
+          ? "border-rm-champagne/30 bg-rm-champagne/[0.04] shadow-[0_0_40px_-15px_rgba(196,160,82,0.25)]"
+          : "border-white/[0.06] bg-rm-black-elevated/40 hover:border-white/12 hover:bg-rm-black-elevated/60"
       )}
     >
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left md:px-6 md:py-5"
+        className="flex w-full items-center justify-between gap-3 px-5 py-5 text-left md:px-7 md:py-6"
       >
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-xl text-rm-off-white md:text-2xl">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h3 className="font-editorial text-xl text-rm-off-white md:text-2xl">
               {row.label}
             </h3>
             {active && (
-              <span className="text-[10px] font-medium tracking-[0.2em] text-rm-champagne uppercase">
-                Seçildi
+              <span className="inline-flex items-center gap-1 rounded-full bg-rm-champagne/15 px-2.5 py-0.5 text-[9px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">
+                <Check className="h-2.5 w-2.5" strokeWidth={3} /> Seçildi
               </span>
             )}
           </div>
@@ -371,13 +373,16 @@ function OccasionAccordion({
               : "Açmak için tıklayın"}
           </p>
         </div>
-        <ChevronDown
+        <span
           className={cn(
-            "h-5 w-5 shrink-0 text-rm-gray-400 transition-transform duration-300",
-            open && "rotate-180 text-rm-champagne"
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-300",
+            open
+              ? "rotate-180 border-rm-champagne bg-rm-champagne text-rm-black"
+              : "border-white/15 bg-white/[0.03] text-rm-gray-400 group-hover:border-white/30 group-hover:text-rm-off-white"
           )}
-          strokeWidth={1.5}
-        />
+        >
+          <ChevronDown className="h-4 w-4" strokeWidth={2} />
+        </span>
       </button>
       <div
         className={cn(

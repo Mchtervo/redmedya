@@ -38,13 +38,6 @@ const CinematicGallery = dynamic(
   { loading: () => <div className="section-light h-96 animate-pulse bg-rm-cream" /> }
 );
 
-const StickyActions = dynamic(
-  () =>
-    import("@/components/layout/sticky-actions").then((m) => ({
-      default: m.StickyActions,
-    }))
-);
-
 export default function HomePage() {
   return (
     <>
@@ -63,9 +56,6 @@ export default function HomePage() {
         <ContactSection />
       </main>
       <Footer />
-      <div className="hidden lg:block">
-        <StickyActions />
-      </div>
     </>
   );
 }

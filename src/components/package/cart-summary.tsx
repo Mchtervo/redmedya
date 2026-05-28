@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { WeddingDatePicker } from "@/components/ui/wedding-date-picker";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
-import { X, Tag, ShoppingBag } from "lucide-react";
+import { X, Tag, ShoppingBag, Check, MessageCircle } from "lucide-react";
 import { CartCampaignKlips } from "@/components/package/cart-campaign-klips";
 import { CartSavingsBreakdown } from "@/components/package/cart-savings-breakdown";
 import { PackageSalesAdvisor } from "@/components/package/package-sales-advisor";
@@ -79,31 +79,44 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
   return (
     <aside
       className={cn(
-        "flex flex-col overflow-visible rounded-sm border border-white/[0.08] bg-rm-black-elevated",
+        "flex flex-col overflow-visible rounded-2xl border border-white/8 bg-rm-black-elevated/80 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-xl",
         className
       )}
     >
-      <div className="border-b border-white/[0.06] px-6 py-6">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-rm-gray-400">
-            <ShoppingBag className="h-4 w-4 text-rm-champagne" strokeWidth={1.25} />
-            <span className="font-editorial text-xl text-rm-off-white">Özet</span>
+      <div className="relative overflow-hidden border-b border-white/8 px-6 py-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -right-20 h-44 w-44 rounded-full bg-rm-champagne/[0.08] blur-3xl"
+        />
+        <div className="relative">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rm-champagne/15">
+                <ShoppingBag className="h-4 w-4 text-rm-champagne" strokeWidth={1.75} />
+              </span>
+              <span className="font-editorial text-xl text-rm-off-white">
+                Sepet özeti
+              </span>
+            </div>
+            {count > 0 && (
+              <span className="rounded-full border border-rm-champagne/30 bg-rm-champagne/15 px-3 py-1 text-[10px] font-bold tracking-wider text-rm-champagne uppercase">
+                {count} hizmet
+              </span>
+            )}
           </div>
-          {count > 0 && (
-            <span className="rounded-full bg-rm-champagne/20 px-2.5 py-0.5 text-xs font-medium text-rm-champagne">
-              {count} hizmet
-            </span>
+          <p className="mt-4 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+            Ödenecek tutar
+          </p>
+          <p className="mt-1 font-editorial text-[2.75rem] leading-none tabular-nums text-rm-champagne">
+            {formatPrice(total)}
+          </p>
+          {totalSavings > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+              <Check className="h-3 w-3" strokeWidth={2.5} />
+              {formatPrice(totalSavings)} kazanç sağladınız
+            </p>
           )}
         </div>
-        <p className="mt-3 text-xs text-rm-gray-400">Ödenecek tutar</p>
-        <p className="mt-1 font-editorial text-[2.75rem] leading-none tabular-nums text-rm-champagne">
-          {formatPrice(total)}
-        </p>
-        {totalSavings > 0 && (
-          <p className="mt-1 text-sm font-medium text-emerald-400/95">
-            Toplam {formatPrice(totalSavings)} kazanç — kampanya + paket indirimi
-          </p>
-        )}
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -288,13 +301,37 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
 
         <Button
           variant="whatsapp"
-          className="mt-5 w-full py-6 text-sm font-semibold"
+          className="group mt-5 h-auto w-full py-5 text-sm font-bold tracking-wide shadow-[0_10px_35px_rgba(37,211,102,0.35)]"
           rounded="full"
           onClick={handleWhatsApp}
           disabled={lineItems.length === 0}
         >
-          WhatsApp ile Teklif Al
+          <MessageCircle className="h-4 w-4" strokeWidth={2} />
+          Rezervasyonu WhatsApp ile onayla
+          <span
+            aria-hidden
+            className="transition-transform group-hover:translate-x-0.5"
+          >
+            →
+          </span>
         </Button>
+
+        {lineItems.length > 0 && (
+          <ul className="mt-3 space-y-1 text-[10px] text-rm-gray-500">
+            <li className="flex items-center gap-1.5">
+              <Check className="h-3 w-3 text-emerald-400/80" strokeWidth={2.5} />
+              Ad, soyad, telefon ve düğün tarihiniz mesaja eklenir
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Check className="h-3 w-3 text-emerald-400/80" strokeWidth={2.5} />
+              Seçtiğiniz tüm hizmetler kalem kalem listelenir
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Check className="h-3 w-3 text-emerald-400/80" strokeWidth={2.5} />
+              İndirim ve toplam tutar otomatik hesaplanır
+            </li>
+          </ul>
+        )}
       </div>
     </aside>
   );
