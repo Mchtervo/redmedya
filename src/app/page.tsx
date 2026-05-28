@@ -22,7 +22,6 @@ import { Navbar } from "@/components/layout/navbar";
 import { HeroSection } from "@/components/home/hero-section";
 import { HomePageExtras } from "@/components/home/home-page-extras";
 import { CoupleCaseStudies } from "@/components/home/couple-case-studies";
-import { UpcomingWeddingsSection } from "@/components/home/upcoming-weddings-section";
 import { SocialTrustSection } from "@/components/home/social-trust-section";
 import { StudioShowcase } from "@/components/home/studio-showcase";
 import { TestimonialsTabs } from "@/components/home/testimonials-tabs";
@@ -58,7 +57,6 @@ export default function HomePage() {
         <CinematicGallery />
         <SocialTrustSection />
         <CoupleCaseStudies />
-        <UpcomingWeddingsSection />
         <TestimonialsTabs />
         <ReservationCta />
         <FaqSection />

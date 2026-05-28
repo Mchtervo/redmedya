@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import { readReservations } from "@/lib/reservations-store";
-import {
-  reservationToPublicPreview,
-  sortPublicWeddings,
-} from "@/lib/reservation-public";
 
+/**
+ * Rezervasyon listesi public değildir — müşteri ad/soyad ve ödeme bilgilerini
+ * sızdırmamak için herkese kapalı. Admin paneli admin API'sini kullanır.
+ */
 export async function GET() {
-  const list = await readReservations();
-  const previews = list
-    .map(reservationToPublicPreview)
-    .filter((p): p is NonNullable<typeof p> => p != null);
-  return NextResponse.json(sortPublicWeddings(previews));
+  return NextResponse.json({ error: "Not found" }, { status: 404 });
 }
