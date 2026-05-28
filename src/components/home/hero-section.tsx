@@ -48,42 +48,43 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 24 }}
           animate={introDone ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.15, duration: 0.9, ease: EASE_LUXURY }}
-          className="mx-auto mt-6 max-w-4xl font-display text-4xl leading-[1.1] text-white md:text-6xl lg:text-7xl"
+          className="mx-auto mt-6 max-w-4xl font-editorial text-[clamp(2.5rem,7vw,5.5rem)] leading-[1.02] tracking-tight text-white"
         >
-          Hayallerinizle
-          <br />
-          <span className="text-rm-champagne-light">buluşmaya hazır mısınız?</span>
+          Düğününüzü{" "}
+          <span className="italic text-rm-champagne-light">sinematik</span>{" "}
+          bir hikâyeye dönüştürüyoruz
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={introDone ? { opacity: 1 } : {}}
           transition={{ delay: 0.35, duration: 0.8 }}
-          className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/85 md:text-lg"
+          className="mx-auto mt-7 max-w-xl text-sm leading-relaxed text-white/75 md:text-base"
         >
-          Türkiye&apos;nin önde gelen düğün hikayesi markalarından REDMEDYA ile tanışın.
-          Cinematic çekim, drone, reels ve özel paket oluşturucu.
+          Ankara · Premium düğün fotoğrafçılığı, dış çekim, drone ve sinematik klip.
+          Paketinizi tasarlayın, fiyatı anında görün.
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={introDone ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.5, duration: 0.7 }}
-          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
           <Link
             href="/paket-olustur"
             onClick={() => trackMetaEvent("InitiateCheckout", { content_name: "hero_cta" })}
-            className="min-w-[240px] bg-rm-champagne px-10 py-4 text-xs font-bold tracking-[0.15em] text-rm-black uppercase transition-opacity hover:opacity-90"
+            className="group inline-flex min-w-[220px] items-center justify-center gap-2 rounded-full bg-rm-champagne px-8 py-3.5 text-[11px] font-bold tracking-[0.2em] text-rm-black uppercase shadow-[0_8px_30px_rgba(196,160,82,0.25)] transition-all hover:bg-rm-champagne-light hover:shadow-[0_8px_40px_rgba(196,160,82,0.45)]"
           >
-            Online rezervasyon
+            Paket oluştur
+            <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </Link>
           <button
             type="button"
             onClick={() => openWhatsApp({ contentName: "hero_whatsapp" })}
-            className="min-w-[240px] border-2 border-white px-10 py-4 text-xs font-bold tracking-[0.15em] text-white uppercase transition-colors hover:bg-white hover:text-rm-black"
+            className="inline-flex min-w-[220px] items-center justify-center rounded-full border border-white/30 bg-white/[0.04] px-8 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-white uppercase backdrop-blur-sm transition-colors hover:border-white hover:bg-white/10"
           >
-            WhatsApp ile ulaş
+            WhatsApp ile yaz
           </button>
         </motion.div>
       </div>

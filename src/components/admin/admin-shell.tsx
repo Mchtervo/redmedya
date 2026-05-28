@@ -73,19 +73,14 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
         className
       )}
     >
-      <div className="border-b border-white/8 p-5">
+      <div className="border-b border-white/8 px-5 py-5">
+        <BrandLogo size="admin" variant="on-dark" href="/" />
         <Link
           href="/"
-          className="text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase hover:text-rm-champagne"
+          className="mt-3 inline-block text-[10px] font-semibold tracking-[0.2em] text-rm-gray-500 uppercase transition-colors hover:text-rm-champagne"
         >
           ← Siteye dön
         </Link>
-        <div className="mt-4">
-          <BrandLogo size="admin" variant="on-dark" href="/" />
-        </div>
-        <p className="text-[10px] tracking-widest text-rm-gray-600 uppercase">
-          Admin v2
-        </p>
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
@@ -98,25 +93,23 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
               type="button"
               onClick={() => navigate(item.id)}
               className={cn(
-                "flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-all",
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all",
                 active
-                  ? "bg-rm-champagne/15 text-rm-off-white shadow-[inset_0_0_0_1px_rgba(201,169,98,0.25)]"
-                  : "text-rm-gray-400 hover:bg-white/5 hover:text-rm-off-white"
+                  ? "bg-rm-champagne/12 text-rm-off-white"
+                  : "text-rm-gray-400 hover:bg-white/[0.04] hover:text-rm-off-white"
               )}
             >
               <Icon
                 className={cn(
-                  "mt-0.5 h-4 w-4 shrink-0",
+                  "h-4 w-4 shrink-0 transition-colors",
                   active ? "text-rm-champagne" : "text-rm-gray-500"
                 )}
                 strokeWidth={1.5}
               />
-              <span>
-                <span className="block text-sm font-medium">{item.label}</span>
-                <span className="mt-0.5 block text-[10px] leading-tight text-rm-gray-600">
-                  {item.description}
-                </span>
-              </span>
+              <span className="font-medium">{item.label}</span>
+              {active && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-rm-champagne" />
+              )}
             </button>
           );
         })}
@@ -158,7 +151,7 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[280px]">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/8 bg-rm-black/80 px-4 py-4 backdrop-blur-md md:px-8">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/8 bg-rm-black/85 px-4 py-3.5 backdrop-blur-md md:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -168,14 +161,9 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
             >
               {mobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">
-                {activeNav?.description ?? "Yönetim"}
-              </p>
-              <h1 className="font-display text-xl text-rm-off-white md:text-2xl">
-                {activeNav?.label ?? "Admin"}
-              </h1>
-            </div>
+            <h1 className="font-editorial text-lg text-rm-off-white md:text-xl">
+              {activeNav?.label ?? "Admin"}
+            </h1>
           </div>
           <div className="lg:hidden">
             <AdminLogoutButton />

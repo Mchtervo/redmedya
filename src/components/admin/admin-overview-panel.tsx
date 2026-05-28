@@ -77,40 +77,30 @@ export function AdminOverviewPanel({
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <motion.header
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE_LUXURY }}
-        className="relative overflow-hidden rounded-2xl border border-rm-champagne/20 bg-gradient-to-br from-rm-champagne/15 via-rm-black-elevated to-rm-black p-8 md:p-10"
+        className="flex flex-wrap items-end justify-between gap-6"
       >
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-rm-champagne/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="flex items-center gap-2 text-[10px] font-bold tracking-[0.35em] text-rm-champagne uppercase">
-              <Sparkles className="h-3.5 w-3.5" />
-              REDMEDYA kontrol merkezi
-            </p>
-            <h1 className="mt-3 font-editorial text-[clamp(2rem,5vw,3.25rem)] leading-tight text-rm-off-white">
-              Hoş geldiniz
-            </h1>
-            <p className="mt-2 max-w-lg text-sm text-rm-gray-400">
-              Takvim, teklifler ve site fiyatları tek panelden. CMS kaydı anında
-              paket sayfasına yansır.
-            </p>
-          </div>
-          <Link
-            href="/paket-olustur"
-            target="_blank"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-xs font-semibold tracking-wide text-rm-off-white uppercase backdrop-blur hover:border-rm-champagne/40"
-          >
-            Siteyi aç
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+        <div>
+          <p className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
+            <Sparkles className="h-3 w-3" />
+            Genel bakış
+          </p>
+          <h1 className="mt-2 font-editorial text-3xl text-rm-off-white md:text-4xl">
+            Hoş geldiniz
+          </h1>
         </div>
+        <Link
+          href="/paket-olustur"
+          target="_blank"
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-[11px] font-semibold tracking-[0.15em] text-rm-off-white uppercase backdrop-blur transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10"
+        >
+          Siteyi aç
+          <ArrowRight className="h-3 w-3" />
+        </Link>
       </motion.header>
 
       {loading ? (
@@ -126,12 +116,15 @@ export function AdminOverviewPanel({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, ease: EASE_LUXURY }}
                 onClick={() => onNavigate(s.tab)}
-                className="rounded-xl border border-white/10 bg-rm-black-elevated/80 p-5 text-left transition-all hover:border-rm-champagne/35 hover:bg-rm-champagne/5"
+                className="group relative overflow-hidden rounded-xl border border-white/10 bg-rm-black-elevated/60 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated"
               >
-                <p className="text-3xl font-display text-rm-champagne">{s.value}</p>
-                <p className="mt-2 text-xs tracking-wide text-rm-gray-500 uppercase">
+                <p className="text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
                   {s.label}
                 </p>
+                <p className="mt-3 font-editorial text-4xl tabular-nums text-rm-off-white transition-colors group-hover:text-rm-champagne">
+                  {s.value}
+                </p>
+                <ArrowRight className="absolute right-4 top-4 h-3.5 w-3.5 text-rm-gray-600 transition-colors group-hover:text-rm-champagne" />
               </motion.button>
             ))}
           </div>
