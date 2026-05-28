@@ -25,7 +25,7 @@ export function PackageMobileBar() {
       document.getElementById("paket-ozeti")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-    openWhatsApp({ contentName: "package_mobile_bar" });
+    openWhatsApp({ contentName: "package_mobile_bar", requireContact: true });
   };
 
   const telUrl = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;

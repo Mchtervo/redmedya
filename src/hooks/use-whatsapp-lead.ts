@@ -25,7 +25,7 @@ export function useWhatsAppLead() {
 
   const openWhatsApp = useCallback(
     (options: OpenWhatsAppOptions = {}) => {
-      const { contentName = "whatsapp", requireContact = true } = options;
+      const { contentName = "whatsapp", requireContact = false } = options;
       const state = usePackageStore.getState();
       const { customer, coupon, bundleDiscounts, seasonalRules } = state;
 

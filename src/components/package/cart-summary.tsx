@@ -95,7 +95,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
       trackMetaEvent("FormStart");
       return;
     }
-    openWhatsApp({ contentName: "package_whatsapp" });
+    openWhatsApp({ contentName: "package_whatsapp", requireContact: true });
   };
 
   return (
