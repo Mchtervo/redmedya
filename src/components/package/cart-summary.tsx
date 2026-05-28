@@ -49,6 +49,28 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
   const [couponError, setCouponError] = useState("");
   const [showForm, setShowForm] = useState(!compact);
 
+  /** Form alanı doldurulduğunda her alan için tek seferlik analytics */
+  const [trackedFields, setTrackedFields] = useState<Set<string>>(new Set());
+  const trackFieldFill = (field: string, value: string) => {
+    if (!value.trim()) return;
+    if (trackedFields.has(field)) return;
+    setTrackedFields((prev) => new Set(prev).add(field));
+    if (trackedFields.size === 0) {
+      trackMetaEvent("FormStart", { content_name: "package_form", field });
+    }
+    trackMetaEvent("PackageBuild", {
+      content_name: `field_filled_${field}`,
+    });
+  };
+
+  const handleCustomerChange = (
+    field: "firstName" | "lastName" | "phone" | "note",
+    value: string
+  ) => {
+    setCustomer({ [field]: value });
+    trackFieldFill(field, value);
+  };
+
   const applyCoupon = () => {
     const code = (document.getElementById("coupon-input") as HTMLInputElement)?.value;
     if (!code) return;
@@ -269,13 +291,13 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                 <Input
                   placeholder="Ad *"
                   value={customer.firstName}
-                  onChange={(e) => setCustomer({ firstName: e.target.value })}
+                  onChange={(e) => handleCustomerChange("firstName", e.target.value)}
                   className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
                 />
                 <Input
                   placeholder="Soyad"
                   value={customer.lastName}
-                  onChange={(e) => setCustomer({ lastName: e.target.value })}
+                  onChange={(e) => handleCustomerChange("lastName", e.target.value)}
                   className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
                 />
               </div>
@@ -283,18 +305,25 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                 placeholder="Telefon *"
                 type="tel"
                 value={customer.phone}
-                onChange={(e) => setCustomer({ phone: e.target.value })}
+                onChange={(e) => handleCustomerChange("phone", e.target.value)}
                 className="h-11 rounded-xl border-white/10 bg-white/[0.03]"
               />
               <WeddingDatePicker
                 value={customer.weddingDate}
-                onChange={(weddingDate) => setCustomer({ weddingDate })}
+                onChange={(weddingDate) => {
+                  setCustomer({ weddingDate });
+                  if (weddingDate) {
+                    trackMetaEvent("PackageBuild", {
+                      content_name: "field_filled_weddingDate",
+                    });
+                  }
+                }}
                 blockedDates={settings.blockedDates}
               />
               <Textarea
                 placeholder="Not (isteğe bağlı)"
                 value={customer.note}
-                onChange={(e) => setCustomer({ note: e.target.value })}
+                onChange={(e) => handleCustomerChange("note", e.target.value)}
                 className="min-h-[72px] rounded-xl border-white/10 bg-white/[0.03]"
               />
             </div>
@@ -316,15 +345,15 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
             <Input
               placeholder="Ad *"
               value={customer.firstName}
-              onChange={(e) => setCustomer({ firstName: e.target.value })}
-              className="border-white/15 bg-white/5 text-sm"
+              onChange={(e) => handleCustomerChange("firstName", e.target.value)}
+              className="h-11 rounded-xl border-white/10 bg-white/[0.03] text-sm"
             />
             <Input
               placeholder="Telefon *"
               type="tel"
               value={customer.phone}
-              onChange={(e) => setCustomer({ phone: e.target.value })}
-              className="border-white/15 bg-white/5 text-sm"
+              onChange={(e) => handleCustomerChange("phone", e.target.value)}
+              className="h-11 rounded-xl border-white/10 bg-white/[0.03] text-sm"
             />
           </div>
         )}

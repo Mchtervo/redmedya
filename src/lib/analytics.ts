@@ -12,19 +12,24 @@ export type AnalyticsEvent =
 
 type Params = Record<string, string | number | boolean | undefined>;
 
+/** Doğrudan GA4 event — özel parametrelerle (örn. server-side tracking) */
 export function trackGA4(event: string, params?: Params): void {
   if (typeof window === "undefined") return;
   gtagEvent(event, params);
 }
 
-/** Meta Pixel + GA4 + özel Meta olayları */
+/**
+ * Birleşik analytics — Meta Pixel + GA4 + özel olaylar.
+ *
+ * Not: `trackMetaEvent` ve `trackCustomEvent` zaten otomatik olarak hem
+ * Meta'ya hem GA4'e gönderiyor (meta-pixel.ts içinde). Bu fonksiyon sadece
+ * iş olayını birden fazla standart event'e dağıtmak için bir yönlendirici.
+ */
 export function trackAnalytics(
   event: AnalyticsEvent,
   params?: Params
 ): void {
   if (typeof window === "undefined") return;
-
-  trackGA4(event, params);
 
   switch (event) {
     case "whatsapp_click":
@@ -43,10 +48,6 @@ export function trackAnalytics(
       trackCustomEvent("PackageComplete", {
         ...params,
         status: "confirmed",
-      });
-      trackGA4("generate_lead", {
-        value: params?.value,
-        items: params?.items,
       });
       break;
     case "campaign_klip_add":
