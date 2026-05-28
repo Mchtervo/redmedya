@@ -5,10 +5,15 @@ import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { GlassCta } from "@/components/ui/glass-cta";
 import { SectionReveal } from "@/components/effects/section-reveal";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
+import { trackMetaEvent } from "@/lib/meta-pixel";
+
+const CONTACT_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
+  siteConfig.defaultWhatsApp
+)}?text=${encodeURIComponent(
+  "Merhaba REDMEDYA ekibi, web sitenizden ulaşıyorum. Düğün / dış çekim paketi için bilgi ve teklif almak istiyorum."
+)}`;
 
 export function ContactSection() {
-  const { openWhatsApp } = useWhatsAppLead();
   const tel = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
 
   type ContactItem = {
@@ -79,9 +84,14 @@ export function ContactSection() {
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 <GlassCta
-                  type="button"
+                  href={CONTACT_WHATSAPP_URL}
+                  external
                   variant="whatsapp"
-                  onClick={() => openWhatsApp({ contentName: "contact_section" })}
+                  onClick={() =>
+                    trackMetaEvent("WhatsAppClick", {
+                      content_name: "contact_section",
+                    })
+                  }
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   WhatsApp

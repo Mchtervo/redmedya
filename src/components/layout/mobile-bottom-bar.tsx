@@ -4,18 +4,29 @@ import { Phone, MessageCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 
-/** Mobil: altta sabit yalnızca ara + WhatsApp (paket sayfasında gizli — orada PackageMobileBar var) */
+/**
+ * Mobil: altta sabit yalnızca ara + WhatsApp.
+ * Paket sayfasında gizli — orada PackageMobileBar var.
+ * Linkler doğrudan `tel:` ve `https://wa.me/...`'ye gider, React hook'a
+ * bağımlı değildir — bu sayede pop-up blocker veya hook hatası butonun
+ * çalışmamasına yol açmaz.
+ */
 export function MobileBottomBar() {
   const pathname = usePathname();
-  const { openWhatsApp } = useWhatsAppLead();
 
   if (pathname.startsWith("/admin")) return null;
   if (pathname.startsWith("/paket-olustur")) return null;
 
-  const telUrl = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
+  const phone = formatPhoneForWhatsApp(siteConfig.defaultPhone);
+  const telUrl = `tel:+${phone}`;
+  const whatsappMessage = encodeURIComponent(
+    "Merhaba REDMEDYA ekibi, web sitenizden ulaşıyorum. Düğün / dış çekim paketi için bilgi ve teklif almak istiyorum."
+  );
+  const whatsappUrl = `https://wa.me/${formatPhoneForWhatsApp(
+    siteConfig.defaultWhatsApp
+  )}?text=${whatsappMessage}`;
 
   return (
     <div
@@ -47,9 +58,16 @@ export function MobileBottomBar() {
           </span>
         </a>
 
-        <button
-          type="button"
-          onClick={() => openWhatsApp({ contentName: "mobile_bar_whatsapp" })}
+        <a
+          href={whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() =>
+            trackMetaEvent("WhatsAppClick", {
+              content_name: "mobile_bar_whatsapp",
+              page_path: pathname,
+            })
+          }
           className="flex min-h-[52px] items-center justify-center gap-2.5 bg-[#25D366]/12 px-3 py-2.5 text-[#25D366] transition-colors active:bg-[#25D366]/20"
           aria-label="WhatsApp ile yaz"
         >
@@ -62,7 +80,7 @@ export function MobileBottomBar() {
             </span>
             <span className="block text-[10px] text-[#25D366]/85">Teklif al</span>
           </span>
-        </button>
+        </a>
       </div>
     </div>
   );

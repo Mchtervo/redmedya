@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
+import { siteConfig } from "@/config/site";
+import { formatPhoneForWhatsApp } from "@/lib/utils";
+import { trackMetaEvent } from "@/lib/meta-pixel";
+
+const RES_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
+  siteConfig.defaultWhatsApp
+)}?text=${encodeURIComponent(
+  "Merhaba REDMEDYA ekibi, web sitenizden ulaşıyorum. Düğün / dış çekim paketi için bilgi ve teklif almak istiyorum."
+)}`;
 
 export function ReservationCta() {
-  const { openWhatsApp } = useWhatsAppLead();
-
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-rm-champagne via-rm-champagne-light to-rm-champagne py-20 md:py-24">
       <div
@@ -35,13 +41,19 @@ export function ReservationCta() {
             Paket oluştur
             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </Link>
-          <button
-            type="button"
-            onClick={() => openWhatsApp({ contentName: "reservation_cta" })}
+          <a
+            href={RES_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              trackMetaEvent("WhatsAppClick", {
+                content_name: "reservation_cta",
+              })
+            }
             className="inline-flex min-w-[220px] items-center justify-center rounded-full border border-rm-black/30 bg-transparent px-8 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-rm-black uppercase transition-colors hover:border-rm-black hover:bg-rm-black hover:text-rm-off-white"
           >
             WhatsApp ile yaz
-          </button>
+          </a>
         </div>
       </div>
     </section>

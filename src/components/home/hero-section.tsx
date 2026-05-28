@@ -4,15 +4,21 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { trackMetaEvent } from "@/lib/meta-pixel";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
+import { siteConfig } from "@/config/site";
+import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { EASE_LUXURY } from "@/lib/animations";
 
 const HERO_VIDEO =
   "https://assets.mixkit.co/videos/preview/mixkit-bride-and-groom-holding-hands-4445-large.mp4";
 
+const HERO_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
+  siteConfig.defaultWhatsApp
+)}?text=${encodeURIComponent(
+  "Merhaba REDMEDYA ekibi, web sitenizden ulaşıyorum. Düğün / dış çekim paketi için bilgi ve teklif almak istiyorum."
+)}`;
+
 export function HeroSection() {
   const [introDone, setIntroDone] = useState(false);
-  const { openWhatsApp } = useWhatsAppLead();
 
   useEffect(() => {
     const t = setTimeout(() => setIntroDone(true), 2000);
@@ -79,13 +85,17 @@ export function HeroSection() {
             Paket oluştur
             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
           </Link>
-          <button
-            type="button"
-            onClick={() => openWhatsApp({ contentName: "hero_whatsapp" })}
+          <a
+            href={HERO_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              trackMetaEvent("WhatsAppClick", { content_name: "hero_whatsapp" })
+            }
             className="inline-flex min-w-[220px] items-center justify-center rounded-full border border-white/30 bg-white/[0.04] px-8 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-white uppercase backdrop-blur-sm transition-colors hover:border-white hover:bg-white/10"
           >
             WhatsApp ile yaz
-          </button>
+          </a>
         </motion.div>
       </div>
     </section>

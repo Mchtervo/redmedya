@@ -5,11 +5,21 @@ import { motion } from "framer-motion";
 import { siteConfig } from "@/config/site";
 import { trackMetaEvent } from "@/lib/meta-pixel";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
-import { useWhatsAppLead } from "@/hooks/use-whatsapp-lead";
 
+/**
+ * Sticky CTA — telefon + WhatsApp.
+ * Linkler doğrudan `tel:` ve `https://wa.me/...` kullanır; hiçbir hook'a
+ * bağımlı değildir. Bu sayede pop-up blocker veya state hatası butonun
+ * tıklanmaz hale gelmesine yol açmaz.
+ */
 export function StickyActions() {
-  const { openWhatsApp } = useWhatsAppLead();
   const telUrl = `tel:+${formatPhoneForWhatsApp(siteConfig.defaultPhone)}`;
+  const whatsappMessage = encodeURIComponent(
+    "Merhaba REDMEDYA ekibi, web sitenizden ulaşıyorum. Düğün / dış çekim paketi için bilgi ve teklif almak istiyorum."
+  );
+  const whatsappUrl = `https://wa.me/${formatPhoneForWhatsApp(
+    siteConfig.defaultWhatsApp
+  )}?text=${whatsappMessage}`;
 
   return (
     <div className="fixed right-5 bottom-5 z-50 flex flex-col items-end gap-3">
@@ -30,14 +40,18 @@ export function StickyActions() {
         </span>
       </motion.a>
 
-      <motion.button
-        type="button"
+      <motion.a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        onClick={() => openWhatsApp({ contentName: "sticky_whatsapp" })}
+        onClick={() =>
+          trackMetaEvent("WhatsAppClick", { content_name: "sticky_whatsapp" })
+        }
         className="group relative flex h-14 items-center gap-2.5 overflow-hidden rounded-full bg-[#25D366] px-4 text-white shadow-[0_10px_35px_rgba(37,211,102,0.4)] transition-all hover:bg-[#1FB957] hover:px-5"
         aria-label="WhatsApp ile yaz"
       >
@@ -46,7 +60,7 @@ export function StickyActions() {
         <span className="relative max-w-0 overflow-hidden text-[13px] font-bold tracking-wide whitespace-nowrap transition-all duration-300 group-hover:max-w-[200px] group-hover:pr-1">
           WhatsApp ile yaz
         </span>
-      </motion.button>
+      </motion.a>
     </div>
   );
 }
