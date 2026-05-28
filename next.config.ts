@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Hostinger Node.js → normal next start. Docker build → standalone (DOCKER=1).
-  ...(process.env.DOCKER === "1" ? { output: "standalone" as const } : {}),
   turbopack: {
     root: process.cwd(),
   },
