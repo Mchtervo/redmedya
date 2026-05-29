@@ -23,24 +23,26 @@ export function SeoLandingPage({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-rm-black pb-24 pt-28">
+      <main className="min-h-screen bg-rm-black pt-24 pb-32 sm:pt-28 lg:pb-24">
         <article className="section-container max-w-3xl">
-          <p className="text-[10px] font-semibold tracking-[0.35em] text-rm-champagne uppercase">
+          <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase sm:tracking-[0.35em]">
             {eyebrow}
           </p>
-          <h1 className="mt-4 font-editorial text-[clamp(2.25rem,6vw,3.5rem)] leading-tight text-rm-off-white">
+          <h1 className="mt-3 font-editorial text-[clamp(1.875rem,6vw,3.5rem)] leading-tight text-rm-off-white sm:mt-4">
             {h1}
           </h1>
-          <p className="mt-6 text-lg leading-relaxed text-rm-gray-400">{intro}</p>
-          <ul className="mt-8 space-y-3 text-rm-gray-300">
+          <p className="mt-5 text-base leading-relaxed text-rm-gray-400 sm:mt-6 sm:text-lg">
+            {intro}
+          </p>
+          <ul className="mt-6 space-y-2.5 text-sm text-rm-gray-300 sm:mt-8 sm:space-y-3 sm:text-base">
             {bullets.map((b) => (
               <li key={b}>· {b}</li>
             ))}
           </ul>
           {faq && faq.length > 0 && (
-            <section className="mt-12 border-t border-white/10 pt-10">
+            <section className="mt-10 border-t border-white/10 pt-8 sm:mt-12 sm:pt-10">
               <h2 className="font-display text-xl text-rm-off-white">Sık sorulanlar</h2>
-              <dl className="mt-6 space-y-6">
+              <dl className="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
                 {faq.map((item) => (
                   <div key={item.q}>
                     <dt className="text-sm font-medium text-rm-champagne">{item.q}</dt>
@@ -50,7 +52,7 @@ export function SeoLandingPage({
               </dl>
             </section>
           )}
-          <div className="mt-10 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3 sm:mt-10">
             <Button variant="default" rounded="full" asChild>
               <Link href="/paket-olustur">{ctaLabel}</Link>
             </Button>

@@ -86,25 +86,25 @@ export function TestimonialsTabs() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.45, ease: EASE_LUXURY }}
-              className="grid items-center gap-10 rounded-3xl border border-white/8 bg-rm-black-elevated/40 p-8 backdrop-blur-sm md:grid-cols-[220px_1fr] md:p-12"
+              className="grid items-center gap-6 rounded-3xl border border-white/8 bg-rm-black-elevated/40 p-5 backdrop-blur-sm sm:gap-10 sm:p-8 md:grid-cols-[220px_1fr] md:p-12"
             >
               {isCouples && "image" in current && (
-                <div className="relative mx-auto aspect-[3/4] w-full max-w-[220px] overflow-hidden rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]">
+                <div className="relative mx-auto aspect-[3/4] w-full max-w-[180px] overflow-hidden rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)] sm:max-w-[220px]">
                   <Image
                     src={(current as (typeof couples)[0]).image}
                     alt={current.name}
                     fill
                     className="object-cover"
-                    sizes="220px"
+                    sizes="(max-width:640px) 180px, 220px"
                   />
                 </div>
               )}
               <div className="text-center md:text-left">
-                <Quote className="mx-auto h-9 w-9 text-rm-champagne/40 md:mx-0" />
-                <p className="mt-5 font-editorial text-xl leading-relaxed text-rm-off-white md:text-2xl">
+                <Quote className="mx-auto h-7 w-7 text-rm-champagne/40 sm:h-9 sm:w-9 md:mx-0" />
+                <p className="mt-4 font-editorial text-lg leading-relaxed text-rm-off-white sm:mt-5 sm:text-xl md:text-2xl">
                   &ldquo;{current.text}&rdquo;
                 </p>
-                <div className="mt-7 flex items-center justify-center gap-3 md:justify-start">
+                <div className="mt-5 flex items-center justify-center gap-3 sm:mt-7 md:justify-start">
                   <div className="h-px w-8 bg-rm-champagne" />
                   <p className="text-sm font-semibold tracking-wider text-rm-champagne uppercase">
                     {current.name}
@@ -122,7 +122,7 @@ export function TestimonialsTabs() {
           <button
             type="button"
             onClick={() => setIndex((i) => (i - 1 + list.length) % list.length)}
-            className="absolute top-1/2 -left-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/80 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 md:-left-16"
+            className="absolute top-1/2 left-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/85 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 sm:left-3 sm:h-11 sm:w-11 md:-left-16"
             aria-label="Önceki"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -130,7 +130,7 @@ export function TestimonialsTabs() {
           <button
             type="button"
             onClick={() => setIndex((i) => (i + 1) % list.length)}
-            className="absolute top-1/2 -right-2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/80 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 md:-right-16"
+            className="absolute top-1/2 right-2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-rm-black-elevated/85 text-rm-off-white backdrop-blur-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-champagne/10 sm:right-3 sm:h-11 sm:w-11 md:-right-16"
             aria-label="Sonraki"
           >
             <ChevronRight className="h-5 w-5" />

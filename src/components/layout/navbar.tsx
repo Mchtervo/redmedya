@@ -129,9 +129,9 @@ export function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 overflow-y-auto bg-rm-black pt-24 lg:hidden"
+            className="fixed inset-0 z-40 overflow-y-auto bg-rm-black pt-20 lg:hidden"
           >
-            <ul className="flex flex-col px-6 pb-12">
+            <ul className="flex flex-col px-6 pb-32 sm:pb-12">
               {navLinks.map((link, i) => (
                 <motion.li
                   key={link.href}

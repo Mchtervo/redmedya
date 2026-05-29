@@ -65,24 +65,24 @@ export function ContactSection() {
       />
       <div className="section-container relative">
         <SectionReveal>
-          <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-20">
             <div>
-              <p className="text-[10px] font-semibold tracking-[0.4em] text-rm-champagne uppercase">
+              <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase sm:tracking-[0.4em]">
                 İletişim
               </p>
-              <h2 className="mt-5 font-editorial text-[clamp(2rem,5vw,3.5rem)] leading-[1.05] text-rm-off-white">
+              <h2 className="mt-4 font-editorial text-[clamp(1.75rem,5vw,3.5rem)] leading-[1.05] text-rm-off-white sm:mt-5">
                 Daha fazla soru?{" "}
                 <span className="italic text-rm-champagne-light">
                   Hemen yanıtlayalım
                 </span>
                 .
               </h2>
-              <p className="mt-6 max-w-md text-sm leading-relaxed text-rm-gray-400">
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-rm-gray-400 sm:mt-6">
                 Paket oluşturucuda hizmetlerinizi seçin, iletişim bilgilerinizi
                 girin — WhatsApp mesajınız sepet özetiyle birlikte otomatik
                 hazırlanır.
               </p>
-              <div className="mt-10 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap gap-3 sm:mt-10">
                 <GlassCta
                   href={CONTACT_WHATSAPP_URL}
                   external
@@ -102,11 +102,11 @@ export function ContactSection() {
               </div>
             </div>
 
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:pt-6">
+            <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:pt-6">
               {items.map((item) => {
                 const Icon = item.icon;
                 const content = (
-                  <div className="flex h-full items-start gap-4 rounded-2xl border border-white/8 bg-rm-black-elevated/40 p-5 transition-all hover:-translate-y-0.5 hover:border-rm-champagne/25 hover:bg-rm-black-elevated">
+                  <div className="flex h-full items-start gap-3.5 rounded-2xl border border-white/8 bg-rm-black-elevated/40 p-4 transition-all hover:-translate-y-0.5 hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:gap-4 sm:p-5">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rm-champagne/10 text-rm-champagne">
                       <Icon className="h-4 w-4" strokeWidth={1.5} />
                     </span>
