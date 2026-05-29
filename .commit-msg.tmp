@@ -1,0 +1,8 @@
+feat(admin): bildirim sayaclari, finans ozeti, bu hafta widgeti, aktivite akisi, Ctrl+K komut paleti
+
+- Sidebar nav itemlarinda canli badge (bekleyen teklif sayisi, telefonu eksik rezervasyon sayisi)
+- Overview: bu hafta dugunleri vurgulu karti + ara/WhatsApp/detay aksiyonlari
+- Overview: finans ozeti (bu ay cirosu, toplam tahmini, alinan kapora, kalan tahsilat)
+- Overview: son 10 hareketi gosteren aktivite akisi (yeni teklif, onay, ret)
+- Topbar Ctrl+K komut paleti: hizli sayfa gecisi + rezervasyon/teklif/rehber aramasi
+- useAdminCounts hook: leads + reservations uzerinden turetilen sayaclar, otomatik refresh

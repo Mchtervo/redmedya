@@ -14,9 +14,13 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import type { ReservationRecord } from "@/types/reservations";
+import type { LeadRecord } from "@/types/site-settings";
 import type { PackageInsights } from "@/lib/package-insights";
 import { AdminVisualCalendar } from "@/components/admin/admin-visual-calendar";
 import { AdminPanelHeader, AdminEmptyState } from "@/components/admin/admin-panel-header";
+import { AdminRevenueSummary } from "@/components/admin/admin-revenue-summary";
+import { AdminThisWeekWeddings } from "@/components/admin/admin-this-week-weddings";
+import { AdminActivityFeed } from "@/components/admin/admin-activity-feed";
 import { formatPrice } from "@/lib/utils";
 import { formatWeddingDateDisplay } from "@/lib/date-format";
 import { EASE_LUXURY } from "@/lib/animations";
@@ -30,6 +34,7 @@ export function AdminOverviewPanel({
 }) {
   const router = useRouter();
   const [reservations, setReservations] = useState<ReservationRecord[]>([]);
+  const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [insights, setInsights] = useState<PackageInsights | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,10 +43,12 @@ export function AdminOverviewPanel({
     Promise.all([
       fetch("/api/admin/reservations").then((r) => r.json()),
       fetch("/api/admin/package-insights").then((r) => r.json()),
+      fetch("/api/admin/leads").then((r) => r.json()),
     ])
-      .then(([res, ins]) => {
+      .then(([res, ins, ld]) => {
         setReservations(Array.isArray(res) ? res : []);
         setInsights(ins);
+        setLeads(Array.isArray(ld) ? ld : []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -158,6 +165,10 @@ export function AdminOverviewPanel({
             })}
           </div>
 
+          <AdminThisWeekWeddings reservations={reservations} />
+
+          <AdminRevenueSummary reservations={reservations} />
+
           <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
             <AdminVisualCalendar
               reservations={reservations}
@@ -172,63 +183,65 @@ export function AdminOverviewPanel({
               }}
             />
 
-            <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-between border-b border-white/8 pb-4">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
-                    <Heart className="h-4 w-4" strokeWidth={1.6} />
-                  </span>
-                  <h3 className="font-editorial text-xl text-rm-off-white">
-                    Yaklaşan düğünler
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate("calendar")}
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase hover:underline"
-                >
-                  Takvim
-                  <ArrowRight className="h-3 w-3" />
-                </button>
+            <AdminActivityFeed reservations={reservations} leads={leads} />
+          </div>
+
+          <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between border-b border-white/8 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
+                  <Heart className="h-4 w-4" strokeWidth={1.6} />
+                </span>
+                <h3 className="font-editorial text-xl text-rm-off-white">
+                  Yaklaşan düğünler
+                </h3>
               </div>
-              {upcoming.length === 0 ? (
-                <AdminEmptyState
-                  icon={Heart}
-                  title="Henüz onaylı düğün yok"
-                  description="Yeni rezervasyon eklediğinizde burada listelenir."
-                />
-              ) : (
-                <ul className="mt-2 divide-y divide-white/5">
-                  {upcoming.map((r) => (
-                    <li key={r.id}>
-                      <button
-                        type="button"
-                        onClick={() => onNavigate("calendar")}
-                        className="group flex w-full items-center justify-between gap-3 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-rm-off-white">
-                            {formatCustomerName(r.customer)}
-                          </p>
-                          <p className="mt-0.5 text-xs text-rm-gray-500">
-                            {formatWeddingDateDisplay(r.customer.weddingDate)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                            Kalan
-                          </p>
-                          <p className="text-sm font-semibold tabular-nums text-rm-champagne">
-                            {formatPrice(r.remainingAmount)}
-                          </p>
-                        </div>
-                        <ArrowRight className="ml-1 h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <button
+                type="button"
+                onClick={() => onNavigate("calendar")}
+                className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase hover:underline"
+              >
+                Takvim
+                <ArrowRight className="h-3 w-3" />
+              </button>
             </div>
+            {upcoming.length === 0 ? (
+              <AdminEmptyState
+                icon={Heart}
+                title="Henüz onaylı düğün yok"
+                description="Yeni rezervasyon eklediğinizde burada listelenir."
+              />
+            ) : (
+              <ul className="mt-2 divide-y divide-white/5">
+                {upcoming.map((r) => (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/admin?tab=calendar&res=${r.id}`)}
+                      className="group flex w-full items-center justify-between gap-3 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-rm-off-white">
+                          {formatCustomerName(r.customer)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-rm-gray-500">
+                          {formatWeddingDateDisplay(r.customer.weddingDate)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
+                          Kalan
+                        </p>
+                        <p className="text-sm font-semibold tabular-nums text-rm-champagne">
+                          {formatPrice(r.remainingAmount)}
+                        </p>
+                      </div>
+                      <ArrowRight className="ml-1 h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}

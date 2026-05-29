@@ -24,6 +24,8 @@ import { AdminDataPanel } from "@/components/admin/admin-data-panel";
 import { AdminMissingPhoneAlerts } from "@/components/admin/admin-missing-phone-alerts";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { EASE_LUXURY } from "@/lib/animations";
+import { useAdminCounts } from "@/hooks/use-admin-counts";
+import { AdminCommandPalette } from "@/components/admin/admin-command-palette";
 
 function AdminShellInner({ children }: { children?: React.ReactNode }) {
   const searchParams = useSearchParams();
@@ -31,6 +33,31 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   const tabParam = searchParams.get("tab");
   const tab: AdminTabId = isAdminTab(tabParam) ? tabParam : "overview";
   const [mobileNav, setMobileNav] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const counts = useAdminCounts();
+
+  /** Hangi nav item'ında badge gözüksün */
+  const badgeFor = (id: AdminTabId): { count: number; tone: "gold" | "red" } | null => {
+    if (id === "leads" && counts.pendingLeads > 0) {
+      return { count: counts.pendingLeads, tone: "gold" };
+    }
+    if (id === "calendar" && counts.missingPhone > 0) {
+      return { count: counts.missingPhone, tone: "red" };
+    }
+    return null;
+  };
+
+  /** Ctrl+K / Cmd+K → komut paleti */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const navigate = (id: AdminTabId) => {
     const q = new URLSearchParams({ tab: id });
@@ -111,6 +138,7 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
                 .map((item) => {
                   const Icon = item.icon;
                   const active = tab === item.id;
+                  const badge = badgeFor(item.id);
                   return (
                     <button
                       key={item.id}
@@ -135,7 +163,19 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
                         )}
                         strokeWidth={1.5}
                       />
-                      <span className="font-medium">{item.label}</span>
+                      <span className="flex-1 font-medium">{item.label}</span>
+                      {badge && (
+                        <span
+                          className={cn(
+                            "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                            badge.tone === "gold"
+                              ? "bg-rm-champagne/25 text-rm-champagne"
+                              : "bg-red-500/25 text-red-300"
+                          )}
+                        >
+                          {badge.count}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -201,6 +241,17 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
             </div>
           </div>
           <div className="hidden items-center gap-2 lg:flex">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white"
+              title="Komut paleti (Ctrl+K)"
+            >
+              <span>Hızlı ara…</span>
+              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-rm-gray-500">
+                Ctrl K
+              </kbd>
+            </button>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               Canlı
@@ -226,6 +277,12 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
           </AnimatePresence>
         </main>
       </div>
+
+      <AdminCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onNavigate={(id) => navigate(id)}
+      />
     </div>
   );
 }
