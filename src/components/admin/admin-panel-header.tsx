@@ -36,38 +36,42 @@ export function AdminPanelHeader({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: EASE_LUXURY }}
-      className="relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm md:p-7"
+      className="relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-7"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -right-16 h-44 w-44 rounded-full bg-rm-champagne/[0.05] blur-3xl"
       />
-      <div className="relative flex flex-wrap items-start justify-between gap-5">
-        <div className="flex items-start gap-4">
+      <div className="relative flex flex-wrap items-start justify-between gap-3 md:gap-5">
+        <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
           {Icon && (
-            <span className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
-              <Icon className="h-5 w-5" strokeWidth={1.6} />
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne sm:mt-1 sm:h-11 sm:w-11">
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.6} />
             </span>
           )}
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-semibold tracking-[0.28em] text-rm-champagne uppercase sm:text-[10px] sm:tracking-[0.3em]">
               {eyebrow}
             </p>
-            <h1 className="mt-2 font-editorial text-3xl leading-tight text-rm-off-white md:text-[2.25rem]">
+            <h1 className="mt-1.5 font-editorial text-2xl leading-tight text-rm-off-white sm:mt-2 sm:text-3xl md:text-[2.25rem]">
               {title}
             </h1>
             {description && (
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-rm-gray-400">
+              <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-rm-gray-400 sm:mt-2 sm:text-sm">
                 {description}
               </p>
             )}
             {meta && (
-              <p className="mt-3 text-xs text-rm-gray-500">{meta}</p>
+              <p className="mt-2 text-[11px] text-rm-gray-500 sm:mt-3 sm:text-xs">
+                {meta}
+              </p>
             )}
           </div>
         </div>
         {actions && (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+            {actions}
+          </div>
         )}
       </div>
     </motion.header>
@@ -102,20 +106,24 @@ export function AdminSection({
       className={
         flat
           ? className
-          : `rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm ${className ?? ""}`
+          : `rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6 ${className ?? ""}`
       }
     >
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/8 pb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/8 pb-3 sm:pb-4">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           {Icon && (
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
               <Icon className="h-4 w-4" strokeWidth={1.6} />
             </span>
           )}
-          <div>
-            <h3 className="font-editorial text-xl text-rm-off-white">{title}</h3>
+          <div className="min-w-0">
+            <h3 className="truncate font-editorial text-lg text-rm-off-white sm:text-xl">
+              {title}
+            </h3>
             {description && (
-              <p className="mt-0.5 text-xs text-rm-gray-500">{description}</p>
+              <p className="mt-0.5 text-[11px] text-rm-gray-500 sm:text-xs">
+                {description}
+              </p>
             )}
           </div>
         </div>
@@ -123,7 +131,7 @@ export function AdminSection({
           <div className="flex flex-wrap items-center gap-2">{actions}</div>
         )}
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-4 sm:mt-5">{children}</div>
     </section>
   );
 }

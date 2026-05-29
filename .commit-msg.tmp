@@ -1,0 +1,21 @@
+feat(mobile): admin paneli ve site genelinde mobil uyumluluk iyilestirmeleri
+
+Admin:
+- Shell mobile header kompakt (px-3 py-2.5), logout ikon butonu, mobile icin search ikonu
+- AdminLogoutButton: compact prop ile sadece ikon (mobile header)
+- AdminPanelHeader: p-4 sm:p-5 md:p-7, baslik 2xl sm:3xl md:[2.25rem], icon 9x9 sm:11x11
+- AdminSection: kompakt padding ve responsive baslik
+- Overview stats: 2 sutun mobile, kucuk font ve padding
+- Bu hafta dugunleri: kompakt kart, dokunmatik ikon butonlar (h-9 mobile)
+- Revenue summary: 2 sutun mobile, kucuk font
+- Activity feed: kompakt padding
+- Leads panel: card p-4 sm:p-5, filter tabs yatay scroll mobile
+- Packages / rehber / data / cms paneller: 2 sutun mobile, kompakt
+- Operations / packages: tablolar yatay scroll
+- CMS editor: tabs yatay scroll, service card kompakt
+- Command palette: mobile fullscreen (inset-x-3 top-3), max-h 70vh
+
+Public site:
+- Paket olustur: header kompakt mobile, ana baslik clamp 1.875rem alt sinir
+- Pb-40 lg:pb-0 ile mobile bar son icerigi kapatmasin
+- Cart summary: header padding kucuk, baslik fiyatlari mobile kucuk

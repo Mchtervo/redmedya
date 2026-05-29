@@ -217,7 +217,7 @@ export function AdminLeadsPanel() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {filterTabs.map((tab) => {
           const active = filter === tab.id;
           return (
@@ -226,7 +226,7 @@ export function AdminLeadsPanel() {
               type="button"
               onClick={() => setFilter(tab.id)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] uppercase transition-all sm:gap-2 sm:px-4 sm:text-[11px] sm:tracking-[0.18em]",
                 active
                   ? tab.tint
                   : "border-white/10 bg-white/[0.02] text-rm-gray-500 hover:border-white/20 hover:text-rm-off-white"
@@ -276,7 +276,7 @@ export function AdminLeadsPanel() {
           <article
             key={lead.id}
             className={cn(
-              "group relative overflow-hidden rounded-2xl border p-6 transition-all",
+              "group relative overflow-hidden rounded-2xl border p-4 transition-all sm:p-5 md:p-6",
               lead.status === "rejected"
                 ? "border-red-500/20 bg-red-950/10 opacity-75"
                 : "border-white/8 bg-rm-black-elevated/60 hover:-translate-y-0.5 hover:border-rm-champagne/30 hover:bg-rm-black-elevated"
@@ -306,9 +306,9 @@ export function AdminLeadsPanel() {
                 </span>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-baseline justify-between gap-3 border-b border-white/8 pb-4">
+              <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3 border-b border-white/8 pb-3 sm:mt-4 sm:pb-4">
                 <div className="min-w-0">
-                  <p className="font-editorial text-2xl text-rm-off-white">
+                  <p className="font-editorial text-xl text-rm-off-white sm:text-2xl">
                     {formatCustomerName(lead.customer)}
                   </p>
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-rm-gray-400">
@@ -329,10 +329,10 @@ export function AdminLeadsPanel() {
                   )}
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+                  <p className="text-[9px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase sm:tracking-[0.25em]">
                     Sepet toplamı
                   </p>
-                  <p className="mt-0.5 font-editorial text-3xl leading-none tabular-nums text-rm-champagne">
+                  <p className="mt-0.5 font-editorial text-2xl leading-none tabular-nums text-rm-champagne sm:text-3xl">
                     {formatPrice(lead.cart.total)}
                   </p>
                 </div>

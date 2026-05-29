@@ -167,7 +167,7 @@ export function AdminDataPanel() {
         }
       />
 
-      <div className="rounded-2xl border border-rm-champagne/20 bg-rm-champagne/[0.04] p-5 text-sm text-rm-gray-300">
+      <div className="rounded-2xl border border-rm-champagne/20 bg-rm-champagne/[0.04] p-4 text-sm text-rm-gray-300 sm:p-5">
         <p className="flex items-center gap-2 font-medium text-rm-off-white">
           <FileJson className="h-4 w-4 text-rm-champagne" strokeWidth={1.6} />
           Admin → site entegrasyonu
@@ -196,26 +196,26 @@ export function AdminDataPanel() {
         </ul>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
             <div
               key={c.label}
-              className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-5 backdrop-blur-sm transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated"
+              className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-3.5 backdrop-blur-sm transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:p-5"
             >
               <div className="flex items-start justify-between">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne">
-                  <Icon className="h-4 w-4" strokeWidth={1.6} />
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne sm:h-9 sm:w-9">
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.6} />
                 </span>
-                <p className="font-editorial text-3xl tabular-nums text-rm-off-white">
+                <p className="font-editorial text-2xl tabular-nums text-rm-off-white sm:text-3xl">
                   {c.value}
                 </p>
               </div>
-              <p className="mt-4 text-[10px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase">
+              <p className="mt-3 text-[9px] font-semibold tracking-[0.2em] text-rm-gray-500 uppercase sm:mt-4 sm:text-[10px] sm:tracking-[0.22em]">
                 {c.label}
               </p>
-              <p className="mt-0.5 text-[11px] text-rm-gray-600">{c.sub}</p>
+              <p className="mt-0.5 truncate text-[11px] text-rm-gray-600">{c.sub}</p>
             </div>
           );
         })}

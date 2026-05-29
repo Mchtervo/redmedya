@@ -138,25 +138,25 @@ export function AdminPackagePanel() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-5">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
             <div
               key={s.label}
-              className={`relative overflow-hidden rounded-2xl border p-5 backdrop-blur-sm ${
+              className={`relative overflow-hidden rounded-2xl border p-3.5 backdrop-blur-sm sm:p-5 ${
                 s.highlight
                   ? "border-rm-champagne/35 bg-rm-champagne/[0.06]"
                   : "border-white/8 bg-rm-black-elevated/60"
               }`}
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne">
-                <Icon className="h-4 w-4" strokeWidth={1.6} />
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne sm:h-9 sm:w-9">
+                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.6} />
               </span>
-              <p className={`mt-3 font-editorial text-3xl tabular-nums ${s.accent}`}>
+              <p className={`mt-2.5 font-editorial text-2xl leading-none tabular-nums sm:mt-3 sm:text-3xl ${s.accent}`}>
                 {s.value}
               </p>
-              <p className="mt-1 text-[10px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase">
+              <p className="mt-1 text-[9px] font-semibold tracking-[0.2em] text-rm-gray-500 uppercase sm:text-[10px] sm:tracking-[0.22em]">
                 {s.label}
               </p>
             </div>
@@ -176,8 +176,8 @@ export function AdminPackagePanel() {
             description="Müşteriler paket oluşturmaya başladığında popüler hizmetler burada görünür."
           />
         ) : (
-          <div className="overflow-hidden rounded-xl border border-white/8">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-xl border border-white/8">
+            <table className="w-full min-w-[420px] text-left text-sm">
               <thead>
                 <tr className="bg-white/[0.03] text-[10px] tracking-[0.2em] text-rm-gray-500 uppercase">
                   <th className="px-4 py-2.5">Hizmet</th>

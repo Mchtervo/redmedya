@@ -239,7 +239,7 @@ export function AdminCommandPalette({ open, onOpenChange, onNavigate }: Props) {
         <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed top-[10%] left-1/2 z-[81] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-rm-black-elevated shadow-[0_40px_120px_-20px_rgba(0,0,0,0.7)] focus:outline-none"
+          className="fixed inset-x-3 top-3 z-[81] overflow-hidden rounded-2xl border border-white/10 bg-rm-black-elevated shadow-[0_40px_120px_-20px_rgba(0,0,0,0.7)] focus:outline-none sm:inset-x-auto sm:top-[10%] sm:left-1/2 sm:w-[calc(100%-2rem)] sm:max-w-xl sm:-translate-x-1/2"
         >
           <Dialog.Title className="sr-only">Admin komut paleti</Dialog.Title>
 
@@ -267,7 +267,7 @@ export function AdminCommandPalette({ open, onOpenChange, onNavigate }: Props) {
 
           <div
             ref={listRef}
-            className="max-h-[min(55vh,420px)] overflow-y-auto p-2"
+            className="max-h-[min(70vh,520px)] overflow-y-auto p-2 sm:max-h-[min(55vh,420px)]"
           >
             {filtered.length === 0 ? (
               <p className="px-3 py-10 text-center text-sm text-rm-gray-500">
@@ -342,7 +342,7 @@ export function AdminCommandPalette({ open, onOpenChange, onNavigate }: Props) {
             )}
           </div>
 
-          <p className="flex flex-wrap items-center gap-3 border-t border-white/8 px-4 py-2 text-[10px] text-rm-gray-500">
+          <p className="hidden flex-wrap items-center gap-3 border-t border-white/8 px-4 py-2 text-[10px] text-rm-gray-500 sm:flex">
             <span className="flex items-center gap-1">
               <kbd className="rounded border border-white/10 bg-white/[0.04] px-1 py-0.5 text-[9px]">
                 ↑↓

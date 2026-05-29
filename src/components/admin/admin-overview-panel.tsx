@@ -125,17 +125,17 @@ export function AdminOverviewPanel({
       />
 
       {loading ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40"
+              className="h-28 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40 sm:h-32"
             />
           ))}
         </div>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
             {stats.map((s, i) => {
               const Icon = s.icon;
               return (
@@ -146,18 +146,18 @@ export function AdminOverviewPanel({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, ease: EASE_LUXURY }}
                   onClick={() => onNavigate(s.tab)}
-                  className="group relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-5 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated"
+                  className="group relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-3.5 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated sm:p-5"
                 >
                   <div className="flex items-start justify-between">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne">
-                      <Icon className="h-4 w-4" strokeWidth={1.6} />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne sm:h-10 sm:w-10">
+                      <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.6} />
                     </span>
                     <ArrowRight className="h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
                   </div>
-                  <p className={`mt-4 font-editorial text-4xl tabular-nums ${s.accent}`}>
+                  <p className={`mt-3 font-editorial text-3xl leading-none tabular-nums sm:mt-4 sm:text-4xl ${s.accent}`}>
                     {s.value}
                   </p>
-                  <p className="mt-1 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+                  <p className="mt-1 text-[9px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase sm:text-[10px] sm:tracking-[0.25em]">
                     {s.label}
                   </p>
                 </motion.button>
@@ -186,13 +186,13 @@ export function AdminOverviewPanel({
             <AdminActivityFeed reservations={reservations} leads={leads} />
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm">
-            <div className="flex items-center justify-between border-b border-white/8 pb-4">
-              <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+            <div className="flex items-center justify-between border-b border-white/8 pb-3 sm:pb-4">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
                   <Heart className="h-4 w-4" strokeWidth={1.6} />
                 </span>
-                <h3 className="font-editorial text-xl text-rm-off-white">
+                <h3 className="font-editorial text-lg text-rm-off-white sm:text-xl">
                   Yaklaşan düğünler
                 </h3>
               </div>

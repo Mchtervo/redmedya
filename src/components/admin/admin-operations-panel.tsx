@@ -225,8 +225,8 @@ export function AdminOperationsPanel() {
             Henüz hiç kupon kullanılmamış.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-white/8">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-xl border border-white/8">
+            <table className="w-full min-w-[320px] text-left text-sm">
               <thead>
                 <tr className="bg-white/[0.03] text-[10px] tracking-[0.2em] text-rm-gray-500 uppercase">
                   <th className="px-4 py-2.5">Kod</th>

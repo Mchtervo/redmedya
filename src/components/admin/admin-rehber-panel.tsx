@@ -129,7 +129,7 @@ export function AdminRehberPanel() {
       {showForm && (
         <form
           onSubmit={addManual}
-          className="overflow-hidden rounded-2xl border border-rm-champagne/25 bg-rm-champagne/[0.04] p-6"
+          className="overflow-hidden rounded-2xl border border-rm-champagne/25 bg-rm-champagne/[0.04] p-4 sm:p-5 md:p-6"
         >
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-8 rounded-full bg-rm-champagne" />
@@ -226,7 +226,7 @@ export function AdminRehberPanel() {
           {filtered.map((c) => (
             <li
               key={c.id}
-              className="group overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 px-5 py-4 transition-all hover:-translate-y-0.5 hover:border-rm-champagne/25 hover:bg-rm-black-elevated"
+              className="group overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 px-4 py-3.5 transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:px-5 sm:py-4 sm:hover:-translate-y-0.5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">

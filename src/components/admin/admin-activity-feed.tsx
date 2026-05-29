@@ -84,13 +84,13 @@ export function AdminActivityFeed({
   }, [reservations, leads]);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm">
-      <div className="flex items-center justify-between border-b border-white/8 pb-4">
-        <div className="flex items-center gap-3">
+    <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+      <div className="flex items-center justify-between border-b border-white/8 pb-3 sm:pb-4">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
             <Activity className="h-4 w-4" strokeWidth={1.6} />
           </span>
-          <h3 className="font-editorial text-xl text-rm-off-white">
+          <h3 className="font-editorial text-lg text-rm-off-white sm:text-xl">
             Aktivite akışı
           </h3>
         </div>

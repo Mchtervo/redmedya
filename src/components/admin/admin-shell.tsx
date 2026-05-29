@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ExternalLink, ShieldCheck } from "lucide-react";
+import { Menu, X, ExternalLink, ShieldCheck, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ADMIN_NAV,
@@ -220,31 +220,40 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[260px]">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/8 bg-rm-black/85 px-4 py-3.5 backdrop-blur-md md:px-8">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-white/8 bg-rm-black/85 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3.5 md:px-8">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-rm-off-white transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10 lg:hidden"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-rm-off-white transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10 lg:hidden"
               onClick={() => setMobileNav(true)}
               aria-label="Menü"
             >
               {mobileNav ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
-            <div className="flex min-w-0 items-baseline gap-2">
-              <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-gray-500 uppercase">
+            <div className="flex min-w-0 items-baseline gap-1.5 sm:gap-2">
+              <p className="hidden text-[10px] font-semibold tracking-[0.3em] text-rm-gray-500 uppercase sm:inline">
                 Yönetim
               </p>
-              <span className="text-rm-gray-700">/</span>
-              <h1 className="truncate font-editorial text-lg text-rm-off-white md:text-xl">
+              <span className="hidden text-rm-gray-700 sm:inline">/</span>
+              <h1 className="truncate font-editorial text-base text-rm-off-white sm:text-lg md:text-xl">
                 {activeNav?.label ?? "Admin"}
               </h1>
             </div>
           </div>
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white lg:hidden"
+              aria-label="Hızlı ara"
+              title="Hızlı ara"
+            >
+              <Search className="h-4 w-4" strokeWidth={1.7} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white lg:inline-flex"
               title="Komut paleti (Ctrl+K)"
             >
               <span>Hızlı ara…</span>
@@ -252,17 +261,17 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
                 Ctrl K
               </kbd>
             </button>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] text-emerald-300 uppercase">
+            <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] text-emerald-300 uppercase lg:inline-flex">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
               Canlı
             </span>
-          </div>
-          <div className="lg:hidden">
-            <AdminLogoutButton />
+            <div className="lg:hidden">
+              <AdminLogoutButton compact />
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-3 sm:p-4 md:p-8">
           <AdminMissingPhoneAlerts />
           <AnimatePresence mode="wait">
             <motion.div

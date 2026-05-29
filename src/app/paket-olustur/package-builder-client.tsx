@@ -71,7 +71,7 @@ export function PackageBuilderClient() {
       <FilmGrain />
       <CampaignWelcomeModal />
       <Navbar />
-      <main className="relative min-h-screen bg-rm-black pt-24 md:pt-32">
+      <main className="relative min-h-screen bg-rm-black pt-20 pb-40 sm:pt-24 md:pt-32 lg:pb-0">
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-rm-champagne/[0.08] via-rm-champagne/[0.02] to-transparent"
           aria-hidden
@@ -86,18 +86,18 @@ export function PackageBuilderClient() {
         />
 
         <div className="section-container relative">
-          <header className="mb-10 max-w-3xl md:mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-rm-champagne/25 bg-rm-champagne/[0.06] px-4 py-1.5 backdrop-blur-sm">
+          <header className="mb-8 max-w-3xl sm:mb-10 md:mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-rm-champagne/25 bg-rm-champagne/[0.06] px-3 py-1.5 backdrop-blur-sm sm:px-4">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rm-champagne" />
-              <p className="text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
+              <p className="text-[9px] font-semibold tracking-[0.25em] text-rm-champagne uppercase sm:text-[10px] sm:tracking-[0.3em]">
                 Paket oluşturucu · canlı fiyat
               </p>
             </div>
-            <h1 className="mt-6 font-editorial text-[clamp(2.25rem,6vw,4.25rem)] leading-[0.95] text-rm-off-white">
+            <h1 className="mt-5 font-editorial text-[clamp(1.875rem,6vw,4.25rem)] leading-[0.95] text-rm-off-white sm:mt-6">
               Kendi sinematik
               <span className="mt-1 block italic text-rm-champagne">paketinizi tasarlayın</span>
             </h1>
-            <p className="mt-6 max-w-lg text-sm leading-relaxed text-rm-gray-400 md:text-base">
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-rm-gray-400 sm:mt-6 md:text-base">
               Etkinlik ve ürünleri seçin; her hizmetin kapsamı açıklamasında yer alır.
               Toplam canlı güncellenir, rezervasyonunuzu WhatsApp ile tek tıkla onaylayın.
             </p>

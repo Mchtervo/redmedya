@@ -193,7 +193,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
         className
       )}
     >
-      <div className="relative overflow-hidden border-b border-white/8 px-6 py-6">
+      <div className="relative overflow-hidden border-b border-white/8 px-4 py-5 sm:px-6 sm:py-6">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-20 h-44 w-44 rounded-full bg-rm-champagne/[0.08] blur-3xl"
@@ -204,7 +204,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rm-champagne/15">
                 <ShoppingBag className="h-4 w-4 text-rm-champagne" strokeWidth={1.75} />
               </span>
-              <span className="font-editorial text-xl text-rm-off-white">
+              <span className="font-editorial text-lg text-rm-off-white sm:text-xl">
                 Sepet özeti
               </span>
             </div>
@@ -214,10 +214,10 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
               </span>
             )}
           </div>
-          <p className="mt-4 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+          <p className="mt-3 text-[10px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase sm:mt-4 sm:tracking-[0.25em]">
             Ödenecek tutar
           </p>
-          <p className="mt-1 font-editorial text-[2.75rem] leading-none tabular-nums text-rm-champagne">
+          <p className="mt-1 font-editorial text-[2.25rem] leading-none tabular-nums text-rm-champagne sm:text-[2.75rem]">
             {formatPrice(total)}
           </p>
           {totalSavings > 0 && (
@@ -229,7 +229,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
         {lineItems.length === 0 ? (
           <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] py-8 text-center">
             <ShoppingBag

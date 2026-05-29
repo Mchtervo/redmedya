@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
-export function AdminLogoutButton() {
+type Props = {
+  /** Sadece ikon (mobile header gibi dar yerler için). */
+  compact?: boolean;
+};
+
+export function AdminLogoutButton({ compact = false }: Props) {
   const router = useRouter();
 
   const logout = async () => {
@@ -11,6 +16,20 @@ export function AdminLogoutButton() {
     router.push("/admin/login");
     router.refresh();
   };
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={logout}
+        aria-label="Çıkış yap"
+        title="Çıkış yap"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] text-rm-gray-400 transition-all hover:border-red-500/35 hover:bg-red-500/10 hover:text-red-300"
+      >
+        <LogOut className="h-4 w-4" strokeWidth={1.7} />
+      </button>
+    );
+  }
 
   return (
     <button

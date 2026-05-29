@@ -151,7 +151,7 @@ export function AdminCmsEditor({ embedded }: { embedded?: boolean } = {}) {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
         {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -160,7 +160,7 @@ export function AdminCmsEditor({ embedded }: { embedded?: boolean } = {}) {
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] uppercase transition-all sm:gap-2 sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.18em] ${
                 active
                   ? "border-rm-champagne/40 bg-rm-champagne/15 text-rm-champagne shadow-[inset_0_0_0_1px_rgba(196,160,82,0.15)]"
                   : "border-white/10 bg-white/[0.02] text-rm-gray-400 hover:border-white/20 hover:text-rm-off-white"
@@ -181,7 +181,7 @@ export function AdminCmsEditor({ embedded }: { embedded?: boolean } = {}) {
           {config.services.map((s, i) => (
             <div
               key={s.id}
-              className="rounded-sm border border-white/10 bg-rm-black-elevated p-5"
+              className="rounded-sm border border-white/10 bg-rm-black-elevated p-3 sm:p-4 md:p-5"
             >
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
