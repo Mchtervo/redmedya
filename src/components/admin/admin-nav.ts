@@ -78,6 +78,16 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
 ];
 
+/**
+ * Sidebar bölüm grupları — eğitim almaya değer olmasa da görsel olarak
+ * geniş menüyü 2-3 mantıklı bölüme ayırır.
+ */
+export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
+  { title: "Operasyon", ids: ["overview", "calendar", "leads"] },
+  { title: "Müşteri", ids: ["packages", "rehber"] },
+  { title: "Ayarlar", ids: ["cms", "operations", "data"] },
+];
+
 export function isAdminTab(id: string | null): id is AdminTabId {
   return ADMIN_NAV.some((n) => n.id === id);
 }

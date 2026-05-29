@@ -12,9 +12,13 @@ import {
   type ReservationFormInitial,
 } from "@/components/admin/create-reservation-dialog";
 import { formatWeddingDateDisplay } from "@/lib/date-format";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, Plus, CalendarPlus, MousePointerClick } from "lucide-react";
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
 import { notifyAdminDataChanged } from "@/lib/admin-data-sync";
+import {
+  AdminPanelHeader,
+  AdminEmptyState,
+} from "@/components/admin/admin-panel-header";
 
 function emptyCustomerForDate(iso?: string) {
   return {
@@ -146,8 +150,13 @@ export function AdminCalendarPanel() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-rm-gray-500">
-        Takvim yükleniyor…
+      <div className="space-y-4">
+        <AdminPanelHeader
+          eyebrow="Takvim"
+          title="Rezervasyon takvimi"
+          icon={CalendarDays}
+        />
+        <div className="h-72 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
       </div>
     );
   }
@@ -157,33 +166,29 @@ export function AdminCalendarPanel() {
     : "Yeni rezervasyon";
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-rm-champagne/20 bg-rm-champagne/5 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="h-6 w-6 text-rm-champagne" />
-          <div>
-            <p className="font-display text-lg text-rm-off-white">
-              Rezervasyon takvimi
-            </p>
-            <p className="text-sm text-rm-gray-500">
-              {list.length} onaylı çift · boş güne tıklayarak ekleyin, dolu güne
-              tıklayarak düzenleyin
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => openCreate()}
-          className="flex items-center gap-2 bg-rm-champagne px-4 py-2.5 text-xs font-bold tracking-wide text-rm-black uppercase"
-        >
-          <Plus className="h-4 w-4" />
-          Rezervasyon ekle
-        </button>
-      </div>
+    <div className="space-y-6">
+      <AdminPanelHeader
+        eyebrow="Takvim"
+        title="Rezervasyon takvimi"
+        description="Onaylı düğünleri günlük olarak görün. Boş bir güne tıklayarak yeni rezervasyon ekleyin, dolu güne tıklayarak detay açın."
+        icon={CalendarDays}
+        meta={`${list.length} onaylı çift`}
+        actions={
+          <button
+            type="button"
+            onClick={() => openCreate()}
+            className="inline-flex items-center gap-2 rounded-full bg-rm-champagne px-5 py-2.5 text-[11px] font-bold tracking-[0.18em] text-rm-black uppercase shadow-[0_6px_22px_rgba(196,160,82,0.3)] transition-all hover:-translate-y-0.5 hover:bg-rm-champagne-light"
+          >
+            <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+            Rezervasyon ekle
+          </button>
+        }
+      />
 
       {dayPick && (
-        <div className="rounded-xl border border-rm-champagne/30 bg-rm-champagne/5 p-4">
-          <p className="text-sm text-rm-off-white">
+        <div className="rounded-2xl border border-rm-champagne/30 bg-rm-champagne/[0.06] p-5">
+          <p className="flex items-center gap-2 text-sm font-medium text-rm-off-white">
+            <CalendarDays className="h-4 w-4 text-rm-champagne" strokeWidth={1.6} />
             {formatWeddingDateDisplay(dayPick.iso)} — {dayPick.events.length}{" "}
             rezervasyon
           </p>
@@ -193,10 +198,12 @@ export function AdminCalendarPanel() {
                 <button
                   type="button"
                   onClick={() => selectReservation(r)}
-                  className="w-full rounded-lg border border-white/10 bg-rm-black-elevated px-4 py-2 text-left text-sm hover:border-rm-champagne/40"
+                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-rm-black-elevated/70 px-4 py-2.5 text-left text-sm transition-all hover:border-rm-champagne/40 hover:bg-rm-black-elevated"
                 >
-                  {r.customer.firstName} {r.customer.lastName}
-                  <span className="ml-2 text-rm-gray-500">
+                  <span className="text-rm-off-white">
+                    {r.customer.firstName} {r.customer.lastName}
+                  </span>
+                  <span className="text-xs text-rm-champagne">
                     Kalan {formatPrice(r.remainingAmount)}
                   </span>
                 </button>
@@ -206,15 +213,16 @@ export function AdminCalendarPanel() {
           <button
             type="button"
             onClick={() => openCreate(dayPick.iso)}
-            className="mt-3 text-xs text-rm-champagne underline"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-rm-champagne underline-offset-2 hover:underline"
           >
-            + Bu güne bir rezervasyon daha ekle
+            <Plus className="h-3 w-3" strokeWidth={2} />
+            Bu güne bir rezervasyon daha ekle
           </button>
         </div>
       )}
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-8">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6">
           <AdminVisualCalendar
             reservations={list}
             selectedId={selected?.id}
@@ -223,62 +231,75 @@ export function AdminCalendarPanel() {
           />
 
           {list.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-rm-black-elevated p-8 text-center text-sm text-rm-gray-500">
-              Henüz rezervasyon yok. Takvimde bir güne tıklayın veya{" "}
-              <button
-                type="button"
-                onClick={() => openCreate()}
-                className="text-rm-champagne underline"
-              >
-                rezervasyon ekleyin
-              </button>
-              . WhatsApp teklifleri için{" "}
-              <a href="/admin?tab=leads" className="text-rm-champagne underline">
-                Gelen teklifler
-              </a>
-              .
-            </p>
+            <AdminEmptyState
+              icon={CalendarPlus}
+              title="Henüz onaylı rezervasyon yok"
+              description="Takvimde bir güne tıklayın veya 'Rezervasyon ekle' butonunu kullanın. WhatsApp ile gelen teklifleri onayladığınızda da takvime düşer."
+              action={
+                <button
+                  type="button"
+                  onClick={() => openCreate()}
+                  className="inline-flex items-center gap-2 rounded-full bg-rm-champagne px-5 py-2.5 text-[11px] font-bold tracking-[0.18em] text-rm-black uppercase transition-all hover:bg-rm-champagne-light"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  İlk rezervasyonu ekle
+                </button>
+              }
+            />
           ) : (
             byMonth.map(([monthKey, items]) => (
               <section
                 key={monthKey}
-                className="rounded-xl border border-white/10 bg-rm-black-elevated/50 p-5"
+                className="overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60"
               >
-                <h3 className="mb-4 font-display text-lg text-rm-champagne">
-                  {formatMonthKey(monthKey)}
-                </h3>
-                <ul className="space-y-2">
+                <div className="flex items-center justify-between border-b border-white/8 bg-white/[0.02] px-5 py-3">
+                  <h3 className="font-editorial text-lg text-rm-champagne">
+                    {formatMonthKey(monthKey)}
+                  </h3>
+                  <span className="rounded-full bg-rm-champagne/10 px-2.5 py-0.5 text-[10px] font-bold tracking-[0.18em] text-rm-champagne uppercase">
+                    {items.length} çift
+                  </span>
+                </div>
+                <ul className="divide-y divide-white/5 p-2">
                   {items
                     .sort(
                       (a, b) =>
                         new Date(a.customer.weddingDate).getTime() -
                         new Date(b.customer.weddingDate).getTime()
                     )
-                    .map((r) => (
-                      <li key={r.id}>
-                        <button
-                          type="button"
-                          onClick={() => selectReservation(r)}
-                          className={`w-full rounded-lg border px-4 py-3 text-left transition-all ${
-                            selected?.id === r.id
-                              ? "border-rm-champagne/50 bg-rm-champagne/10"
-                              : "border-white/10 hover:border-white/20"
-                          }`}
-                        >
-                          <div className="flex flex-wrap justify-between gap-2">
-                            <span className="font-medium text-rm-off-white">
-                              {r.customer.firstName} {r.customer.lastName}
-                            </span>
-                            <span className="text-xs text-rm-gray-500">
-                              {formatWeddingDateDisplay(r.customer.weddingDate)}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-sm text-rm-champagne">
-                            Kalan: {formatPrice(r.remainingAmount)}
-                          </p>
-                        </button>
-                      </li>
-                    ))}
+                    .map((r) => {
+                      const isActive = selected?.id === r.id;
+                      return (
+                        <li key={r.id}>
+                          <button
+                            type="button"
+                            onClick={() => selectReservation(r)}
+                            className={`group flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-all ${
+                              isActive
+                                ? "bg-rm-champagne/[0.12] shadow-[inset_0_0_0_1px_rgba(196,160,82,0.18)]"
+                                : "hover:bg-white/[0.03]"
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-rm-off-white">
+                                {r.customer.firstName} {r.customer.lastName}
+                              </p>
+                              <p className="mt-0.5 text-xs text-rm-gray-500">
+                                {formatWeddingDateDisplay(r.customer.weddingDate)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] tracking-[0.18em] text-rm-gray-500 uppercase">
+                                Kalan
+                              </p>
+                              <p className="text-sm font-semibold tabular-nums text-rm-champagne">
+                                {formatPrice(r.remainingAmount)}
+                              </p>
+                            </div>
+                          </button>
+                        </li>
+                      );
+                    })}
                 </ul>
               </section>
             ))
@@ -307,10 +328,11 @@ export function AdminCalendarPanel() {
               }}
             />
           ) : (
-            <div className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-rm-gray-500">
-              Takvimde bir güne tıklayın — yeni rezervasyon veya mevcut çift
-              detayı burada açılır.
-            </div>
+            <AdminEmptyState
+              icon={MousePointerClick}
+              title="Bir güne tıklayın"
+              description="Takvimde günü seçtiğinizde rezervasyon detayı veya yeni kayıt formu burada açılır."
+            />
           )}
         </div>
       </div>

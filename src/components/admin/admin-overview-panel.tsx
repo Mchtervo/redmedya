@@ -4,10 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CalendarCheck2,
+  Heart,
+  Inbox,
+  LayoutDashboard,
+  ShoppingBag,
+} from "lucide-react";
 import type { ReservationRecord } from "@/types/reservations";
 import type { PackageInsights } from "@/lib/package-insights";
 import { AdminVisualCalendar } from "@/components/admin/admin-visual-calendar";
+import { AdminPanelHeader, AdminEmptyState } from "@/components/admin/admin-panel-header";
 import { formatPrice } from "@/lib/utils";
 import { formatWeddingDateDisplay } from "@/lib/date-format";
 import { EASE_LUXURY } from "@/lib/animations";
@@ -58,75 +67,95 @@ export function AdminOverviewPanel({
       label: "Onaylı rezervasyon",
       value: reservations.length,
       tab: "calendar",
-    },
-    {
-      label: "Bekleyen teklif",
-      value: insights?.totals.abandoned ?? 0,
-      tab: "packages",
+      icon: CalendarCheck2,
+      accent: "text-emerald-300",
     },
     {
       label: "WhatsApp teklif",
       value: insights?.totals.leads ?? 0,
       tab: "leads",
+      icon: Inbox,
+      accent: "text-rm-champagne",
+    },
+    {
+      label: "Bekleyen sepet",
+      value: insights?.totals.abandoned ?? 0,
+      tab: "packages",
+      icon: ShoppingBag,
+      accent: "text-amber-300",
     },
     {
       label: "Sepet oluşturan",
       value: insights?.totals.draftsWithCart ?? 0,
       tab: "packages",
+      icon: Heart,
+      accent: "text-rose-300",
     },
   ];
 
   return (
     <div className="space-y-6">
-      <motion.header
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: EASE_LUXURY }}
-        className="flex flex-wrap items-end justify-between gap-6"
-      >
-        <div>
-          <p className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.3em] text-rm-champagne uppercase">
-            <Sparkles className="h-3 w-3" />
-            Genel bakış
-          </p>
-          <h1 className="mt-2 font-editorial text-3xl text-rm-off-white md:text-4xl">
-            Hoş geldiniz
-          </h1>
-        </div>
-        <Link
-          href="/paket-olustur"
-          target="_blank"
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-[11px] font-semibold tracking-[0.15em] text-rm-off-white uppercase backdrop-blur transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10"
-        >
-          Siteyi aç
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </motion.header>
+      <AdminPanelHeader
+        eyebrow="Genel bakış"
+        title="Hoş geldiniz"
+        description="Bugüne kadar gelen tüm teklifleri, onaylı rezervasyonları ve takvim doluluğunuzu tek ekrandan takip edin."
+        icon={LayoutDashboard}
+        meta={
+          loading
+            ? "Veriler yükleniyor…"
+            : `${reservations.length} rezervasyon · ${insights?.totals.leads ?? 0} teklif · ${insights?.totals.draftsWithCart ?? 0} sepet`
+        }
+        actions={
+          <Link
+            href="/paket-olustur"
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-full border border-rm-champagne/30 bg-rm-champagne/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-rm-champagne uppercase transition-colors hover:border-rm-champagne hover:bg-rm-champagne hover:text-rm-black"
+          >
+            Siteyi aç
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        }
+      />
 
       {loading ? (
-        <p className="text-sm text-rm-gray-500">Yükleniyor…</p>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-32 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40"
+            />
+          ))}
+        </div>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((s, i) => (
-              <motion.button
-                key={s.label}
-                type="button"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, ease: EASE_LUXURY }}
-                onClick={() => onNavigate(s.tab)}
-                className="group relative overflow-hidden rounded-xl border border-white/10 bg-rm-black-elevated/60 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated"
-              >
-                <p className="text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
-                  {s.label}
-                </p>
-                <p className="mt-3 font-editorial text-4xl tabular-nums text-rm-off-white transition-colors group-hover:text-rm-champagne">
-                  {s.value}
-                </p>
-                <ArrowRight className="absolute right-4 top-4 h-3.5 w-3.5 text-rm-gray-600 transition-colors group-hover:text-rm-champagne" />
-              </motion.button>
-            ))}
+            {stats.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <motion.button
+                  key={s.label}
+                  type="button"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, ease: EASE_LUXURY }}
+                  onClick={() => onNavigate(s.tab)}
+                  className="group relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-5 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated"
+                >
+                  <div className="flex items-start justify-between">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne">
+                      <Icon className="h-4 w-4" strokeWidth={1.6} />
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
+                  </div>
+                  <p className={`mt-4 font-editorial text-4xl tabular-nums ${s.accent}`}>
+                    {s.value}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase">
+                    {s.label}
+                  </p>
+                </motion.button>
+              );
+            })}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
@@ -143,46 +172,58 @@ export function AdminOverviewPanel({
               }}
             />
 
-            <div className="rounded-xl border border-white/10 bg-rm-black-elevated/60 p-6">
+            <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-6 backdrop-blur-sm">
               <div className="flex items-center justify-between border-b border-white/8 pb-4">
-                <h3 className="font-editorial text-lg text-rm-off-white">
-                  Yaklaşan düğünler
-                </h3>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
+                    <Heart className="h-4 w-4" strokeWidth={1.6} />
+                  </span>
+                  <h3 className="font-editorial text-xl text-rm-off-white">
+                    Yaklaşan düğünler
+                  </h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => onNavigate("calendar")}
-                  className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase hover:underline"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase hover:underline"
                 >
-                  Takvime git →
+                  Takvim
+                  <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
               {upcoming.length === 0 ? (
-                <p className="mt-8 text-center text-sm text-rm-gray-500">
-                  Henüz onaylı rezervasyon yok.
-                </p>
+                <AdminEmptyState
+                  icon={Heart}
+                  title="Henüz onaylı düğün yok"
+                  description="Yeni rezervasyon eklediğinizde burada listelenir."
+                />
               ) : (
-                <ul className="mt-4 divide-y divide-white/5">
+                <ul className="mt-2 divide-y divide-white/5">
                   {upcoming.map((r) => (
-                    <li
-                      key={r.id}
-                      className="flex items-center justify-between gap-3 py-3.5"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-rm-off-white">
-                          {formatCustomerName(r.customer)}
-                        </p>
-                        <p className="mt-0.5 text-xs text-rm-gray-500">
-                          {formatWeddingDateDisplay(r.customer.weddingDate)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
-                          Kalan
-                        </p>
-                        <p className="text-sm font-semibold tabular-nums text-rm-champagne">
-                          {formatPrice(r.remainingAmount)}
-                        </p>
-                      </div>
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate("calendar")}
+                        className="group flex w-full items-center justify-between gap-3 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-rm-off-white">
+                            {formatCustomerName(r.customer)}
+                          </p>
+                          <p className="mt-0.5 text-xs text-rm-gray-500">
+                            {formatWeddingDateDisplay(r.customer.weddingDate)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] tracking-wider text-rm-gray-500 uppercase">
+                            Kalan
+                          </p>
+                          <p className="text-sm font-semibold tabular-nums text-rm-champagne">
+                            {formatPrice(r.remainingAmount)}
+                          </p>
+                        </div>
+                        <ArrowRight className="ml-1 h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
+                      </button>
                     </li>
                   ))}
                 </ul>

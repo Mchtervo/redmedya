@@ -1,7 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import {
+  Database,
+  Download,
+  RefreshCw,
+  FileJson,
+  Inbox,
+  ShoppingBag,
+  CalendarCheck2,
+  Contact,
+  Settings2,
+  Layers,
+  Sparkles,
+} from "lucide-react";
+import {
+  AdminPanelHeader,
+  AdminSection,
+  AdminEmptyState,
+} from "@/components/admin/admin-panel-header";
 
 type ExportPayload = {
   exportedAt: string;
@@ -55,8 +72,26 @@ export function AdminDataPanel() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <p className="text-sm text-rm-gray-400">Tüm veriler yükleniyor…</p>;
-  if (error) return <p className="text-sm text-red-400">{error}</p>;
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <AdminPanelHeader eyebrow="Veriler" title="Dışa aktar" icon={Database} />
+        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <AdminPanelHeader eyebrow="Veriler" title="Dışa aktar" icon={Database} />
+        <AdminEmptyState
+          icon={Database}
+          title="Veri alınamadı"
+          description={error}
+        />
+      </div>
+    );
+  }
   if (!data) return null;
 
   const cards = [
@@ -66,103 +101,146 @@ export function AdminDataPanel() {
       sub: data.cms.updatedAt
         ? new Date(data.cms.updatedAt).toLocaleString("tr-TR")
         : "—",
+      icon: Layers,
     },
     {
       label: "Teklif (lead)",
       value: data.leads.length,
       sub: "WhatsApp ile gelen",
+      icon: Inbox,
     },
     {
       label: "Yarım sepet",
       value: data.packageDrafts.length,
       sub: "Teklif yapmayan dahil",
+      icon: ShoppingBag,
     },
     {
       label: "Rezervasyon",
       value: data.reservations.length,
       sub: "Onaylı",
+      icon: CalendarCheck2,
     },
     {
       label: "Rehber",
       value: data.rehber.length,
       sub: "Kişi kaydı",
+      icon: Contact,
     },
     {
       label: "Site ayarları",
-      value: "✓",
+      value: 1,
       sub: data.siteSettings.updatedAt
         ? new Date(data.siteSettings.updatedAt).toLocaleString("tr-TR")
         : "—",
+      icon: Settings2,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-sm border border-rm-champagne/20 bg-rm-champagne/5 p-4 text-sm text-rm-gray-300">
-        <p className="font-medium text-rm-off-white">Admin → site entegrasyonu</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-rm-gray-400">
-          <li>
-            <strong className="text-rm-champagne">Hizmetler & kupon</strong> kaydı{" "}
-            <code className="text-xs">data/cms.json</code> dosyasına yazılır; paket
-            sayfası ve fiyatlar buradan okunur.
+    <div className="space-y-5">
+      <AdminPanelHeader
+        eyebrow="Veriler"
+        title="Dışa aktar"
+        description="CMS, ayarlar, lead, sepet, rezervasyon ve rehber kayıtlarının tek seferlik tam yedeğini buradan JSON olarak indirebilirsiniz."
+        icon={Database}
+        meta={`Son çekim: ${new Date(data.exportedAt).toLocaleString("tr-TR")}`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={load}
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-rm-off-white uppercase transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10 hover:text-rm-champagne"
+            >
+              <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.8} />
+              Yenile
+            </button>
+            <button
+              type="button"
+              onClick={downloadJson}
+              className="inline-flex items-center gap-2 rounded-full bg-rm-champagne px-5 py-2 text-[11px] font-bold tracking-[0.18em] text-rm-black uppercase shadow-[0_6px_22px_rgba(196,160,82,0.3)] transition-all hover:-translate-y-0.5 hover:bg-rm-champagne-light"
+            >
+              <Download className="h-3.5 w-3.5" strokeWidth={2.2} />
+              JSON indir
+            </button>
+          </div>
+        }
+      />
+
+      <div className="rounded-2xl border border-rm-champagne/20 bg-rm-champagne/[0.04] p-5 text-sm text-rm-gray-300">
+        <p className="flex items-center gap-2 font-medium text-rm-off-white">
+          <FileJson className="h-4 w-4 text-rm-champagne" strokeWidth={1.6} />
+          Admin → site entegrasyonu
+        </p>
+        <ul className="mt-3 space-y-1.5 text-rm-gray-400">
+          <li className="flex items-start gap-2">
+            <span className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-rm-champagne/60" />
+            <span>
+              <strong className="text-rm-champagne">Hizmetler & kupon</strong> kaydı{" "}
+              <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-xs">data/cms.json</code>{" "}
+              dosyasına yazılır; paket sayfası ve fiyatlar buradan okunur.
+            </span>
           </li>
-          <li>
-            <strong className="text-rm-champagne">Kontenjan & sezon</strong>{" "}
-            <code className="text-xs">data/site-settings.json</code> — ana sayfa ve
-            tarih seçici.
+          <li className="flex items-start gap-2">
+            <span className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-rm-champagne/60" />
+            <span>
+              <strong className="text-rm-champagne">Kontenjan & sezon</strong>{" "}
+              <code className="rounded bg-white/[0.04] px-1.5 py-0.5 text-xs">data/site-settings.json</code>{" "}
+              ile ana sayfa ve tarih seçici beslenir.
+            </span>
           </li>
-          <li>
-            Sepet, teklif, rezervasyon ve rehber verileri aşağıdaki özetten veya
-            JSON indirmeden görülebilir.
+          <li className="flex items-start gap-2">
+            <span className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-rm-champagne/60" />
+            <span>Sepet, teklif, rezervasyon ve rehber verileri özet panelinde veya JSON dosyasında görülebilir.</span>
           </li>
         </ul>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={load} variant="outline" size="sm">
-          Verileri yenile
-        </Button>
-        <Button type="button" onClick={downloadJson} size="sm">
-          Tüm veriyi JSON indir
-        </Button>
-      </div>
-
-      <p className="text-xs text-rm-gray-500">
-        Son çekim: {new Date(data.exportedAt).toLocaleString("tr-TR")}
-      </p>
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-sm border border-white/10 bg-rm-black-elevated p-4"
-          >
-            <p className="text-2xl font-display text-rm-champagne">{c.value}</p>
-            <p className="mt-1 text-xs tracking-wider text-rm-gray-500 uppercase">
-              {c.label}
-            </p>
-            <p className="mt-1 text-[10px] text-rm-gray-600">{c.sub}</p>
-          </div>
-        ))}
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div
+              key={c.label}
+              className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-5 backdrop-blur-sm transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated"
+            >
+              <div className="flex items-start justify-between">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne">
+                  <Icon className="h-4 w-4" strokeWidth={1.6} />
+                </span>
+                <p className="font-editorial text-3xl tabular-nums text-rm-off-white">
+                  {c.value}
+                </p>
+              </div>
+              <p className="mt-4 text-[10px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase">
+                {c.label}
+              </p>
+              <p className="mt-0.5 text-[11px] text-rm-gray-600">{c.sub}</p>
+            </div>
+          );
+        })}
       </div>
 
       {data.insights?.serviceStats?.length > 0 && (
-        <section>
-          <h3 className="font-display text-lg text-rm-off-white">
-            Popüler hizmetler (sepet verisi)
-          </h3>
-          <p className="mt-1 text-xs text-rm-gray-500">
-            Sepet & istatistik sekmesindeki tablo ile aynı kaynak.
-          </p>
-          <ul className="mt-3 max-h-48 overflow-y-auto text-sm text-rm-gray-400">
+        <AdminSection
+          title="Popüler hizmetler"
+          description="Sepet & istatistik sekmesindeki tablo ile aynı kaynak."
+          icon={Sparkles}
+        >
+          <ul className="max-h-72 space-y-1 overflow-y-auto pr-1 text-sm text-rm-gray-400">
             {data.insights.serviceStats.slice(0, 15).map((s) => (
-              <li key={s.label} className="flex justify-between border-b border-white/5 py-1">
-                <span>{s.label}</span>
-                <span className="text-rm-champagne">{s.count}</span>
+              <li
+                key={s.label}
+                className="flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.02]"
+              >
+                <span className="text-rm-off-white">{s.label}</span>
+                <span className="rounded-full bg-rm-champagne/10 px-2.5 py-0.5 text-xs font-bold tabular-nums text-rm-champagne">
+                  {s.count}
+                </span>
               </li>
             ))}
           </ul>
-        </section>
+        </AdminSection>
       )}
     </div>
   );

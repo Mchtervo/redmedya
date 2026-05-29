@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Layers, Save, Check, Plus, Trash2, Star, Megaphone, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { SiteCmsConfig, ServiceItem, CouponConfig } from "@/types/cms";
 import { getDefaultCmsConfig } from "@/lib/cms-defaults";
 import { OCCASIONS } from "@/config/occasions";
+import { AdminPanelHeader } from "@/components/admin/admin-panel-header";
 
 type Tab = "services" | "bundles" | "coupons" | "campaign";
 
@@ -104,52 +106,71 @@ export function AdminCmsEditor({ embedded }: { embedded?: boolean } = {}) {
   };
 
   if (!config) {
-    return <p className="text-sm text-rm-gray-400">Yükleniyor…</p>;
+    return (
+      <div className="space-y-4">
+        <AdminPanelHeader eyebrow="Hizmetler" title="İçerik yönetimi" icon={Layers} />
+        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+      </div>
+    );
   }
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "services", label: "Hizmetler" },
-    { id: "bundles", label: "Paket indirimi" },
-    { id: "coupons", label: "Kuponlar" },
-    { id: "campaign", label: "Kampanya" },
+  const tabs: { id: Tab; label: string; icon: typeof Layers }[] = [
+    { id: "services", label: "Hizmetler", icon: Layers },
+    { id: "bundles", label: "Paket indirimi", icon: Star },
+    { id: "coupons", label: "Kuponlar", icon: Ticket },
+    { id: "campaign", label: "Kampanya", icon: Megaphone },
   ];
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        {!embedded && (
-          <div>
-            <h1 className="font-display text-3xl text-rm-off-white">İçerik yönetimi</h1>
-            <p className="mt-2 text-sm text-rm-gray-400">
-              Paket oluşturucu, kampanya şeridi ve kuponlar buradan güncellenir.
-            </p>
-          </div>
-        )}
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Kaydediliyor…" : "Tümünü kaydet"}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <AdminPanelHeader
+        eyebrow="Hizmetler"
+        title="İçerik yönetimi"
+        description="Paket oluşturucudaki hizmetler, otomatik indirim kademeleri, kupon kodları ve üst kampanya şeridi buradan güncellenir."
+        icon={Layers}
+        meta={`${config.services.length} hizmet · ${config.coupons.length} kupon`}
+        actions={
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-full bg-rm-champagne px-5 py-2.5 text-[11px] font-bold tracking-[0.18em] text-rm-black uppercase shadow-[0_6px_22px_rgba(196,160,82,0.3)] transition-all hover:-translate-y-0.5 hover:bg-rm-champagne-light disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Save className="h-3.5 w-3.5" strokeWidth={2.2} />
+            {saving ? "Kaydediliyor…" : "Tümünü kaydet"}
+          </button>
+        }
+      />
+
+      {!embedded && null}
+
       {message && (
-        <p className="mt-4 rounded-sm border border-rm-champagne/20 bg-rm-champagne/10 px-4 py-2 text-sm text-rm-champagne">
+        <p className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.08] px-4 py-3 text-sm font-medium text-emerald-300">
+          <Check className="h-4 w-4" strokeWidth={2.2} />
           {message}
         </p>
       )}
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded-sm px-4 py-2 text-xs tracking-wider uppercase transition-colors ${
-              tab === t.id
-                ? "bg-rm-champagne text-rm-black"
-                : "border border-white/10 text-rm-gray-400 hover:text-rm-off-white"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase transition-all ${
+                active
+                  ? "border-rm-champagne/40 bg-rm-champagne/15 text-rm-champagne shadow-[inset_0_0_0_1px_rgba(196,160,82,0.15)]"
+                  : "border-white/10 bg-white/[0.02] text-rm-gray-400 hover:border-white/20 hover:text-rm-off-white"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" strokeWidth={1.7} />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "services" && (

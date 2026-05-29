@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -45,21 +46,25 @@ export default function AdminLoginPage() {
       <div className="relative w-full max-w-md">
         <Link
           href="/"
-          className="mb-6 inline-flex items-center gap-1 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase transition-colors hover:text-rm-champagne"
+          className="mb-6 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.25em] text-rm-gray-500 uppercase transition-colors hover:text-rm-champagne"
         >
-          ← Siteye dön
+          <ArrowLeft className="h-3 w-3" />
+          Siteye dön
         </Link>
 
-        <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/80 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-10">
-          <div className="text-center">
+        <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/85 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl md:p-10">
+          <div className="flex flex-col items-center text-center">
+            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rm-champagne/30 bg-rm-champagne/10 text-rm-champagne shadow-[0_8px_30px_rgba(196,160,82,0.15)]">
+              <ShieldCheck className="h-6 w-6" strokeWidth={1.5} />
+            </span>
             <p className="text-[10px] font-semibold tracking-[0.4em] text-rm-champagne uppercase">
-              RED MEDYA
+              RED MEDYA · Admin
             </p>
             <h1 className="mt-3 font-editorial text-3xl text-rm-off-white">
               Yönetim girişi
             </h1>
-            <p className="mt-2 text-sm text-rm-gray-400">
-              Yalnızca yetkili kullanıcılar
+            <p className="mt-2 max-w-xs text-sm text-rm-gray-400">
+              Rezervasyon, teklif ve içerik panellerine erişmek için giriş yapın.
             </p>
           </div>
 
@@ -95,17 +100,24 @@ export default function AdminLoginPage() {
             )}
             <Button
               type="submit"
-              className="h-12 w-full rounded-xl"
+              className="h-12 w-full rounded-full shadow-[0_8px_30px_rgba(196,160,82,0.3)]"
               disabled={loading}
             >
-              {loading ? "Giriş yapılıyor…" : "Giriş yap →"}
+              {loading ? "Giriş yapılıyor…" : "Giriş yap"}
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.2} />
             </Button>
           </form>
 
           <p className="mt-6 text-center text-[10px] text-rm-gray-600">
             Üretimde{" "}
-            <code className="text-rm-gray-500">ADMIN_USERNAME</code> ve{" "}
-            <code className="text-rm-gray-500">ADMIN_PASSWORD</code> tanımlayın.
+            <code className="rounded bg-white/[0.04] px-1 py-0.5 text-rm-gray-500">
+              ADMIN_USERNAME
+            </code>{" "}
+            ve{" "}
+            <code className="rounded bg-white/[0.04] px-1 py-0.5 text-rm-gray-500">
+              ADMIN_PASSWORD
+            </code>{" "}
+            tanımlayın.
           </p>
         </div>
       </div>
