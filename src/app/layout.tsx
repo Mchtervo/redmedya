@@ -82,7 +82,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${cormorant.variable} ${instrument.variable} ${dmSans.variable}`}>
-      <body className="min-h-screen bg-rm-black pb-16 text-rm-off-white antialiased lg:pb-0">
+      <body className="min-h-screen overflow-x-clip bg-rm-black pb-16 text-rm-off-white antialiased lg:pb-0">
         <JsonLd />
         <MetaPixel />
         <GA4 />
