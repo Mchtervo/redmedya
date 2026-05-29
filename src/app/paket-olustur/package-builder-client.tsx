@@ -71,7 +71,7 @@ export function PackageBuilderClient() {
       <FilmGrain />
       <CampaignWelcomeModal />
       <Navbar />
-      <main className="relative min-h-screen overflow-x-hidden bg-rm-black pt-20 pb-40 sm:pt-24 md:pt-32 lg:pb-0">
+      <main className="relative min-h-screen overflow-x-clip bg-rm-black pt-20 pb-40 sm:pt-24 md:pt-32 lg:pb-0">
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-rm-champagne/[0.08] via-rm-champagne/[0.02] to-transparent"
           aria-hidden
