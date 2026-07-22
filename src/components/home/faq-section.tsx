@@ -4,25 +4,9 @@ import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
 import { SectionReveal } from "@/components/effects/section-reveal";
 import { cn } from "@/lib/utils";
+import { GENERAL_FAQ } from "@/config/faq";
 
-const faqs = [
-  {
-    q: "Paket fiyatları nasıl hesaplanıyor?",
-    a: "Seçtiğiniz her hizmet canlı olarak toplama eklenir. 2, 3 ve 5+ hizmet kademelerinde otomatik indirim uygulanır — progress bar üzerinden takip edebilirsiniz.",
-  },
-  {
-    q: "Teslimat süreleri?",
-    a: "Reels 10–14 gün, fotoğraf 4–6 hafta, tam cinematic film 8–12 hafta. Same Day Edit düğün günü akşamı.",
-  },
-  {
-    q: "Ankara dışı çekim?",
-    a: "Kapadokya, sahil ve özel destinasyonlar dahil. Şehir dışı hizmetini paket oluşturucudan ekleyin.",
-  },
-  {
-    q: "Ödeme ve kapora?",
-    a: "Kapora ile tarih rezervasyonu. Kalan tutar taksitlendirilebilir. Online ödeme altyapısı yakında.",
-  },
-];
+const faqs = GENERAL_FAQ;
 
 export function FaqSection() {
   return (

@@ -64,3 +64,15 @@ export async function getDraftBySessionId(
 ): Promise<PackageDraftRecord | undefined> {
   return (await readPackageDrafts()).find((d) => d.sessionId === sessionId);
 }
+
+/** §12 — "Arandı" işaretini güncelle */
+export async function markDraftCalled(
+  sessionId: string,
+  called: boolean
+): Promise<void> {
+  const list = await readPackageDrafts();
+  const idx = list.findIndex((d) => d.sessionId === sessionId);
+  if (idx < 0) return;
+  list[idx] = { ...list[idx], called, updatedAt: new Date().toISOString() };
+  await writeAll(list);
+}

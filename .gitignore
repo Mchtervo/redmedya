@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# müşteri verisi (PII) — commit edilmez; availability.json config olduğu için tutulur
+/data/leads.json
+/data/package-drafts.json
+/data/reservations.json
+
 # vercel
 .vercel
 
@@ -45,3 +50,7 @@ next-env.d.ts
 .vercel
 
 .commit-msg.tmp
+
+# runtime/PII veri (commit edilmez)
+/data/events.jsonl
+/data/rehber.json

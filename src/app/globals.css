@@ -305,3 +305,90 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* ═══ §9 Paket Oluştur animasyonları (yalnızca transform/opacity/box-shadow) ═══ */
+
+/* 1 & 8 — altın shimmer süpürmesi */
+.rm-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.rm-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.38) 50%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  animation: rm-shimmer-sweep 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes rm-shimmer-sweep {
+  to {
+    transform: translateX(130%);
+  }
+}
+/* P3 DRONE ribbon — 4 sn + KAMPANYA ile 1,3 sn faz farkı */
+.rm-shimmer-slow::after {
+  animation-duration: 4s;
+  animation-delay: 1.3s;
+}
+
+/* 1 — KAMPANYA rozeti nefes (scale 1→1.04→1, 3 sn) */
+@keyframes rm-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+.rm-breathe {
+  animation: rm-breathe 3s ease-in-out infinite;
+}
+
+/* 4 — kampanya bandı altın glow pulse (12px→24px, 4 sn) */
+@keyframes rm-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.55);
+  }
+}
+.rm-glow-pulse {
+  animation: rm-glow-pulse 4s ease-in-out infinite;
+}
+
+/* 3 — üstü çizili fiyat sonrası yeni fiyat 8px fade-up */
+@keyframes rm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rm-fade-up {
+  animation: rm-fade-up 0.4s ease-out 0.3s both;
+}
+
+/* 11 — prefers-reduced-motion: TÜM hareket kapalı */
+@media (prefers-reduced-motion: reduce) {
+  .rm-breathe,
+  .rm-glow-pulse,
+  .rm-fade-up {
+    animation: none !important;
+  }
+  .rm-shimmer::after {
+    display: none !important;
+  }
+}

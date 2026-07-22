@@ -1,0 +1,7 @@
+{
+  "2026-06": { "level": "busy", "message": "Haziran 2026 yoğun sezon — son birkaç hafta sonu kaldı." },
+  "2026-07": { "level": "busy", "message": "Temmuz 2026 yoğun sezon — hızlı davranın." },
+  "2026-08": { "level": "busy", "message": "Ağustos 2026 yoğun sezon — son birkaç hafta sonu için hızlı olun." },
+  "2026-09": { "level": "limited", "message": "Eylül 2026 için az yer kaldı." },
+  "2026-10": { "level": "limited", "message": "Ekim 2026 için sınırlı sayıda tarih var." }
+}

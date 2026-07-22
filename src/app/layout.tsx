@@ -7,6 +7,7 @@ import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { GA4 } from "@/components/analytics/ga4";
 import { JsonLd } from "@/components/seo/json-ld";
 import { SiteChrome } from "@/components/analytics/site-chrome";
+import { KvkkBanner } from "@/components/consent/kvkk-banner";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -88,6 +89,7 @@ export default function RootLayout({
         <GA4 />
         <SiteChrome />
         {children}
+        <KvkkBanner />
       </body>
     </html>
   );

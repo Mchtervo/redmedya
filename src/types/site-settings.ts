@@ -80,8 +80,10 @@ export type LeadRecord = {
   bundleDiscount?: number;
   couponDiscount?: number;
   couponCode?: string;
-  /** Paket oturumu — GA4 sunucu eşleştirme */
+  /** Paket oturumu — GA4 sunucu eşleştirme + journey tracking korelasyonu */
   sessionId?: string;
+  /** İlk dokunuş reklam kaynağı (§11) */
+  utm?: { utm_source?: string; utm_campaign?: string };
   /** _fbp / _fbc — admin onayında Meta CAPI eşleştirme */
   metaAttribution?: MetaAttribution;
 };

@@ -29,6 +29,9 @@ import { ReservationCta } from "@/components/home/reservation-cta";
 import { FaqSection } from "@/components/home/faq-section";
 import { ContactSection } from "@/components/home/contact-section";
 import { Footer } from "@/components/layout/footer";
+import { FaqJsonLd } from "@/components/seo/faq-jsonld";
+import { OfferJsonLd } from "@/components/seo/offer-jsonld";
+import { GENERAL_FAQ } from "@/config/faq";
 
 const CinematicGallery = dynamic(
   () =>
@@ -41,6 +44,8 @@ const CinematicGallery = dynamic(
 export default function HomePage() {
   return (
     <>
+      <FaqJsonLd items={GENERAL_FAQ} />
+      <OfferJsonLd />
       <IntroLoader />
       <Navbar />
       <main>

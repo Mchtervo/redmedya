@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
 
     const extra = body as {
       sessionId?: string;
+      utm?: LeadRecord["utm"];
       metaAttribution?: LeadRecord["metaAttribution"];
     };
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
       couponDiscount: body.couponDiscount,
       couponCode: body.couponCode,
       sessionId: extra.sessionId,
+      utm: extra.utm,
       metaAttribution: extra.metaAttribution,
     };
 

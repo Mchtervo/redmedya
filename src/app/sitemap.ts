@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/galeri",
     "/ankara-dugun-fotografcisi",
     "/dis-cekim-fiyatlari",
+    "/ankara-dis-cekim-mekanlari",
     "/ankara-gelin-alma-klibi",
     "/ankara-dugun-videosu",
     "/ankara-kina-cekimi",

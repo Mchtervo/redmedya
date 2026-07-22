@@ -8,12 +8,14 @@ import {
   Layers,
   Settings2,
   Database,
+  Activity,
 } from "lucide-react";
 
 export type AdminTabId =
   | "overview"
   | "calendar"
   | "leads"
+  | "journey"
   | "packages"
   | "rehber"
   | "cms"
@@ -45,6 +47,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "Teklifler",
     description: "WhatsApp talepleri",
     icon: Inbox,
+  },
+  {
+    id: "journey",
+    label: "Yolculuk",
+    description: "Funnel & yarım kalanlar",
+    icon: Activity,
   },
   {
     id: "packages",
@@ -83,7 +91,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
  * geniş menüyü 2-3 mantıklı bölüme ayırır.
  */
 export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
-  { title: "Operasyon", ids: ["overview", "calendar", "leads"] },
+  { title: "Operasyon", ids: ["overview", "calendar", "leads", "journey"] },
   { title: "Müşteri", ids: ["packages", "rehber"] },
   { title: "Ayarlar", ids: ["cms", "operations", "data"] },
 ];

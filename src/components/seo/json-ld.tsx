@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
 import { ANKARA_DISTRICTS } from "@/config/seo-keywords";
+import { PACKAGES } from "@/config/pricing";
 
 export function JsonLd() {
   const logoUrl = `${siteConfig.url}/logo-redmedya.png`;
@@ -32,35 +33,53 @@ export function JsonLd() {
       name,
       containedInPlace: { "@type": "AdministrativeArea", name: "Ankara" },
     })),
-    priceRange: "₺₺₺",
+    priceRange: `₺${Math.min(...PACKAGES.map((p) => p.price)).toLocaleString(
+      "tr-TR"
+    )}+`,
     telephone: `+${siteConfig.defaultPhone}`,
     email: siteConfig.email,
     sameAs: [siteConfig.instagram, siteConfig.dugun],
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        opens: "09:00",
+        closes: "21:00",
+      },
+    ],
     knowsAbout: [
       "düğün fotoğrafçılığı",
       "düğün videosu",
       "gelin alma çekimi",
       "dış çekim",
+      "plato çekimi",
       "sinematik klip",
       "drone düğün çekimi",
+      "düğün albümü",
     ],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Düğün fotoğraf ve video paketleri",
-      itemListElement: [
-        {
-          "@type": "Offer",
-          itemOffered: { "@type": "Service", name: "Ankara dış çekim fotoğraf ve video" },
+      itemListElement: PACKAGES.map((p) => ({
+        "@type": "Offer",
+        name: `${p.name} — ${p.subtitle}`,
+        price: p.price,
+        priceCurrency: "TRY",
+        url: `${siteConfig.url}/paket-olustur?p=${p.id}`,
+        itemOffered: {
+          "@type": "Service",
+          name: `${p.name} — ${p.subtitle}`,
+          serviceType: "Düğün fotoğraf ve video paketi",
         },
-        {
-          "@type": "Offer",
-          itemOffered: { "@type": "Service", name: "Gelin alma sinematik klip" },
-        },
-        {
-          "@type": "Offer",
-          itemOffered: { "@type": "Service", name: "Salon düğünü ve ilk dans klibi" },
-        },
-      ],
+      })),
     },
   };
 

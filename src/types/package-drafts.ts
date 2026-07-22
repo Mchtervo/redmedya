@@ -23,4 +23,6 @@ export type PackageDraftRecord = {
   /** WhatsApp / teklif butonuna tıklandı mı */
   whatsappClicked: boolean;
   leadId?: string;
+  /** §12 Yarım Kalanlar — admin "Arandı" işareti */
+  called?: boolean;
 };

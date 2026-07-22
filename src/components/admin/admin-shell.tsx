@@ -17,6 +17,7 @@ import { AdminOverviewPanel } from "@/components/admin/admin-overview-panel";
 import { AdminCmsEditor } from "@/components/admin/admin-cms-editor";
 import { AdminOperationsPanel } from "@/components/admin/admin-operations-panel";
 import { AdminLeadsPanel } from "@/components/admin/admin-leads-panel";
+import { AdminJourneyPanel } from "@/components/admin/admin-journey-panel";
 import { AdminCalendarPanel } from "@/components/admin/admin-calendar-panel";
 import { AdminRehberPanel } from "@/components/admin/admin-rehber-panel";
 import { AdminPackagePanel } from "@/components/admin/admin-package-panel";
@@ -83,6 +84,8 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
         return <AdminCalendarPanel />;
       case "leads":
         return <AdminLeadsPanel />;
+      case "journey":
+        return <AdminJourneyPanel />;
       case "packages":
         return <AdminPackagePanel />;
       case "rehber":
