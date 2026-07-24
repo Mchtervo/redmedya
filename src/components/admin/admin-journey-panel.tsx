@@ -29,17 +29,29 @@ type Abandoner = {
   lastStep: number;
 };
 type Summary = Record<string, number | string>;
+type VisitDaily = { day: string; total: number; utm: number };
 type JourneyData = {
   summary: Summary;
   sessions: SessionRow[];
   abandoners: Abandoner[];
+  visitsDaily: VisitDaily[];
   campaigns: string[];
 };
 
 const STEP_LABELS = ["", "Paket", "Özelleştir", "Tarih", "WhatsApp"];
 const TABS = ["Özet", "Funnel", "Oturumlar", "Yarım Kalanlar"] as const;
 
-function Card({ label, value, tone }: { label: string; value: string; tone?: "gold" | "green" }) {
+function Card({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: string;
+  tone?: "gold" | "green";
+  hint?: string;
+}) {
   return (
     <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
       <p className="text-[11px] tracking-wide text-rm-gray-500 uppercase">{label}</p>
@@ -51,6 +63,46 @@ function Card({ label, value, tone }: { label: string; value: string; tone?: "go
       >
         {value}
       </p>
+      {hint && <p className="mt-1 text-[10px] leading-snug text-rm-gray-500">{hint}</p>}
+    </div>
+  );
+}
+
+/** Son 14 günün anonim trafiği — toplam çubuk, reklamlı kısım altın */
+function VisitsSpark({ rows }: { rows: VisitDaily[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.total));
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <p className="text-[11px] tracking-wide text-rm-gray-500 uppercase">
+          Son 14 gün — sayfa açılışı
+        </p>
+        <p className="text-[10px] text-rm-gray-500">
+          <span className="text-rm-champagne">■</span> reklamlı (UTM)
+        </p>
+      </div>
+      <div className="flex h-24 items-end gap-1">
+        {rows.map((r) => (
+          <div
+            key={r.day}
+            className="flex flex-1 flex-col justify-end"
+            title={`${r.day} — ${r.total} açılış (${r.utm} reklamlı)`}
+          >
+            <div
+              className="w-full rounded-t-sm bg-white/15"
+              style={{ height: `${Math.round(((r.total - r.utm) / max) * 100)}%` }}
+            />
+            <div
+              className="w-full bg-rm-champagne"
+              style={{ height: `${Math.round((r.utm / max) * 100)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[10px] text-rm-gray-500">
+        <span>{rows[0]?.day.slice(5)}</span>
+        <span>{rows[rows.length - 1]?.day.slice(5)}</span>
+      </div>
     </div>
   );
 }
@@ -96,7 +148,7 @@ export function AdminJourneyPanel() {
         ))}
       </div>
 
-      {tab === "Özet" && <Ozet s={data.summary} />}
+      {tab === "Özet" && <Ozet s={data.summary} visitsDaily={data.visitsDaily ?? []} />}
       {tab === "Funnel" && <Funnel sessions={data.sessions} campaigns={data.campaigns} />}
       {tab === "Oturumlar" && <Sessions rows={data.sessions} />}
       {tab === "Yarım Kalanlar" && <Abandoners rows={data.abandoners} onChange={reload} />}
@@ -104,20 +156,64 @@ export function AdminJourneyPanel() {
   );
 }
 
-function Ozet({ s }: { s: Summary }) {
+function Ozet({ s, visitsDaily }: { s: Summary; visitsDaily: VisitDaily[] }) {
+  const today = Number(s.visitorsToday) || 0;
+  const utmToday = Number(s.utmToday) || 0;
+  const utmPct = today ? Math.round((utmToday / today) * 100) : 0;
+  const consented = Number(s.consentedToday) || 0;
+
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <Card label="Bugün ziyaretçi" value={String(s.visitorsToday)} />
-      <Card label="7 gün ziyaretçi" value={String(s.visitorsWeek)} />
-      <Card label="Kurulan paket" value={String(s.packagesBuilt)} />
-      <Card label="WhatsApp tık" value={String(s.whatsappClicks)} tone="green" />
-      <Card label="Dönüşüm oranı" value={`%${s.conversionRate}`} tone="gold" />
-      <Card label="Ort. sepet" value={formatPrice(Number(s.avgCart))} />
-      <Card label="Upsell kabul" value={`%${s.upsellAcceptRate}`} />
-      <Card label="Son fırsat kurtarma" value={`%${s.lastchanceRecoveryRate}`} />
-      <Card label="En çok paket" value={`Paket ${s.topPackage}`} tone="gold" />
-      <Card label="En çok plato" value={String(s.topPlato)} />
-      <Card label="En çok ekstra" value={String(s.topAddon)} />
+    <div className="space-y-4">
+      {/* GERÇEK TRAFİK — çerez onayından bağımsız anonim sayaç */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card
+          label="Bugün ziyaret"
+          value={String(today)}
+          hint="Sayfa açılışı — çerez onayı gerekmez"
+        />
+        <Card
+          label="Bugün reklamlı (UTM)"
+          value={String(utmToday)}
+          tone="gold"
+          hint={today ? `Trafiğin %${utmPct}'i reklamdan` : "Henüz veri yok"}
+        />
+        <Card label="7 gün ziyaret" value={String(s.visitorsWeek)} />
+        <Card
+          label="7 gün reklamlı"
+          value={String(s.utmWeek)}
+          tone="gold"
+          hint={s.topVisitCampaign !== "—" ? `En çok: ${s.topVisitCampaign}` : undefined}
+        />
+      </div>
+
+      <VisitsSpark rows={visitsDaily} />
+
+      {/* Rızaya bağlı ölçümler — kaç kişiyi detaylı izleyebildiğimiz */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card
+          label="Onaylı oturum (bugün)"
+          value={String(consented)}
+          hint={
+            today
+              ? `Ziyaretin %${Math.round((consented / today) * 100)}'i çerez onayı verdi`
+              : "Journey detayı yalnızca bunlarda var"
+          }
+        />
+        <Card label="Kurulan paket" value={String(s.packagesBuilt)} />
+        <Card label="WhatsApp tık" value={String(s.whatsappClicks)} tone="green" />
+        <Card
+          label="Dönüşüm oranı"
+          value={`%${s.conversionRate}`}
+          tone="gold"
+          hint="Onaylı oturumlar üzerinden"
+        />
+        <Card label="Ort. sepet" value={formatPrice(Number(s.avgCart))} />
+        <Card label="Upsell kabul" value={`%${s.upsellAcceptRate}`} />
+        <Card label="Son fırsat kurtarma" value={`%${s.lastchanceRecoveryRate}`} />
+        <Card label="En çok paket" value={`Paket ${s.topPackage}`} tone="gold" />
+        <Card label="En çok plato" value={String(s.topPlato)} />
+        <Card label="En çok ekstra" value={String(s.topAddon)} />
+      </div>
     </div>
   );
 }

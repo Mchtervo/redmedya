@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { COOKIE_NAME, verifyAdminSessionToken } from "@/lib/admin-session";
 import { readEvents, type TrackedEvent } from "@/lib/track/events-store";
 import { readPackageDrafts } from "@/lib/package-drafts-store";
+import { summarizeVisits } from "@/lib/track/visits-store";
 
 /**
  * §12 — Admin yolculuk analitiği. Auth zorunlu.
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const events = await readEvents(8000);
+  const visits = await summarizeVisits();
   const sessionParam = request.nextUrl.searchParams.get("session");
 
   // Tek oturum → kronolojik olaylar
@@ -132,8 +134,19 @@ export async function GET(request: NextRequest) {
     : 0;
 
   const summary = {
-    visitorsToday: sessions.filter((s) => inRange(s.firstTs, dayAgo)).length,
-    visitorsWeek: sessions.filter((s) => inRange(s.firstTs, weekAgo)).length,
+    /**
+     * GERÇEK TRAFİK — anonim sayaçtan (çerez onayı beklemez, kişisel veri yok).
+     * Panel artık yalnızca onay verenleri değil, tüm ziyaretleri gösterir.
+     */
+    visitorsToday: visits.today,
+    visitorsWeek: visits.week,
+    /** Bunlardan reklamla (UTM'li) gelenler — reklam trafiği net görünsün */
+    utmToday: visits.todayUtm,
+    utmWeek: visits.weekUtm,
+    topVisitCampaign: visits.topCampaign,
+    /** Journey detayı hâlâ RIZAYA bağlı; kıyas için onaylı oturum sayısı */
+    consentedToday: sessions.filter((s) => inRange(s.firstTs, dayAgo)).length,
+    consentedWeek: sessions.filter((s) => inRange(s.firstTs, weekAgo)).length,
     packagesBuilt: count("package_selected"),
     whatsappClicks: count("whatsapp_clicked"),
     conversionRate: pvSessions.length
@@ -174,6 +187,8 @@ export async function GET(request: NextRequest) {
         new Date(b.lastTs ?? 0).getTime() - new Date(a.lastTs ?? 0).getTime()
     ),
     abandoners,
+    /** Son 14 günün anonim trafiği (toplam + reklamlı) */
+    visitsDaily: visits.daily,
     campaigns: [
       ...new Set(sessions.map((s) => s.utm_campaign).filter(Boolean)),
     ] as string[],

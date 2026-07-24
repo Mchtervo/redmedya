@@ -55,3 +55,6 @@ next-env.d.ts
 
 # Rezervasyon otomatik yedekleri (canli veri, repoya girmez)
 /data/backups/
+
+# Anonim ziyaret sayaci (canli veri, runtime uretilir)
+/data/visits.json

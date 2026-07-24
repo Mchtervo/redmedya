@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { MetaPageTracker } from "@/components/analytics/meta-page-tracker";
 import { GA4PageTracker } from "@/components/analytics/ga4-page-tracker";
+import { VisitCounter } from "@/components/analytics/visit-counter";
 
 const MobileBottomBar = dynamic(
   () =>
@@ -31,6 +32,8 @@ export function SiteChrome() {
     <>
       <MetaPageTracker />
       <GA4PageTracker />
+      {/* Anonim sayaç — çerez onayı beklemez (kişisel veri işlemez) */}
+      <VisitCounter />
       <MobileBottomBar />
       {!hideSticky && (
         <div className="hidden lg:block">

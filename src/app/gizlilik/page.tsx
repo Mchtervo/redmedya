@@ -61,6 +61,15 @@ export default function GizlilikPage() {
                 <strong> asla </strong> dahil edilmez; yalnızca hangi alanın
                 doldurulduğu bilgisi tutulur. IP adresi saklanmaz.
               </p>
+              <p className="mt-2">
+                Bunlardan bağımsız olarak, sayfaların günde kaç kez açıldığını
+                gösteren bir <strong>toplam sayaç</strong> tutulur. Bu sayaç kişisel
+                veri işlemez: çerez kullanılmaz, oturum kimliği, IP adresi veya
+                cihaz parmak izi kaydedilmez; yalnızca gün bazında toplam sayı ve
+                varsa reklam kampanyası etiketi (utm) saklanır. Bu kayıtlardan bir
+                ziyaretçinin kimliğine ulaşmak <strong>teknik olarak mümkün
+                değildir</strong>, bu nedenle çerez onayına bağlı değildir.
+              </p>
             </section>
 
             <section>
