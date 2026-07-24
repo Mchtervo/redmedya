@@ -65,8 +65,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Sessiz düşme YOK — sunucu loglarında (Hostinger "Çalışma zamanı günlükleri") görünsün
+    if (result.skipped) {
+      console.error(
+        "[CAPI] ATLANDI: META_CAPI_ACCESS_TOKEN sunucu ortamında TANIMLI DEĞİL. " +
+          "Hostinger → Ortam değişkenleri'ne ekleyip 'Değişiklikleri uygula' + 'Yeniden Dağıt' yapın."
+      );
+    } else if (!result.ok) {
+      console.error(`[CAPI] Meta reddetti (${body.eventName}):`, result.error);
+    }
+
     return NextResponse.json(result);
-  } catch {
+  } catch (e) {
+    console.error("[CAPI] route hatası:", e);
     return NextResponse.json(
       { ok: false, error: "CAPI isteği başarısız" },
       { status: 500 }

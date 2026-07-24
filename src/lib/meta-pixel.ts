@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
 import { gtagEvent } from "@/lib/gtag";
+import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 
 export type MetaPixelEvent =
   | "ViewContent"
@@ -21,10 +22,82 @@ declare global {
     fbq?: (
       action: string,
       event: string,
-      params?: EventParams
+      params?: EventParams,
+      /** Meta dedup: eventID BURADA olmalı, params içinde DEĞİL */
+      options?: { eventID?: string }
     ) => void;
     _fbq?: unknown;
   }
+}
+
+export type PixelCustomerData = {
+  name?: string;
+  phone?: string;
+  email?: string;
+};
+
+function newEventId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `evt_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+}
+
+function splitName(name?: string) {
+  const clean = name?.trim();
+  if (!clean) return {};
+  const parts = clean.split(/\s+/);
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") || undefined };
+}
+
+/**
+ * Sunucu tarafı (CAPI) aynası — tarayıcıyla AYNI eventID ile /api/meta-events'e gider.
+ * Hata YUTULMAZ: konsola yazılır (sessiz düşme sorunu için).
+ */
+function mirrorToCapi(
+  eventName: string,
+  eventId: string,
+  params: EventParams,
+  customer?: PixelCustomerData
+): void {
+  if (typeof window === "undefined") return;
+  const attr = readMetaAttributionFromDocument();
+  const { firstName, lastName } = splitName(customer?.name);
+  fetch("/api/meta-events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    keepalive: true,
+    body: JSON.stringify({
+      eventName,
+      eventId,
+      eventSourceUrl: window.location.href,
+      value: typeof params.value === "number" ? params.value : undefined,
+      currency: "TRY",
+      contentName:
+        typeof params.content_name === "string" ? params.content_name : undefined,
+      customer: {
+        phone: customer?.phone,
+        email: customer?.email,
+        firstName,
+        lastName,
+      },
+      fbp: attr.fbp,
+      fbc: attr.fbc,
+    }),
+  })
+    .then(async (res) => {
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; skipped?: boolean; error?: string }
+        | null;
+      if (!data?.ok) {
+        // Sessiz düşme YOK — sebebi görünür olsun
+        console.warn(
+          `[CAPI] ${eventName} sunucuya gönderilemedi:`,
+          data?.skipped
+            ? "META_CAPI_ACCESS_TOKEN sunucuda TANIMLI DEĞİL (env eksik)"
+            : (data?.error ?? `HTTP ${res.status}`)
+        );
+      }
+    })
+    .catch((e) => console.warn(`[CAPI] ${eventName} istek hatası:`, e));
 }
 
 /**
@@ -48,7 +121,9 @@ const META_TO_GA4_EVENT: Record<MetaPixelEvent, string> = {
 
 export function trackMetaEvent(
   event: MetaPixelEvent,
-  params?: EventParams
+  params?: EventParams,
+  /** Lead/Contact gibi olaylarda CAPI eşleştirme kalitesi için (hash'lenir) */
+  customer?: PixelCustomerData
 ): void {
   if (typeof window === "undefined") return;
 
@@ -60,13 +135,20 @@ export function trackMetaEvent(
 
   if (params?.value != null) payload.value = Number(params.value) || 0;
 
+  // Tarayıcı + sunucu AYNI id'yi kullanır (dedup). Dışarıdan verilmişse onu kullan.
+  const eventId =
+    typeof params?.event_id === "string" ? params.event_id : newEventId();
+  delete payload.event_id; // params içinde gitmesin — dedup 4. argümanla olur
+
   /** Meta Pixel — sadece Pixel ID tanımlıysa */
   if (siteConfig.metaPixelId) {
     try {
-      window.fbq?.("track", event, payload);
-    } catch {
-      // silent in production
+      window.fbq?.("track", event, payload, { eventID: eventId });
+    } catch (e) {
+      console.warn("[Pixel] fbq hatası:", e);
     }
+    /** Sunucu aynası (CAPI) — HER event için, aynı eventID */
+    mirrorToCapi(event, eventId, payload, customer);
   }
 
   /** GA4 paralel gönderim — Meta isimlerini GA4 standardına çevir */
@@ -83,16 +165,25 @@ export function trackMetaEvent(
 
 export function trackCustomEvent(
   event: string,
-  params?: EventParams
+  params?: EventParams,
+  customer?: PixelCustomerData
 ): void {
   if (typeof window === "undefined") return;
 
-  /** Meta Pixel custom event */
+  const eventId =
+    typeof params?.event_id === "string" ? params.event_id : newEventId();
+  const clean: EventParams = { ...params };
+  delete clean.event_id;
+
+  /** Meta Pixel custom event — eventID 4. argümanda (dedup) */
   try {
-    window.fbq?.("trackCustom", event, params);
-  } catch {
-    // silent
+    window.fbq?.("trackCustom", event, clean, { eventID: eventId });
+  } catch (e) {
+    console.warn("[Pixel] fbq custom hatası:", e);
   }
+
+  /** Sunucu aynası (CAPI) — aynı eventID */
+  mirrorToCapi(event, eventId, clean, customer);
 
   /** GA4 — özel olay (snake_case'e dönüştür) */
   const ga4Name = event
