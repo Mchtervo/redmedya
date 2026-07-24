@@ -178,16 +178,36 @@ function PackageCard({ pkg }: { pkg: PackageDef }) {
 }
 
 function PlatoSelector() {
-  const { state, selectPlato } = useWizard();
+  const { state, selectPlato, warning } = useWizard();
+  const missing = state.packageId != null && state.plato == null;
 
   return (
-    <section className="mt-12">
+    <section id="plato-secimi" className="mt-12 scroll-mt-24">
       <h2 className="font-editorial text-2xl text-rm-off-white sm:text-3xl">
         {COPY.step1.platoHeading}
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-rm-gray-400">
         {COPY.step1.platoSubtitle}
       </p>
+
+      {/* Eksik seçim uyarısı — Devam'a basınca vurgulu */}
+      {missing && (
+        <div
+          className={cn(
+            "mt-4 flex items-start gap-2.5 rounded-lg border p-3.5 text-sm transition-colors",
+            warning === "plato"
+              ? "border-red-500/50 bg-red-500/10 text-red-300"
+              : "border-rm-champagne/30 bg-rm-champagne/[0.06] text-rm-champagne"
+          )}
+          role="alert"
+        >
+          <span className="mt-0.5 shrink-0">⚠️</span>
+          <span>
+            <strong>Lütfen bir plato seçin.</strong> Devam edebilmek için dış çekim
+            mekânınızı seçmeniz gerekiyor — anlaşmalı platolar ücretsiz.
+          </span>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {PLATO_OPTIONS.map((opt) => {
@@ -276,7 +296,10 @@ export function Step1PackagePlato() {
     <div>
       <h2 className="sr-only">{COPY.step1.packagesHeading}</h2>
       <FreePlatoUrgencyCard />
-      <div className="grid gap-6 pt-4 md:grid-cols-3 md:items-start md:gap-4 lg:gap-6">
+      <div
+        id="paket-secimi"
+        className="grid scroll-mt-24 gap-6 pt-4 md:grid-cols-3 md:items-start md:gap-4 lg:gap-6"
+      >
         {PACKAGES.map((pkg) => (
           <PackageCard key={pkg.id} pkg={pkg} />
         ))}

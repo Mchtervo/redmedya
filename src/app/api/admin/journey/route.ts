@@ -46,6 +46,31 @@ export async function GET(request: NextRequest) {
     bySession.set(e.session_id, arr);
   }
 
+  // Oturum → KİŞİ eşlemesi (taslaktaki ad/telefon) — "kim bastı" görünsün
+  const drafts = await readPackageDrafts();
+  const personBySession = new Map<string, { name: string; phone: string }>();
+  for (const d of drafts) {
+    const name = [d.customer.firstName, d.customer.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    if (name || d.customer.phone?.trim()) {
+      personBySession.set(d.sessionId, {
+        name,
+        phone: d.customer.phone?.trim() ?? "",
+      });
+    }
+  }
+
+  /** Oturumun sepet tutarı = tutar taşıyan SON olay (cart_updated / whatsapp_clicked / form_*) */
+  const totalOf = (evs: TrackedEvent[]): number => {
+    for (let i = evs.length - 1; i >= 0; i--) {
+      const t = Number((evs[i].payload as { total?: number }).total);
+      if (Number.isFinite(t) && t > 0) return t;
+    }
+    return 0;
+  };
+
   const sessions = [...bySession.entries()].map(([id, evs]) => {
     const sorted = evs.sort(
       (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
@@ -57,7 +82,9 @@ export async function GET(request: NextRequest) {
       lastTs: sorted[sorted.length - 1]?.ts ?? null,
       maxStep: maxStepOf(sorted),
       whatsapp: Boolean(wa),
-      total: wa ? Number((wa.payload as { total?: number }).total) || 0 : 0,
+      total: totalOf(sorted),
+      name: personBySession.get(id)?.name ?? "",
+      phone: personBySession.get(id)?.phone ?? "",
       utm_source: sorted[0]?.utm_source ?? null,
       utm_campaign: sorted[0]?.utm_campaign ?? null,
       device: sorted[0]?.device ?? null,
@@ -98,8 +125,10 @@ export async function GET(request: NextRequest) {
   const pvSessions = sessions.filter((s) =>
     bySession.get(s.session_id)?.some((e) => e.event_type === "page_view")
   );
-  const avgCart = waSessions.length
-    ? Math.round(waSessions.reduce((a, s) => a + s.total, 0) / waSessions.length)
+  // Ort. sepet — sepet kuran TÜM oturumlar (dönüşüm şart değil)
+  const cartSessions = sessions.filter((s) => s.total > 0);
+  const avgCart = cartSessions.length
+    ? Math.round(cartSessions.reduce((a, s) => a + s.total, 0) / cartSessions.length)
     : 0;
 
   const summary = {
@@ -123,7 +152,6 @@ export async function GET(request: NextRequest) {
   };
 
   // Yarım Kalanlar — telefon bırakıp WhatsApp'a BASMAYAN taslaklar
-  const drafts = await readPackageDrafts();
   const abandoners = drafts
     .filter((d) => !d.whatsappClicked && d.customer.phone?.trim())
     .map((d) => ({

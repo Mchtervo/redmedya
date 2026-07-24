@@ -71,12 +71,11 @@ export function StickyBar() {
         <button
           type="button"
           onClick={next}
-          disabled={!canContinue}
           className={cn(
-            "btn-luxury inline-flex h-12 items-center gap-2 rounded-sm px-6 text-sm font-semibold tracking-wide uppercase transition-all sm:px-8",
+            "btn-luxury inline-flex h-12 shrink-0 items-center gap-1.5 rounded-sm px-4 text-xs font-semibold tracking-wide uppercase transition-all sm:gap-2 sm:px-8 sm:text-sm",
             canContinue
               ? "bg-rm-champagne text-rm-black hover:bg-rm-champagne-light shadow-[0_0_30px_rgba(196,160,82,0.25)]"
-              : "cursor-not-allowed bg-white/5 text-rm-gray-500"
+              : "bg-white/10 text-rm-gray-300 hover:bg-white/15"
           )}
         >
           {COPY.cta.next.replace("→", "")}

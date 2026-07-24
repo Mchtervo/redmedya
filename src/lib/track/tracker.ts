@@ -19,6 +19,7 @@ export type TrackEventType =
   | "step_back"
   | "package_selected"
   | "plato_selected"
+  | "cart_updated"
   | "addon_added"
   | "addon_removed"
   | "upsell_shown"

@@ -17,11 +17,8 @@ export const PRICING = {
   // eşit tutuluyor ki sayfada çelişki olmasın.
   ADDON_DRONE: 4000, // etkinlik başına
   ADDON_OMUZ: 6500, // etkinlik başına
-  ADDON_SALON_FULL: 6000, // salon girişinden after party'ye sinematik klip — indirimli net fiyat
-  SALON_FULL_LIST: 7200, // üstü çizili list fiyatı = 6.000 + %20 (1.200) → belirgin indirim
-  // P3'te salon girişi & ilk dans klibi ZATEN dahil → Full'e sadece "yükseltme farkı"
-  // ödenir (mükerrer ödeme olmasın). Girişten after party'ye uzatma bedeli.
-  SALON_FULL_UPGRADE_P3: 2500,
+  ADDON_SALON_FULL: 6000, // Mücahit: indirimli net satış — HER pakette 6.000
+  SALON_FULL_LIST: 8500, // üstü çizili → kazanç 2.500 (8.500 − 6.000)
   ADDON_FOTO_EKEVENT: 5000, // ek etkinlik fotoğraf (kına/nişan/nikah/salon)
   ADDON_CANVAS_5070: 1000,
   ADDON_CANVAS_70100: 1500,
@@ -341,23 +338,18 @@ export function getAddon(id: AddonId): AddonDef {
 export type ResolvedAddonPricing = {
   price: number;
   originalPrice?: number;
-  /** P3'te Salon Full "yükseltme farkı" olarak fiyatlanıyor */
   isUpgrade: boolean;
 };
 
 /**
- * Addon fiyatını pakete göre çözer.
- * P3'te "Salon Full Sinematik" salon girişi & ilk dans ZATEN dahil olduğundan
- * tam fiyat değil, yalnızca "yükseltme farkı" (SALON_FULL_UPGRADE_P3) ödenir —
- * mükerrer ödeme olmaz.
+ * Addon fiyatını çözer. Salon Full HER pakette aynı: ~8.500 → 6.000 (kazanç 2.500).
+ * (P3'e özel "yükseltme farkı" indirimi kaldırıldı — Mücahit kararı.)
  */
 export function resolveAddonPricing(
   addon: AddonDef,
   packageId: PackageId | null
 ): ResolvedAddonPricing {
-  if (addon.id === "salon-full" && packageId === 3) {
-    return { price: PRICING.SALON_FULL_UPGRADE_P3, isUpgrade: true };
-  }
+  void packageId;
   return {
     price: addon.price,
     originalPrice: addon.originalPrice,

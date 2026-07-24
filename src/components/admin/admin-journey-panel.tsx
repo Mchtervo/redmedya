@@ -10,6 +10,8 @@ type SessionRow = {
   maxStep: number;
   whatsapp: boolean;
   total: number;
+  name: string;
+  phone: string;
   utm_source: string | null;
   utm_campaign: string | null;
   device: string | null;
@@ -221,7 +223,7 @@ function Sessions({ rows }: { rows: SessionRow[] }) {
       <table className="w-full min-w-[560px] text-sm">
         <thead>
           <tr className="border-b border-white/8 text-left text-[11px] tracking-wide text-rm-gray-500 uppercase">
-            <th className="py-2 pr-3">Oturum</th>
+            <th className="py-2 pr-3">Kişi / Oturum</th>
             <th className="py-2 pr-3">Son adım</th>
             <th className="py-2 pr-3">Tutar</th>
             <th className="py-2 pr-3">Kampanya</th>
@@ -236,8 +238,25 @@ function Sessions({ rows }: { rows: SessionRow[] }) {
                 onClick={() => openSession(s.session_id)}
                 className="cursor-pointer border-b border-white/5 hover:bg-white/[0.03]"
               >
-                <td className="py-2 pr-3 font-mono text-[11px] text-rm-gray-400">
-                  {s.session_id.slice(-8)}
+                <td className="py-2 pr-3">
+                  {s.name || s.phone ? (
+                    <span className="block">
+                      <span className="block text-rm-off-white">{s.name || "—"}</span>
+                      {s.phone && (
+                        <a
+                          href={`tel:${s.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="block text-[11px] text-rm-champagne hover:underline"
+                        >
+                          {s.phone}
+                        </a>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[11px] text-rm-gray-500">
+                      anonim · {s.session_id.slice(-8)}
+                    </span>
+                  )}
                 </td>
                 <td className="py-2 pr-3">
                   <span

@@ -47,6 +47,8 @@ type WizardContextValue = {
   totals: TotalResult;
   /** §9.10 adım geçiş yönü: 1 ileri, -1 geri */
   dir: number;
+  /** Eksik seçim uyarısı (Devam'a basıldığında) */
+  warning: null | "package" | "plato";
   hasAddon: (id: AddonId) => boolean;
   addonQty: (id: AddonId) => number;
   goToStep: (step: WizardStep) => void;
@@ -184,6 +186,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   ]);
 
   const [dir, setDir] = useState(1);
+  const [warning, setWarning] = useState<null | "package" | "plato">(null);
   const goToStep = useCallback(
     (step: WizardStep) => {
       if (step === state.step) return;
@@ -200,13 +203,31 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   );
 
   const next = useCallback(() => {
-    if (state.step === 1 && state.packageId != null) {
+    if (state.step === 1) {
+      // Eksik seçim → uyar + ilgili bölüme kaydır (buton ölü kalmasın)
+      if (state.packageId == null) {
+        setWarning("package");
+        document.getElementById("paket-secimi")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return;
+      }
+      if (state.plato == null) {
+        setWarning("plato");
+        document.getElementById("plato-secimi")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return;
+      }
+      setWarning(null);
       pixelInitiateCheckout(totals.total);
       goToStep(2);
     } else if (state.step === 2) {
       goToStep(3);
     }
-  }, [state.step, state.packageId, totals.total, goToStep]);
+  }, [state.step, state.packageId, state.plato, totals.total, goToStep]);
 
   const back = useCallback(() => {
     if (state.step > 1) goToStep((state.step - 1) as WizardStep);
@@ -215,12 +236,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const selectPackage = useCallback((id: PackageId) => {
     const pkg = getPackage(id);
     dispatch({ type: "SELECT_PACKAGE", packageId: id });
+    setWarning(null);
     pixelSelectPackage(`${pkg.name} — ${pkg.subtitle}`, pkg.price);
     track("package_selected", { package_id: id, price: pkg.price });
   }, []);
 
   const selectPlato = useCallback((plato: PlatoId) => {
     dispatch({ type: "SELECT_PLATO", plato });
+    setWarning(null);
     track("plato_selected", { plato });
   }, []);
 
@@ -268,19 +291,36 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   // §11 — form tracking: DEĞER asla loglanmaz, yalnızca alan adı
   const formStartedRef = useRef(false);
   const filledFieldsRef = useRef<Set<string>>(new Set());
+  const dateCheckoutFiredRef = useRef(false);
+  /** Callback'lerde güncel sepet toplamı (dep churn olmadan) */
+  const totalRef = useRef(0);
+  useEffect(() => {
+    totalRef.current = totals.total;
+  }, [totals.total]);
+
   const setField = useCallback(
     (field: "date" | "name" | "phone" | "note", value: string) => {
       dispatch({ type: "SET_FIELD", field, value });
       if (!formStartedRef.current) {
         formStartedRef.current = true;
-        track("form_started", {});
+        track("form_started", { total: totalRef.current });
       }
       if (field === "date") {
         const m = /^(\d{4})-(\d{2})/.exec(value);
-        if (m) track("date_selected", { month: `${m[1]}-${m[2]}` }); // yalnızca AY
+        if (m) {
+          track("date_selected", {
+            month: `${m[1]}-${m[2]}`, // yalnızca AY
+            total: totalRef.current,
+          });
+          // Tarih seçimi güçlü niyet sinyali → InitiateCheckout (piksel + CAPI), tek sefer
+          if (!dateCheckoutFiredRef.current) {
+            dateCheckoutFiredRef.current = true;
+            pixelInitiateCheckout(totalRef.current);
+          }
+        }
       } else if (value.trim() && !filledFieldsRef.current.has(field)) {
         filledFieldsRef.current.add(field);
-        track("form_field_filled", { field }); // ⚠️ DEĞER YOK
+        track("form_field_filled", { field, total: totalRef.current }); // ⚠️ DEĞER YOK
       }
     },
     []
@@ -295,19 +335,36 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Adım 3'e gelip form dolunca Lead (isim + tarih dolduğunda tek sefer)
+  // Adım 3'te form dolunca Lead — tarih + (isim VEYA telefon) yeterli, tek sefer
   const leadFiredRef = useRef(false);
   useEffect(() => {
     if (
       state.step === 3 &&
-      state.name.trim() &&
       state.date &&
+      (state.name.trim() || state.phone.trim()) &&
       !leadFiredRef.current
     ) {
       leadFiredRef.current = true;
       pixelLead(totals.total, { name: state.name, phone: state.phone });
     }
   }, [state.step, state.name, state.phone, state.date, totals.total]);
+
+  // Sepet tutarını olaylara yaz — admin "Ort. Sepet" bunu okur (dönüşüm olmasa da)
+  const lastTrackedTotalRef = useRef(-1);
+  useEffect(() => {
+    if (state.packageId == null) return;
+    if (totals.total === lastTrackedTotalRef.current) return;
+    const t = setTimeout(() => {
+      lastTrackedTotalRef.current = totals.total;
+      track("cart_updated", {
+        total: totals.total,
+        savings: totals.savings,
+        package_id: state.packageId ?? 0,
+        step: state.step,
+      });
+    }, 900);
+    return () => clearTimeout(t);
+  }, [totals.total, totals.savings, state.packageId, state.step]);
 
   const shareUrl = useCallback(() => buildShareUrl(state), [state]);
 
@@ -316,6 +373,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       state,
       totals,
       dir,
+      warning,
       hasAddon,
       addonQty,
       goToStep,
@@ -336,6 +394,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       state,
       totals,
       dir,
+      warning,
       hasAddon,
       addonQty,
       goToStep,

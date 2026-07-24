@@ -33,10 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# müşteri verisi (PII) — commit edilmez; availability.json config olduğu için tutulur
-/data/leads.json
-/data/package-drafts.json
-/data/reservations.json
+# NOT: leads/reservations/rehber/package-drafts dosyaları uygulamanın VERİTABANI.
+# Hostinger GitHub'dan deploy ettiği için repo'da durmaları ZORUNLU (yoksa canlıda veri kaybolur).
+# ⚠️ Bu yüzden repo PRIVATE olmalı — müşteri ad/telefon bilgisi içerirler.
 
 # vercel
 .vercel
@@ -51,6 +50,5 @@ next-env.d.ts
 
 .commit-msg.tmp
 
-# runtime/PII veri (commit edilmez)
+# yalnızca tracking runtime verisi (yeniden üretilir, commit edilmez)
 /data/events.jsonl
-/data/rehber.json

@@ -262,7 +262,7 @@ function AddonRow({
           width={64}
           height={64}
           loading="lazy"
-          className="h-16 w-16 shrink-0 rounded-lg object-cover"
+          className="h-12 w-12 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16"
         />
       ) : (
         <span

@@ -64,20 +64,20 @@ test("Büyük albüm ekleme kampanya farkını kazanca yansıtır (4.500→2.500
   assert.equal(r.savings, 4750); // 2.750 + (4.500 − 2.500)
 });
 
-test("P3'te Salon Full 'yükseltme farkı' +₺2.500 (mükerrer ödeme yok)", () => {
+test("Salon Full HER pakette ₺6.000 (üstü çizili 8.500 → +2.500 kazanç) — P3", () => {
   const r = calculateTotal(
     make({ packageId: 3, plato: "no25", addons: [{ id: "salon-full", quantity: 1 }] })
   );
-  assert.equal(r.total, 24500); // 22.000 + 2.500
-  assert.equal(r.savings, 9500); // yükseltmenin strike'ı yok
+  assert.equal(r.total, 28000); // 22.000 + 6.000
+  assert.equal(r.savings, 12000); // 9.500 + (8.500 − 6.000)
 });
 
-test("P1'de Salon Full tam fiyat ₺6.000 (üstü çizili 7.200 → +1.200 kazanç)", () => {
+test("Salon Full P1'de de ₺6.000 / +₺2.500 kazanç", () => {
   const r = calculateTotal(
     make({ packageId: 1, plato: "no25", addons: [{ id: "salon-full", quantity: 1 }] })
   );
   assert.equal(r.total, 17000); // 11.000 + 6.000
-  assert.equal(r.savings, 3950); // 2.750 + (7.200 − 6.000)
+  assert.equal(r.savings, 5250); // 2.750 + 2.500
 });
 
 test("Drone addon fiyatı ₺4.000", () => {
