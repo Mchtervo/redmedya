@@ -44,15 +44,11 @@ function PackageCard({ pkg }: { pkg: PackageDef }) {
     <div className={cn(pkg.featured && "lg:scale-[1.05]")}>
       <motion.div
         className="relative"
-        animate={
-          reduce
-            ? undefined
-            : {
-                opacity: anySelected && !selected ? 0.85 : 1, // §9.9
-                scale: selected ? [1, 1.02, 1] : 1, // §9.9 seçim pulse
-              }
-        }
-        transition={{ duration: 0.25, ease: "easeOut" }}
+        animate={{
+          opacity: anySelected && !selected ? 0.85 : 1, // §9.9
+          scale: selected ? [1, 1.02, 1] : 1, // §9.9 seçim pulse
+        }}
+        transition={reduce ? { duration: 0 } : { duration: 0.25, ease: "easeOut" }}
       >
         <ConfettiBurst trigger={confetti} />
       {/* Ribbon — kartın üst kenarında, kırpılmaz */}

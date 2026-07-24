@@ -30,8 +30,13 @@ function StepSwitch() {
       <Step3DateConfirm />
     );
 
-  if (reduce) return content;
-
+  /**
+   * DİKKAT: `reduce` yalnızca `transition`'ı etkileyebilir; DOM YAPISINI ASLA
+   * değiştiremez. Sunucu her zaman reduce=false ile render eder; yapıyı burada
+   * dallandırmak, cihazında "hareketi azalt" açık olan HER ziyaretçide
+   * hydration hatasına ve tüm ağacın yeniden çizilmesine yol açıyordu.
+   * duration:0 → animasyon fiilen kapalı (kırmızı çizgi korunur).
+   */
   return (
     <AnimatePresence mode="wait" custom={dir} initial={false}>
       <motion.div
@@ -41,7 +46,7 @@ function StepSwitch() {
         initial="enter"
         animate="center"
         exit="exit"
-        transition={{ duration: 0.35, ease: "easeOut" }}
+        transition={reduce ? { duration: 0 } : { duration: 0.35, ease: "easeOut" }}
       >
         {content}
       </motion.div>

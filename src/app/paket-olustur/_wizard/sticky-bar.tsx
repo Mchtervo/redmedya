@@ -38,19 +38,18 @@ export function StickyBar() {
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <div className="relative min-w-0">
-          {/* §9.7 yeşil flash */}
-          {!reduce && (
-            <AnimatePresence>
-              <motion.span
-                key={flash}
-                initial={{ opacity: 0.15 }}
-                animate={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded bg-emerald-500"
-                aria-hidden
-              />
-            </AnimatePresence>
-          )}
+          {/* §9.7 yeşil flash — yapı her zaman aynı, reduced-motion'da süre 0
+              (koşullu render hydration uyuşmazlığı yaratıyordu) */}
+          <AnimatePresence>
+            <motion.span
+              key={flash}
+              initial={{ opacity: 0.15 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.4 }}
+              className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded bg-emerald-500"
+              aria-hidden
+            />
+          </AnimatePresence>
           <p className="relative flex items-baseline gap-2">
             <span className="text-[11px] tracking-wide text-rm-gray-400">
               {COPY.cta.totalPrefix}

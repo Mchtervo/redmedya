@@ -24,7 +24,14 @@ export function CountUp({
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (reduce) return; // reduced-motion: statik değer render edilir
+    if (reduce) {
+      // reduced-motion: animasyon yok, hedef değere anında geç.
+      // Render sırasında dallanmıyoruz — sunucu ile ilk client render'ı
+      // aynı metni üretsin diye değer effect'te atanıyor.
+      const raf = requestAnimationFrame(() => setDisplay(value));
+      fromRef.current = value;
+      return () => cancelAnimationFrame(raf);
+    }
     const from = fromRef.current;
     const to = value;
     if (from === to) return;
@@ -47,9 +54,7 @@ export function CountUp({
     };
   }, [value, durationMs, reduce]);
 
-  return (
-    <span className={className}>{format(reduce ? value : display)}</span>
-  );
+  return <span className={className}>{format(display)}</span>;
 }
 
 /**
