@@ -25,6 +25,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# KALICI VERI: rezervasyon/lead/ayar dosyalari konteyner icinde DEGIL,
+# /app/data'ya baglanan volume uzerinde durur. Imajdaki kopya sadece
+# ilk acilista tohum olarak kullanilir (bkz. scripts/docker-entrypoint.mjs).
+COPY --from=builder /app/data ./data-seed
+COPY --from=builder /app/scripts/docker-entrypoint.mjs ./docker-entrypoint.mjs
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+ENV DATA_DIR=/app/data
+VOLUME ["/app/data"]
+
 USER nextjs
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "docker-entrypoint.mjs"]

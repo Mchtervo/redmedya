@@ -8,4 +8,12 @@ services:
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
       - NEXT_PUBLIC_WHATSAPP=905404340618
       - NEXT_PUBLIC_PHONE=905404340618
+      # Veri build ciktisinin DISINDA, kalici volume uzerinde tutulur
+      - DATA_DIR=/app/data
+    volumes:
+      # KALICI VERI — bu satir olmadan her deploy rezervasyonlari siler
+      - redmedya-data:/app/data
     restart: unless-stopped
+
+volumes:
+  redmedya-data:

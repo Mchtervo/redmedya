@@ -1,9 +1,10 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 import type { SiteCmsConfig } from "@/types/cms";
 import { getDefaultCmsConfig } from "@/lib/cms-defaults";
 
-const CMS_PATH = path.join(process.cwd(), "data", "cms.json");
+const CMS_PATH = dataPath("cms.json");
 
 export async function readCmsConfig(): Promise<SiteCmsConfig> {
   try {

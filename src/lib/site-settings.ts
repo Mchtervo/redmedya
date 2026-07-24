@@ -1,9 +1,10 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 import type { SiteSettings } from "@/types/site-settings";
 import { getDefaultSiteSettings } from "@/lib/site-settings-defaults";
 
-const SETTINGS_PATH = path.join(process.cwd(), "data", "site-settings.json");
+const SETTINGS_PATH = dataPath("site-settings.json");
 
 export async function readSiteSettings(): Promise<SiteSettings> {
   try {

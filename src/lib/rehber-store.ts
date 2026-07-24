@@ -2,8 +2,9 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { RehberContact } from "@/types/reservations";
 import type { ReservationRecord } from "@/types/reservations";
+import { dataPath } from "@/lib/data-dir";
 
-const PATH = path.join(process.cwd(), "data", "rehber.json");
+const PATH = dataPath("rehber.json");
 
 export async function readRehber(): Promise<RehberContact[]> {
   try {

@@ -1,8 +1,9 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 import type { LeadRecord } from "@/types/site-settings";
 
-const LEADS_PATH = path.join(process.cwd(), "data", "leads.json");
+const LEADS_PATH = dataPath("leads.json");
 const MAX_LEADS = 500;
 
 export async function readLeads(): Promise<LeadRecord[]> {

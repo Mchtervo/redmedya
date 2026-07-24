@@ -1,5 +1,6 @@
 import { readFile, writeFile, appendFile, mkdir, stat } from "fs/promises";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 import { RETENTION } from "@/config/retention";
 
 /**
@@ -18,7 +19,7 @@ export type TrackedEvent = {
   referrer: string | null;
 };
 
-const FILE = path.join(process.cwd(), "data", "events.jsonl");
+const FILE = dataPath("events.jsonl");
 
 function sbUrl(): string | undefined {
   return process.env.SUPABASE_URL?.trim();

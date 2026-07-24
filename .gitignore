@@ -52,3 +52,6 @@ next-env.d.ts
 
 # yalnızca tracking runtime verisi (yeniden üretilir, commit edilmez)
 /data/events.jsonl
+
+# Rezervasyon otomatik yedekleri (canli veri, repoya girmez)
+/data/backups/

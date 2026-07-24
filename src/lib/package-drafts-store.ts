@@ -1,8 +1,9 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 import type { PackageDraftRecord } from "@/types/package-drafts";
 
-const PATH = path.join(process.cwd(), "data", "package-drafts.json");
+const PATH = dataPath("package-drafts.json");
 const MAX = 800;
 
 export async function readPackageDrafts(): Promise<PackageDraftRecord[]> {
