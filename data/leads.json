@@ -1,0 +1,61 @@
+[
+  {
+    "id": "lead-1779900615326",
+    "createdAt": "2026-05-27T16:50:15.326Z",
+    "source": "package_whatsapp",
+    "status": "approved",
+    "customer": {
+      "firstName": "MÜCAHİT",
+      "lastName": "EROVA",
+      "phone": "05441523418",
+      "weddingDate": "2026-05-28",
+      "note": ""
+    },
+    "cart": {
+      "selectedIds": [
+        "foto-dis-cekim",
+        "video-dis-cekim",
+        "buyuk-album",
+        "drone-dis-cekim"
+      ],
+      "lineSummary": [
+        "Fotoğraf — Dış Çekim",
+        "Video Klip — Dış Çekim",
+        "Drone — Dış Çekim",
+        "Büyük Albüm (10 sayfa)",
+        "Aile Albümü"
+      ],
+      "subtotal": 14500,
+      "total": 11600,
+      "count": 5
+    },
+    "lineDetails": [
+      {
+        "label": "Fotoğraf — Dış Çekim",
+        "price": 5000,
+        "isGift": false
+      },
+      {
+        "label": "Video Klip — Dış Çekim",
+        "price": 5000,
+        "isGift": false
+      },
+      {
+        "label": "Drone — Dış Çekim",
+        "price": 0,
+        "isGift": true
+      },
+      {
+        "label": "Büyük Albüm (10 sayfa)",
+        "price": 2500
+      },
+      {
+        "label": "Aile Albümü",
+        "price": 2000
+      }
+    ],
+    "bundleDiscount": 2900,
+    "couponDiscount": 0,
+    "reservationId": "res-1779900667915"
+  }
+]

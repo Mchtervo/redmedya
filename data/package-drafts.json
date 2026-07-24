@@ -1,0 +1,57 @@
+[
+  {
+    "sessionId": "6dad3948-5bc9-41ef-94dd-b441cea81835",
+    "createdAt": "2026-07-22T18:50:20.782Z",
+    "updatedAt": "2026-07-22T20:39:40.682Z",
+    "customer": {
+      "firstName": "",
+      "lastName": "",
+      "phone": "",
+      "weddingDate": "",
+      "note": ""
+    },
+    "selectedIds": [
+      "paket-3",
+      "plato-no25"
+    ],
+    "lineDetails": [],
+    "lineSummary": [
+      "Paket 3 — Full Prodüksiyon",
+      "Paket 3 — Full Prodüksiyon — ₺22.000",
+      "🏛 No25 Plato — ÜCRETSİZ",
+      "🚁 Dış çekim drone — HEDİYE · ₺4.000 değerinde",
+      "Plato: No25 Plato (ücretsiz)"
+    ],
+    "subtotal": 22000,
+    "total": 22000,
+    "count": 3,
+    "whatsappClicked": false
+  },
+  {
+    "sessionId": "sess-1784741995753-snxofxq",
+    "createdAt": "2026-07-22T18:29:21.772Z",
+    "updatedAt": "2026-07-22T18:49:26.119Z",
+    "customer": {
+      "firstName": "",
+      "lastName": "",
+      "phone": "",
+      "weddingDate": "",
+      "note": ""
+    },
+    "selectedIds": [
+      "paket-2",
+      "plato-no25"
+    ],
+    "lineDetails": [],
+    "lineSummary": [
+      "Paket 2 — Sinematik + Albüm",
+      "Paket 2 — Sinematik + Albüm — ₺17.500",
+      "🏛 No25 Plato — ÜCRETSİZ",
+      "Plato: No25 Plato (ücretsiz)"
+    ],
+    "subtotal": 17500,
+    "total": 17500,
+    "count": 2,
+    "whatsappClicked": false
+  }
+]
