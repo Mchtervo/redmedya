@@ -32,7 +32,9 @@ function newId(): string {
   return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const VALID = /^[a-z_]+$/;
+// event_type adı: küçük harf, rakam, alt çizgi (ör. "step3_view").
+// Rakam İZİNLİ olmalı yoksa step3_view gibi tipler sessizce reddedilir.
+const VALID = /^[a-z0-9_]+$/;
 
 export async function POST(request: NextRequest) {
   try {

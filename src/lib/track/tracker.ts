@@ -33,6 +33,18 @@ export type TrackEventType =
   | "form_field_filled"
   | "share_link_copied"
   | "whatsapp_clicked"
+  // §Adım-3 mikro funnel — insanlar 3. adımda TAM hangi alanda düşüyor
+  | "step3_view"
+  | "form_start"
+  | "date_filled"
+  | "name_filled"
+  | "cta_click"
+  // WhatsApp kısayolu + çıkış yakalama
+  | "wa_shortcut_open"
+  | "wa_shortcut_sent"
+  | "exit_capture_shown"
+  | "exit_capture_copy"
+  | "exit_capture_whatsapp"
   | "session_end";
 
 /** payload yalnızca anonim/ürün verisi; form DEĞERİ (isim/telefon/not) ASLA */

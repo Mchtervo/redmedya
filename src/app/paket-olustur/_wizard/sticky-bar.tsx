@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { COPY } from "@/content/paketOlustur";
+import { track } from "@/lib/track/tracker";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { CountUp } from "./motion";
+import { WhatsAppShortcutModal } from "./whatsapp-shortcut-modal";
 import { useWizard } from "./wizard-context";
 
 /**
@@ -15,6 +18,8 @@ import { useWizard } from "./wizard-context";
 export function StickyBar() {
   const { state, totals, next } = useWizard();
   const reduce = useReducedMotion();
+  const kbInset = useKeyboardInset();
+  const [showShortcut, setShowShortcut] = useState(false);
 
   // §9.7 — toplam değişince yeşil flash
   const [flash, setFlash] = useState(0);
@@ -31,11 +36,24 @@ export function StickyBar() {
   const canContinue =
     state.step === 1 ? state.packageId != null && state.plato != null : true;
 
+  // §2 — Adım 2'de "WhatsApp'ta Tamamla" kısayolu (form doldurmadan kaçmasın)
+  const showWhatsAppShortcut = state.step === 2 && state.packageId != null;
+
+  const openShortcut = () => {
+    track("wa_shortcut_open", { total: totals.total, package_id: state.packageId ?? 0 });
+    setShowShortcut(true);
+  };
+
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-rm-black/95 backdrop-blur-lg lg:sticky lg:bottom-4 lg:mt-8 lg:rounded-lg lg:border">
+    <div
+      className="fixed inset-x-0 z-40 border-t border-white/10 bg-rm-black/95 backdrop-blur-lg lg:sticky lg:bottom-4 lg:mt-8 lg:rounded-lg lg:border"
+      style={{ bottom: kbInset }}
+    >
       <div
-        className="section-container flex items-center justify-between gap-4 py-3 sm:py-4"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        className="section-container flex items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4"
+        style={{
+          paddingBottom: kbInset ? "0.75rem" : "max(0.75rem, env(safe-area-inset-bottom))",
+        }}
       >
         <div className="relative min-w-0">
           {/* §9.7 yeşil flash — yapı her zaman aynı, reduced-motion'da süre 0
@@ -67,20 +85,37 @@ export function StickyBar() {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={next}
-          className={cn(
-            "btn-luxury inline-flex h-12 shrink-0 items-center gap-1.5 rounded-sm px-4 text-xs font-semibold tracking-wide uppercase transition-all sm:gap-2 sm:px-8 sm:text-sm",
-            canContinue
-              ? "bg-rm-champagne text-rm-black hover:bg-rm-champagne-light shadow-[0_0_30px_rgba(196,160,82,0.25)]"
-              : "bg-white/10 text-rm-gray-300 hover:bg-white/15"
+        <div className="flex shrink-0 items-center gap-2">
+          {/* §2 — ikincil: form doldurmadan WhatsApp'a geç */}
+          {showWhatsAppShortcut && (
+            <button
+              type="button"
+              onClick={openShortcut}
+              className="inline-flex h-12 items-center gap-1.5 rounded-sm border border-[#25D366]/50 px-3 text-xs font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10 sm:px-4"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden xs:inline sm:inline">{COPY.whatsappShortcut.button}</span>
+            </button>
           )}
-        >
-          {COPY.cta.next.replace("→", "")}
-          <ArrowRight className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            onClick={next}
+            className={cn(
+              "btn-luxury inline-flex h-12 items-center gap-1.5 rounded-sm px-4 text-xs font-semibold tracking-wide uppercase transition-all sm:gap-2 sm:px-8 sm:text-sm",
+              canContinue
+                ? "bg-rm-champagne text-rm-black hover:bg-rm-champagne-light shadow-[0_0_30px_rgba(196,160,82,0.25)]"
+                : "bg-white/10 text-rm-gray-300 hover:bg-white/15"
+            )}
+          >
+            {COPY.cta.next.replace("→", "")}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
+
+      {showShortcut && (
+        <WhatsAppShortcutModal onClose={() => setShowShortcut(false)} />
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { StickyBar } from "./sticky-bar";
 import { Step1PackagePlato } from "./step1-package-plato";
 import { Step2Customize } from "./step2-customize";
 import { Step3DateConfirm } from "./step3-date-confirm";
+import { ExitCapture } from "./exit-capture";
 import { stepVariants } from "./motion";
 
 function StepSwitch() {
@@ -110,6 +111,7 @@ function WizardInner() {
         </div>
       </main>
       <Footer />
+      <ExitCapture />
     </>
   );
 }

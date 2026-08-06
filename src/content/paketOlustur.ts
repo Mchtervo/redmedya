@@ -72,18 +72,22 @@ export const COPY = {
   },
 
   step3: {
-    heading: "Tarih & bilgiler",
+    heading: "Son adım — tarihini söyle",
     dateLabel: "Düğün tarihi",
     nameLabel: "Ad Soyad",
-    phoneLabel: "Telefon (opsiyonel)",
-    noteLabel: "Not (opsiyonel)",
+    phoneLabel: "Telefon",
+    noteLabel: "Not",
     notePlaceholder: "Eklemek istedikleriniz...",
+    optionalToggle: "İsteğe bağlı bilgiler",
+    optionalHint: "Telefon ve notunuz — şimdi yazmasanız da WhatsApp'ta sorabiliriz",
     summaryHeading: "Özet",
     copyLink: "Paket linkini kopyala",
     copyLinkDone: "Kopyalandı ✓",
+    // Ana CTA metni artık config/experiments.ts (A/B) — buradaki yalnızca fallback
     lockButton: "🔒 Tarihimi Kilitle",
+    // Taahhüt korkusunu azaltan, "soru da sorabilirsin" diyen düşük eşikli mikro yazı
     lockMicrocopy:
-      "Ortalama 15 dk içinde dönüş yapıyoruz · Küçük bir depozito ile tarihiniz kilitlenir, başkasına verilmez.",
+      "Sorularınız için de yazabilirsiniz — ortalama 15 dk'da dönüyoruz.",
     trust: {
       reviews: "⭐ yorumları gör",
       instagram: "@redmedia.co",
@@ -95,6 +99,25 @@ export const COPY = {
       addBoth: (amount: string) => `İkisini de ekle (+${amount})`,
       skip: "Eklemeden devam et",
     },
+  },
+
+  // Adım 2 sticky bar'daki ikincil "form doldurmadan WhatsApp'a geç" yolu
+  whatsappShortcut: {
+    button: "WhatsApp'ta Tamamla",
+    modalTitle: "Düğün tarihiniz?",
+    modalBody: "Tek soru — tarihinizi seçin, paketinizle birlikte WhatsApp'a geçelim.",
+    modalCta: "WhatsApp'ta Devam Et",
+    modalSkip: "Vazgeç",
+  },
+
+  // Adım 2/3'te sayfadan ayrılırken tek seferlik yakalama modalı
+  exitCapture: {
+    title: "Paketiniz kaydedildi 💾",
+    body: "Linki kopyalayın, dilediğinizde tam kaldığınız yerden devam edin. Ya da hemen WhatsApp'tan gönderin, tarihinizi konuşalım.",
+    copy: "Linki Kopyala",
+    copied: "Kopyalandı ✓",
+    whatsapp: "WhatsApp'tan Gönder",
+    dismiss: "Kapat",
   },
 
   cta: {

@@ -30,11 +30,13 @@ type Abandoner = {
 };
 type Summary = Record<string, number | string>;
 type VisitDaily = { day: string; total: number; utm: number };
+type Step3Funnel = Record<string, number>;
 type JourneyData = {
   summary: Summary;
   sessions: SessionRow[];
   abandoners: Abandoner[];
   visitsDaily: VisitDaily[];
+  step3Funnel: Step3Funnel;
   campaigns: string[];
 };
 
@@ -149,7 +151,13 @@ export function AdminJourneyPanel() {
       </div>
 
       {tab === "Özet" && <Ozet s={data.summary} visitsDaily={data.visitsDaily ?? []} />}
-      {tab === "Funnel" && <Funnel sessions={data.sessions} campaigns={data.campaigns} />}
+      {tab === "Funnel" && (
+        <Funnel
+          sessions={data.sessions}
+          campaigns={data.campaigns}
+          step3={data.step3Funnel ?? {}}
+        />
+      )}
       {tab === "Oturumlar" && <Sessions rows={data.sessions} />}
       {tab === "Yarım Kalanlar" && <Abandoners rows={data.abandoners} onChange={reload} />}
     </div>
@@ -218,7 +226,85 @@ function Ozet({ s, visitsDaily }: { s: Summary; visitsDaily: VisitDaily[] }) {
   );
 }
 
-function Funnel({ sessions, campaigns }: { sessions: SessionRow[]; campaigns: string[] }) {
+/** §6 — Adım 3 alan bazlı mikro funnel: nerede düşüyorlar */
+function Step3Breakdown({ f }: { f: Step3Funnel }) {
+  const rows: { key: string; label: string }[] = [
+    { key: "step3_view", label: "Adım 3 görüldü" },
+    { key: "form_start", label: "Forma başladı" },
+    { key: "date_filled", label: "Tarih girdi" },
+    { key: "name_filled", label: "Ad Soyad girdi" },
+    { key: "cta_click", label: "Butona bastı" },
+    { key: "whatsapp", label: "WhatsApp'a geçti" },
+  ];
+  const base = f.step3_view || 1;
+  return (
+    <div className="mt-8 rounded-xl border border-white/8 bg-white/[0.02] p-4">
+      <h4 className="text-sm font-semibold text-rm-off-white">
+        Adım 3 kırılımı — nerede düşüyorlar
+      </h4>
+      <p className="mt-1 text-[11px] text-rm-gray-500">
+        Formu görenlerin kaçı hangi alana kadar geldi. En büyük düşüş = darboğaz.
+      </p>
+      <div className="mt-4 space-y-2.5">
+        {rows.map((r, i) => {
+          const count = f[r.key] ?? 0;
+          const pct = Math.round((count / base) * 100);
+          const prev = i > 0 ? f[rows[i - 1].key] ?? 0 : count;
+          const drop = i > 0 && prev ? Math.round((1 - count / prev) * 100) : 0;
+          return (
+            <div key={r.key}>
+              <div className="mb-1 flex items-baseline justify-between text-sm">
+                <span className="text-rm-gray-200">{r.label}</span>
+                <span className="tabular-nums text-rm-off-white">
+                  {count}
+                  {i > 0 && drop > 0 && (
+                    <span className="ml-1.5 text-red-400">(−%{drop})</span>
+                  )}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-white/5">
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    r.key === "whatsapp" ? "bg-emerald-500" : "bg-rm-champagne"
+                  )}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Alternatif yollar */}
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3 text-center">
+        <div>
+          <p className="font-editorial text-lg text-emerald-400">{f.shortcut_sent ?? 0}</p>
+          <p className="text-[10px] text-rm-gray-500">WhatsApp kısayolu (formu atladı)</p>
+        </div>
+        <div>
+          <p className="font-editorial text-lg text-rm-champagne">{f.exit_shown ?? 0}</p>
+          <p className="text-[10px] text-rm-gray-500">Çıkışta yakalandı</p>
+        </div>
+        <div>
+          <p className="font-editorial text-lg text-emerald-400">
+            {(f.exit_whatsapp ?? 0) + (f.exit_copy ?? 0)}
+          </p>
+          <p className="text-[10px] text-rm-gray-500">Çıkışta kurtarıldı</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Funnel({
+  sessions,
+  campaigns,
+  step3,
+}: {
+  sessions: SessionRow[];
+  campaigns: string[];
+  step3: Step3Funnel;
+}) {
   const [range, setRange] = useState<"7" | "30" | "all">("30");
   const [campaign, setCampaign] = useState("all");
   const [nowMs] = useState(() => Date.now()); // render'da impure çağrı yok
@@ -297,6 +383,8 @@ function Funnel({ sessions, campaigns }: { sessions: SessionRow[]; campaigns: st
           );
         })}
       </div>
+
+      <Step3Breakdown f={step3} />
     </div>
   );
 }

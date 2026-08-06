@@ -119,6 +119,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const totals = useMemo(() => calculateTotal(state), [state]);
 
+  /** Callback/effect'lerde güncel sepet toplamı (dep churn olmadan) */
+  const totalRef = useRef(0);
+  useEffect(() => {
+    totalRef.current = totals.total;
+  }, [totals.total]);
+
   // Müsaitlik — dosyadan (data/availability.json); config varsayılanı fallback
   const [availability, setAvailability] = useState<AvailabilityMap>(AVAILABILITY);
   useEffect(() => {
@@ -141,6 +147,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   // Funnel — her adım görüntülemesi (GA4 + Meta custom event + journey tracking)
   const prevStepRef = useRef(state.step);
+  const step3ViewFiredRef = useRef(false);
   useEffect(() => {
     pixelStepView(state.step);
     const prev = prevStepRef.current;
@@ -150,6 +157,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         to: state.step,
       });
       prevStepRef.current = state.step;
+    }
+    // §6 mikro funnel — Adım 3 görüntülendi (tek sefer)
+    if (state.step === 3 && !step3ViewFiredRef.current) {
+      step3ViewFiredRef.current = true;
+      track("step3_view", { total: totalRef.current });
     }
   }, [state.step]);
 
@@ -292,11 +304,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const formStartedRef = useRef(false);
   const filledFieldsRef = useRef<Set<string>>(new Set());
   const dateCheckoutFiredRef = useRef(false);
-  /** Callback'lerde güncel sepet toplamı (dep churn olmadan) */
-  const totalRef = useRef(0);
+  // §6 Adım-3 mikro funnel bayrakları (tek sefer)
+  const form3StartedRef = useRef(false);
+  const date3FilledRef = useRef(false);
+  const name3FilledRef = useRef(false);
+  const stepRefForField = useRef(state.step);
   useEffect(() => {
-    totalRef.current = totals.total;
-  }, [totals.total]);
+    stepRefForField.current = state.step;
+  }, [state.step]);
 
   const setField = useCallback(
     (field: "date" | "name" | "phone" | "note", value: string) => {
@@ -305,6 +320,23 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         formStartedRef.current = true;
         track("form_started", { total: totalRef.current });
       }
+
+      // §6 — Adım 3'e ÖZEL alan bazlı funnel (hangi alanda düşüyorlar)
+      if (stepRefForField.current === 3) {
+        if (!form3StartedRef.current) {
+          form3StartedRef.current = true;
+          track("form_start", { total: totalRef.current });
+        }
+        if (field === "date" && value && !date3FilledRef.current) {
+          date3FilledRef.current = true;
+          track("date_filled", { total: totalRef.current });
+        }
+        if (field === "name" && value.trim() && !name3FilledRef.current) {
+          name3FilledRef.current = true;
+          track("name_filled", { total: totalRef.current });
+        }
+      }
+
       if (field === "date") {
         const m = /^(\d{4})-(\d{2})/.exec(value);
         if (m) {

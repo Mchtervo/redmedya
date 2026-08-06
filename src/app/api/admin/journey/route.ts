@@ -164,6 +164,27 @@ export async function GET(request: NextRequest) {
       : 0,
   };
 
+  /**
+   * §6 — Adım 3 mikro funnel. İnsanların 3. adımda TAM hangi alanda düştüğü.
+   * step3_view → form_start → date_filled → name_filled → cta_click → whatsapp
+   * WhatsApp kısayolu (Adım 2'den geçenler) ayrı sayılır.
+   */
+  const step3Funnel = {
+    step3_view: count("step3_view"),
+    form_start: count("form_start"),
+    date_filled: count("date_filled"),
+    name_filled: count("name_filled"),
+    cta_click: count("cta_click"),
+    whatsapp: count("whatsapp_clicked"),
+    // WhatsApp kısayolu (form atlama) — Adım 2'den
+    shortcut_open: count("wa_shortcut_open"),
+    shortcut_sent: count("wa_shortcut_sent"),
+    // Çıkış yakalama
+    exit_shown: count("exit_capture_shown"),
+    exit_whatsapp: count("exit_capture_whatsapp"),
+    exit_copy: count("exit_capture_copy"),
+  };
+
   // Yarım Kalanlar — telefon bırakıp WhatsApp'a BASMAYAN taslaklar
   const abandoners = drafts
     .filter((d) => !d.whatsappClicked && d.customer.phone?.trim())
@@ -189,6 +210,8 @@ export async function GET(request: NextRequest) {
     abandoners,
     /** Son 14 günün anonim trafiği (toplam + reklamlı) */
     visitsDaily: visits.daily,
+    /** §6 Adım 3 alan bazlı funnel */
+    step3Funnel,
     campaigns: [
       ...new Set(sessions.map((s) => s.utm_campaign).filter(Boolean)),
     ] as string[],

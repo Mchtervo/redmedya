@@ -17,13 +17,12 @@ import { CAMPAIGN, PRICING } from "@/config/pricing";
 import { stats } from "@/config/site";
 import { COPY } from "@/content/paketOlustur";
 import { siteConfig } from "@/config/site";
+import { ACTIVE_CTA_VARIANT, activeCtaText } from "@/config/experiments";
 import { WeddingDatePicker } from "@/components/ui/wedding-date-picker";
-import { getWhatsAppUrl } from "@/lib/whatsapp";
+import { goToWhatsApp } from "@/lib/paket/go-to-whatsapp";
 import { buildWizardWhatsAppMessage } from "@/lib/paket/whatsapp-message";
-import { calculateTotal } from "@/lib/paket/calculate-total";
-import { pixelLockDate } from "@/lib/paket/pixel";
-import { submitPackageLead, syncPackageDraft } from "@/lib/paket/lead-capture";
 import { track } from "@/lib/track/tracker";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import type { AddonId } from "@/config/pricing";
 import type { PackageBuilderState } from "@/lib/paket/state";
 import { useWizard } from "./wizard-context";
@@ -111,6 +110,57 @@ function SummaryCard() {
   );
 }
 
+/** §1 — Mobilde tek ekrana sığması için katlanabilir kompakt özet */
+function CompactSummary() {
+  const { state, totals } = useWizard();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-white/10 bg-rm-black-elevated/60 p-4 lg:hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-rm-off-white">
+            {COPY.step3.summaryHeading}
+            {totals.savings > 0 && (
+              <span className="ml-2 text-xs font-semibold text-emerald-400">
+                {formatPrice(totals.savings)} kazanç 🎉
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="font-editorial text-xl text-rm-off-white tabular-nums">
+            {formatPrice(totals.total)}
+          </span>
+          <ChevronDown
+            className={cn("h-4 w-4 text-rm-gray-400 transition-transform", open && "rotate-180")}
+          />
+        </div>
+      </button>
+      {open && (
+        <ul className="mt-3 space-y-2 border-t border-white/[0.08] pt-3">
+          {totals.lineItems.map((li) => (
+            <li key={li.key} className="flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="text-rm-gray-300">{li.label}</span>
+              <span className="shrink-0 tabular-nums text-rm-gray-200">
+                {li.rightLabel
+                  ? li.rightLabel
+                  : li.amount < 0
+                    ? `−${formatPrice(-li.amount)}`
+                    : formatPrice(li.amount)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {state.packageId != null && <WhatsAppPreview />}
+    </div>
+  );
+}
+
 function ShareLinkButton() {
   const { shareUrl } = useWizard();
   const [copied, setCopied] = useState(false);
@@ -174,7 +224,6 @@ function TrustBlock() {
   );
   return (
     <div className="mt-4 rounded-lg border border-white/10 bg-rm-black-elevated/40 p-4">
-      {/* Puan + rezervasyon kanıtı */}
       <div className="flex items-center justify-between gap-3">
         <a
           href={siteConfig.dugun}
@@ -192,7 +241,6 @@ function TrustBlock() {
         </a>
       </div>
 
-      {/* Aggregate istatistik (gerçek) */}
       <div className="mt-3 flex items-center gap-4 border-t border-white/[0.06] pt-3">
         {trustStats.map((s) => (
           <div key={s.label}>
@@ -211,7 +259,6 @@ function TrustBlock() {
         </p>
       </div>
 
-      {/* Linkler */}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/[0.06] pt-3 text-xs text-rm-gray-400">
         <a
           href={siteConfig.dugun}
@@ -236,6 +283,67 @@ function TrustBlock() {
           Küçük depozitoyla tarih kilidi
         </span>
       </div>
+    </div>
+  );
+}
+
+/** §1 — Telefon + Not artık varsayılan KAPALI akordeon içinde */
+function OptionalDetails() {
+  const { state, setField } = useWizard();
+  const [open, setOpen] = useState(false);
+  const filled = state.phone.trim() || state.note.trim();
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.02]">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2 text-sm font-medium text-rm-gray-200">
+          {COPY.step3.optionalToggle}
+          {filled && !open && (
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+              dolu
+            </span>
+          )}
+        </span>
+        <ChevronDown
+          className={cn("h-4 w-4 text-rm-gray-400 transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open && (
+        <div className="space-y-4 border-t border-white/[0.06] px-4 pt-4 pb-4">
+          <p className="text-[11px] leading-snug text-rm-gray-500">
+            {COPY.step3.optionalHint}
+          </p>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
+              {COPY.step3.phoneLabel}
+            </label>
+            <input
+              type="tel"
+              inputMode="tel"
+              value={state.phone}
+              onChange={(e) => setField("phone", e.target.value)}
+              placeholder="05__ ___ __ __"
+              className="h-12 w-full rounded-sm border border-white/10 bg-white/[0.04] px-4 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500 focus:border-rm-champagne/40"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
+              {COPY.step3.noteLabel}
+            </label>
+            <textarea
+              value={state.note}
+              onChange={(e) => setField("note", e.target.value)}
+              placeholder={COPY.step3.notePlaceholder}
+              rows={3}
+              className="w-full rounded-sm border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500 focus:border-rm-champagne/40"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -304,30 +412,59 @@ function LastChanceModal({
   );
 }
 
+/** Ana CTA — WhatsApp yeşili büyük buton + düşük eşikli mikro yazı */
+function PrimaryCta({
+  disabled,
+  onClick,
+  className,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          "flex h-14 w-full items-center justify-center gap-2 rounded-sm text-sm font-bold tracking-wide uppercase transition-all",
+          disabled
+            ? "cursor-not-allowed bg-white/5 text-rm-gray-500"
+            : "bg-[#25D366] text-white shadow-lg hover:bg-[#20bd5a]"
+        )}
+      >
+        <MessageCircle className="h-5 w-5" />
+        {activeCtaText()}
+      </button>
+      <p className="mt-3 text-center text-[11px] leading-relaxed text-rm-gray-500">
+        {COPY.step3.lockMicrocopy}
+      </p>
+    </div>
+  );
+}
+
 export function Step3DateConfirm() {
-  const { state, setField, hasAddon, toggleAddon, markLastChanceSeen, back } =
+  const { state, setField, hasAddon, toggleAddon, markLastChanceSeen, back, totals } =
     useWizard();
   const [showLastChance, setShowLastChance] = useState(false);
+  const kbInset = useKeyboardInset();
 
   const missingKlips = CAMPAIGN_KLIPS.filter((k) => !hasAddon(k.id)).map((k) => ({
     id: k.id,
     label: k.label,
   }));
 
-  const goToWhatsApp = (override?: PackageBuilderState) => {
-    const s = override ?? state;
-    // Dönüşümü kaydet: taslağı "whatsapp tıklandı" işaretle + tam lead kaydı
-    syncPackageDraft(s, true);
-    submitPackageLead(s);
-    const total = calculateTotal(s).total;
-    pixelLockDate(total, { name: s.name, phone: s.phone });
-    track("whatsapp_clicked", { total, package_id: s.packageId ?? 0 });
-    const msg = buildWizardWhatsAppMessage(s);
-    const url = getWhatsAppUrl(msg, siteConfig.defaultWhatsApp);
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
+  const canSubmit = Boolean(state.date && state.name.trim());
 
   const handleLock = () => {
+    // §6 — ana CTA tıklandı (hangi varyant)
+    track("cta_click", {
+      variant: ACTIVE_CTA_VARIANT,
+      total: totals.total,
+      package_id: state.packageId ?? 0,
+    });
     const shouldOffer =
       state.packageId !== 3 &&
       missingKlips.length > 0 &&
@@ -337,18 +474,18 @@ export function Step3DateConfirm() {
       track("lastchance_shown", {});
       return;
     }
-    goToWhatsApp();
+    // Adım 3'te Lead zaten form dolunca ateşlendi → fireLead:false (çift Lead yok)
+    goToWhatsApp(state, { source: "step3" });
   };
 
   const addAndContinue = (ids: string[]) => {
-    // Reducer güncellemesi asenkron olduğundan mesajı augmented state'ten üret.
     const addonIds = ids as AddonId[];
     const nextAddons = [...state.addons];
     addonIds.forEach((id) => {
       if (!nextAddons.some((a) => a.id === id)) {
         nextAddons.push({ id, quantity: 1 });
       }
-      if (!hasAddon(id)) toggleAddon(id); // görsel state için de uygula
+      if (!hasAddon(id)) toggleAddon(id);
     });
     const nextState: PackageBuilderState = {
       ...state,
@@ -358,21 +495,24 @@ export function Step3DateConfirm() {
     markLastChanceSeen();
     setShowLastChance(false);
     track("lastchance_accepted", { klips: addonIds });
-    goToWhatsApp(nextState);
+    goToWhatsApp(nextState, { source: "step3" });
   };
 
   const skipLastChance = () => {
     markLastChanceSeen();
     setShowLastChance(false);
     track("lastchance_dismissed", {});
-    goToWhatsApp({ ...state, lastChancePopupSeen: true });
+    goToWhatsApp({ ...state, lastChancePopupSeen: true }, { source: "step3" });
   };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-10">
-      {/* Form */}
-      <div>
-        <h2 className="font-editorial text-3xl text-rm-off-white sm:text-4xl">
+      {/* Form — mobilde fixed CTA'nın altında kalmasın diye pb */}
+      <div className="pb-28 lg:pb-0">
+        {/* Mobil kompakt özet (tek ekran hedefi) */}
+        <CompactSummary />
+
+        <h2 className="mt-5 font-editorial text-3xl text-rm-off-white sm:text-4xl lg:mt-0">
           {COPY.step3.heading}
         </h2>
 
@@ -401,32 +541,8 @@ export function Step3DateConfirm() {
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
-              {COPY.step3.phoneLabel}
-            </label>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={state.phone}
-              onChange={(e) => setField("phone", e.target.value)}
-              placeholder="05__ ___ __ __"
-              className="h-12 w-full rounded-sm border border-white/10 bg-white/[0.04] px-4 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500 focus:border-rm-champagne/40"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
-              {COPY.step3.noteLabel}
-            </label>
-            <textarea
-              value={state.note}
-              onChange={(e) => setField("note", e.target.value)}
-              placeholder={COPY.step3.notePlaceholder}
-              rows={3}
-              className="w-full rounded-sm border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500 focus:border-rm-champagne/40"
-            />
-          </div>
+          {/* §1 — Telefon + Not opsiyonel akordeonda (varsayılan kapalı) */}
+          <OptionalDetails />
         </div>
 
         <button
@@ -438,29 +554,24 @@ export function Step3DateConfirm() {
         </button>
       </div>
 
-      {/* Özet + CTA */}
-      <div className="lg:sticky lg:top-24 lg:self-start">
+      {/* Özet + CTA — masaüstü (sağ kolon, sticky) */}
+      <div className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
         <SummaryCard />
         <WhatsAppPreview />
         <ShareLinkButton />
         <TrustBlock />
+        <PrimaryCta disabled={!canSubmit} onClick={handleLock} className="mt-5" />
+      </div>
 
-        <button
-          type="button"
-          onClick={handleLock}
-          disabled={!state.date || !state.name.trim()}
-          className={cn(
-            "mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-sm text-sm font-bold tracking-wide uppercase transition-all",
-            state.date && state.name.trim()
-              ? "bg-[#25D366] text-white hover:bg-[#20bd5a] shadow-lg"
-              : "cursor-not-allowed bg-white/5 text-rm-gray-500"
-          )}
-        >
-          {COPY.step3.lockButton}
-        </button>
-        <p className="mt-3 text-center text-[11px] leading-relaxed text-rm-gray-500">
-          {COPY.step3.lockMicrocopy}
-        </p>
+      {/* Mobil sabit CTA — §8 klavye açıkken üstte kalır (visualViewport inset) */}
+      <div
+        className="fixed inset-x-0 z-40 border-t border-white/10 bg-rm-black/95 px-4 pt-3 backdrop-blur-lg lg:hidden"
+        style={{
+          bottom: kbInset,
+          paddingBottom: kbInset ? "0.75rem" : "max(0.75rem, env(safe-area-inset-bottom))",
+        }}
+      >
+        <PrimaryCta disabled={!canSubmit} onClick={handleLock} />
       </div>
 
       {showLastChance && (

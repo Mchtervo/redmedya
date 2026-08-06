@@ -30,7 +30,33 @@ export function MetaPixel() {
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '${pixelId}');
-            fbq('track', 'PageView');
+            /* §7 CAPI: ilk PageView de aynı event_id ile SUNUCUDAN aynalanır (dedup).
+               Tarayıcı fbq çağrısına eventID verilir, aynısı /api/meta-events'e POST edilir. */
+            (function(){
+              var id = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : ('pv_' + Date.now() + '_' + Math.floor(Math.random()*1e9));
+              fbq('track', 'PageView', {}, { eventID: id });
+              try {
+                fetch('/api/meta-events', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  keepalive: true,
+                  body: JSON.stringify({
+                    eventName: 'PageView',
+                    eventId: id,
+                    eventSourceUrl: location.href,
+                    currency: 'TRY'
+                  })
+                }).then(function(r){ return r.json(); }).then(function(d){
+                  if (!d || !d.ok) {
+                    console.warn('[CAPI] PageView sunucuya gitmedi:',
+                      d && d.skipped ? 'META_CAPI_ACCESS_TOKEN sunucuda TANIMLI DEĞİL (env eksik)'
+                                     : (d && d.error) || 'bilinmeyen');
+                  }
+                }).catch(function(e){ console.warn('[CAPI] PageView istek hatası:', e); });
+              } catch(e) { console.warn('[CAPI] PageView istisna:', e); }
+            })();
           `,
         }}
       />
