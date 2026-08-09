@@ -12,7 +12,8 @@
     "postbuild": "node scripts/postbuild.mjs",
     "start": "node scripts/start.mjs",
     "start:standalone": "DOCKER=1 npm run build && node scripts/start-standalone.mjs",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test src/lib/analytics/collect-core.test.ts src/lib/analytics/funnel-aggregate.test.ts src/lib/paket/calculate-total.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
@@ -44,6 +45,7 @@
     "eslint-config-next": "16.2.6",
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.11",
     "typescript": "^5"
   }
 }

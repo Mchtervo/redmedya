@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { captureUtmOnLanding } from "@/lib/track/session";
 
 /**
  * Anonim sayfa açılış sayacı — ÇEREZ ONAYINDAN BAĞIMSIZ çalışır.
@@ -22,6 +23,9 @@ function VisitCounterInner() {
     if (!pathname || pathname.startsWith("/admin")) return;
     if (lastSent.current === pathname) return;
     lastSent.current = pathname;
+
+    // İlk dokunuş UTM + fbclid sakla (paket funnel boyunca kaybolmasın)
+    captureUtmOnLanding();
 
     const body = JSON.stringify({
       path: pathname,

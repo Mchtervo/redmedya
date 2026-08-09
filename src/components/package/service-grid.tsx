@@ -22,7 +22,7 @@ import { usePackageStore } from "@/stores/package-store";
 import { OCCASIONS } from "@/config/occasions";
 import type { ServiceItem } from "@/config/services";
 import { formatPrice, cn } from "@/lib/utils";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackGA4 } from "@/lib/analytics";
 import {
   DRONE_GIFT_SERVICE_ID,
   lineTotalFor,
@@ -770,13 +770,12 @@ export function ServiceGrid() {
     if (adding) {
       const svc = services.find((s) => s.id === id);
       const price = svc ? lineTotalFor(svc, 1) : 0;
-      trackMetaEvent("AddToCart", {
+      trackGA4("select_service", {
         content_name: name,
         content_ids: id,
         value: price,
         num_items: 1,
       });
-      trackMetaEvent("PackageBuild", { content_name: name });
     }
   };
 

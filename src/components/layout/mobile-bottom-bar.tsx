@@ -4,7 +4,7 @@ import { Phone, MessageCircle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelWhatsAppClick } from "@/lib/paket/pixel";
 
 /**
  * Mobil: altta sabit yalnızca ara + WhatsApp.
@@ -36,12 +36,6 @@ export function MobileBottomBar() {
       <div className="grid grid-cols-2 gap-px bg-white/10">
         <a
           href={telUrl}
-          onClick={() =>
-            trackMetaEvent("Lead", {
-              content_name: "mobile_bar_phone",
-              page_path: pathname,
-            })
-          }
           className="flex min-h-[52px] items-center justify-center gap-2.5 bg-rm-black px-3 py-2.5 text-rm-champagne transition-colors active:bg-white/5"
           aria-label={`Ara ${siteConfig.displayPhone}`}
         >
@@ -62,12 +56,7 @@ export function MobileBottomBar() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() =>
-            trackMetaEvent("WhatsAppClick", {
-              content_name: "mobile_bar_whatsapp",
-              page_path: pathname,
-            })
-          }
+          onClick={() => pixelWhatsAppClick("mobile_bar_whatsapp")}
           className="flex min-h-[52px] items-center justify-center gap-2.5 bg-[#25D366]/12 px-3 py-2.5 text-[#25D366] transition-colors active:bg-[#25D366]/20"
           aria-label="WhatsApp ile yaz"
         >

@@ -38,23 +38,57 @@ export function getSessionId(): string {
   return id;
 }
 
-export type Utm = { utm_source?: string; utm_campaign?: string };
+export type Utm = {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  fbclid?: string;
+};
 
-/** İlk dokunuş UTM'i — reklamdan gelen linkten yakalanır, oturum boyunca saklanır */
+function readUtmFromSearch(): Utm {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    utm_source: p.get("utm_source") ?? undefined,
+    utm_medium: p.get("utm_medium") ?? undefined,
+    utm_campaign: p.get("utm_campaign") ?? undefined,
+    utm_content: p.get("utm_content") ?? undefined,
+    utm_term: p.get("utm_term") ?? undefined,
+    fbclid: p.get("fbclid") ?? undefined,
+  };
+}
+
+function utmHasValue(utm: Utm): boolean {
+  return Boolean(
+    utm.utm_source ||
+      utm.utm_medium ||
+      utm.utm_campaign ||
+      utm.utm_content ||
+      utm.utm_term ||
+      utm.fbclid
+  );
+}
+
+/**
+ * İlk dokunuş UTM + fbclid — reklamdan gelen linkten yakalanır,
+ * paket oluşturma boyunca localStorage'da saklanır.
+ */
 export function getUtm(): Utm {
   if (typeof window === "undefined") return {};
   try {
     const stored = localStorage.getItem(UTM_KEY);
-    if (stored) return JSON.parse(stored) as Utm;
+    if (stored) {
+      const parsed = JSON.parse(stored) as Utm;
+      // URL'de yeni fbclid varsa (aynı oturum yeniden tık) fbc için güncelleme yapılmaz —
+      // ilk dokunuş korunur. Eksik alanları ilk kayıtta doldurmak için merge yok.
+      if (utmHasValue(parsed)) return parsed;
+    }
   } catch {
     /* ignore */
   }
-  const p = new URLSearchParams(window.location.search);
-  const utm: Utm = {
-    utm_source: p.get("utm_source") ?? undefined,
-    utm_campaign: p.get("utm_campaign") ?? undefined,
-  };
-  if (utm.utm_source || utm.utm_campaign) {
+  const utm = readUtmFromSearch();
+  if (utmHasValue(utm)) {
     try {
       localStorage.setItem(UTM_KEY, JSON.stringify(utm));
     } catch {
@@ -62,6 +96,17 @@ export function getUtm(): Utm {
     }
   }
   return utm;
+}
+
+/** Sayfa açılışında bir kez çağır — UTM kaybını önler */
+export function captureUtmOnLanding(): void {
+  getUtm();
+}
+
+/** Last-touch: mevcut URL'deki UTM (first-touch'ı ezmez). */
+export function getLastTouchUtm(): Utm {
+  if (typeof window === "undefined") return {};
+  return readUtmFromSearch();
 }
 
 export function getDevice(): "mobile" | "tablet" | "desktop" {

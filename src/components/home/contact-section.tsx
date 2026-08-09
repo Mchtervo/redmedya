@@ -5,7 +5,7 @@ import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { GlassCta } from "@/components/ui/glass-cta";
 import { SectionReveal } from "@/components/effects/section-reveal";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelWhatsAppClick } from "@/lib/paket/pixel";
 
 const CONTACT_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
   siteConfig.defaultWhatsApp
@@ -87,11 +87,7 @@ export function ContactSection() {
                   href={CONTACT_WHATSAPP_URL}
                   external
                   variant="whatsapp"
-                  onClick={() =>
-                    trackMetaEvent("WhatsAppClick", {
-                      content_name: "contact_section",
-                    })
-                  }
+                  onClick={() => pixelWhatsAppClick("contact_section")}
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   WhatsApp

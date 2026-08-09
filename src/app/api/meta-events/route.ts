@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
+import { META_CAPI_ALLOWED } from "@/lib/meta-pixel";
 
 /**
- * Meta Conversions API (CAPI) — sunucu taraflı olay gönderimi.
- * Tarayıcı pikseli + bu route AYNI event_id'yi kullanır; Meta çiftleri ayıklar.
- * iPhone / adblock kullanıcılarında bile sinyal kaybolmaz.
- *
- * Kurulum: Events Manager → Ayarlar → Conversions API → Token oluştur →
- * META_CAPI_ACCESS_TOKEN olarak .env'e ekle. Token yoksa route sessizce
- * "skipped" döner (hata vermez).
+ * Meta Conversions API (CAPI) — tarayıcı ile AYNI event_id.
+ * Allowlist dışı (Lead, Purchase, Contact, SitePageView…) reddedilir.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +21,7 @@ export async function POST(request: NextRequest) {
         phone?: string;
         firstName?: string;
         lastName?: string;
+        externalId?: string;
       };
       fbp?: string;
       fbc?: string;
@@ -37,21 +34,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!META_CAPI_ALLOWED.has(body.eventName)) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        debug: true,
+        error: `CAPI allowlist dışı: ${body.eventName}`,
+      });
+    }
+
+    const hostHeader = request.headers.get("host");
     const clientIp =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       request.headers.get("x-real-ip") ||
       undefined;
     const clientUserAgent = request.headers.get("user-agent") || undefined;
 
+    // event_source_url: istemcinin gerçek sayfası; yoksa Referer (hard-code root yok)
+    const eventSourceUrl =
+      body.eventSourceUrl?.trim() ||
+      request.headers.get("referer") ||
+      undefined;
+
     const result = await sendMetaCapiEvent(body.eventName, {
       eventId: body.eventId,
       actionSource: "website",
-      eventSourceUrl: body.eventSourceUrl,
+      eventSourceUrl,
+      hostHeader,
       userData: {
         email: body.customer?.email,
         phone: body.customer?.phone,
         firstName: body.customer?.firstName,
         lastName: body.customer?.lastName,
+        externalId: body.customer?.externalId,
         fbp: body.fbp,
         fbc: body.fbc,
         clientIp,
@@ -65,13 +80,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Sessiz düşme YOK — sunucu loglarında (Hostinger "Çalışma zamanı günlükleri") görünsün
-    if (result.skipped) {
+    if (result.skipped && !result.debug) {
       console.error(
-        "[CAPI] ATLANDI: META_CAPI_ACCESS_TOKEN sunucu ortamında TANIMLI DEĞİL. " +
-          "Hostinger → Ortam değişkenleri'ne ekleyip 'Değişiklikleri uygula' + 'Yeniden Dağıt' yapın."
+        "[CAPI] ATLANDI: META_CAPI_ACCESS_TOKEN yok veya yapılandırma eksik."
       );
-    } else if (!result.ok) {
+    } else if (!result.ok && !result.debug) {
       console.error(`[CAPI] Meta reddetti (${body.eventName}):`, result.error);
     }
 

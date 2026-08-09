@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelWhatsAppClick } from "@/lib/paket/pixel";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { EASE_LUXURY } from "@/lib/animations";
@@ -79,7 +79,6 @@ export function HeroSection() {
         >
           <Link
             href="/paket-olustur"
-            onClick={() => trackMetaEvent("InitiateCheckout", { content_name: "hero_cta" })}
             className="group inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-rm-champagne px-6 py-3.5 text-[11px] font-bold tracking-[0.2em] text-rm-black uppercase shadow-[0_8px_30px_rgba(196,160,82,0.25)] transition-all hover:bg-rm-champagne-light hover:shadow-[0_8px_40px_rgba(196,160,82,0.45)] sm:w-auto sm:min-w-[220px] sm:px-8"
           >
             Paket oluştur
@@ -89,9 +88,7 @@ export function HeroSection() {
             href={HERO_WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() =>
-              trackMetaEvent("WhatsAppClick", { content_name: "hero_whatsapp" })
-            }
+            onClick={() => pixelWhatsAppClick("hero_whatsapp")}
             className="inline-flex w-full max-w-xs items-center justify-center rounded-full border border-white/30 bg-white/[0.04] px-6 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-white uppercase backdrop-blur-sm transition-colors hover:border-white hover:bg-white/10 sm:w-auto sm:min-w-[220px] sm:px-8"
           >
             WhatsApp ile yaz

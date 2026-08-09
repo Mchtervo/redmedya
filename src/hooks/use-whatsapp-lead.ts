@@ -10,7 +10,7 @@ import {
   getWhatsAppUrl,
 } from "@/lib/whatsapp";
 import { trackAnalytics } from "@/lib/analytics";
-import { trackCustomEvent, trackMetaEvent } from "@/lib/meta-pixel";
+import { trackGA4 } from "@/lib/analytics";
 import { getPackageSessionId } from "@/lib/package-session-id";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 
@@ -45,16 +45,12 @@ export function useWhatsAppLead() {
           seasonalRules
         );
         if (snap.count > 0) {
-          trackCustomEvent("CartNeedsContact", {
+          // Meta InitiateCheckout YOK — yalnızca GA4 (funnel IC form adımında)
+          trackGA4("cart_needs_contact", {
             item_count: snap.count,
             value: snap.total,
             content_name: contentName,
             page_path: pathname,
-          });
-          trackMetaEvent("InitiateCheckout", {
-            content_name: "sepet_var_iletisim_eksik",
-            value: snap.total,
-            num_items: snap.count,
           });
         }
         if (!pathname.startsWith("/paket-olustur")) {

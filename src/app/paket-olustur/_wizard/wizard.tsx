@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FilmGrain } from "@/components/effects/film-grain";
 import { COPY } from "@/content/paketOlustur";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelViewContentPaket } from "@/lib/paket/pixel";
 import { WizardProvider, useWizard } from "./wizard-context";
 import { CampaignBanner } from "./campaign-banner";
 import { StepIndicator } from "./step-indicator";
@@ -57,7 +57,7 @@ function StepSwitch() {
 
 function WizardInner() {
   useEffect(() => {
-    trackMetaEvent("ViewContent", { content_name: "package_builder_v2" });
+    pixelViewContentPaket();
   }, []);
 
   return (

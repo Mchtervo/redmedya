@@ -2,8 +2,10 @@ import { getPackage, getPlato } from "@/config/pricing";
 import { calculateTotal } from "@/lib/paket/calculate-total";
 import type { PackageBuilderState } from "@/lib/paket/state";
 import { getSessionId, getUtm } from "@/lib/track/session";
-import { readMetaAttributionFromDocument, newMetaEventId } from "@/lib/meta-attribution";
+import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 import { formatPrice } from "@/lib/utils";
+import { pixelSchedule } from "@/lib/paket/pixel";
+import { reservationScheduleEventId } from "@/lib/meta-tracking";
 
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,7 +29,6 @@ function buildCartSummary(state: PackageBuilderState) {
         : formatPrice(li.amount);
     return `${li.label} — ${right}`;
   });
-  // Paket adını başa ekle (admin okunabilirliği)
   if (state.packageId != null) {
     const pkg = getPackage(state.packageId);
     lineSummary.unshift(`${pkg.name} — ${pkg.subtitle}`);
@@ -63,8 +64,7 @@ function customerPayload(state: PackageBuilderState) {
 
 /**
  * Taslak senkronu — "Tarihimi Kilitle"ye BASMADAN önce paket + isim + tarih +
- * (varsa) telefon kaydedilir. Yarım bırakan müşteri admin panelde görünür → aranır.
- * Fire-and-forget; hata UI'yı etkilemez.
+ * (varsa) telefon kaydedilir. Fire-and-forget; Meta conversion YOK.
  */
 export function syncPackageDraft(
   state: PackageBuilderState,
@@ -86,6 +86,7 @@ export function syncPackageDraft(
         total: cart.total,
         count: cart.count,
         whatsappClicked,
+        utm: getUtm(),
       }),
     }).catch(() => {});
   } catch {
@@ -94,13 +95,18 @@ export function syncPackageDraft(
 }
 
 /**
- * WhatsApp'a basıldığında tam lead kaydı (dönüşen müşteri).
- * metaAttribution (fbp/fbc/eventId) admin onayında CAPI eşleştirme için saklanır.
+ * WhatsApp'a basıldığında tam lead kaydı.
+ * Backend başarılı olunca Schedule (browser + CAPI aynı event_id).
+ * Sadece buton → Schedule YOK; kayıt başarısı şart.
  */
 export function submitPackageLead(state: PackageBuilderState): void {
   if (typeof window === "undefined" || state.packageId == null) return;
   const cart = buildCartSummary(state);
   const attr = readMetaAttributionFromDocument();
+  const sessionId = getSessionId();
+  const utm = getUtm();
+  // Sunucu ile aynı Schedule event_id için client önceden üretir;
+  // sunucu lead.id ile reservation_<id> kullanır — client yanıt sonrası aynı id ile fbq.
   try {
     fetch("/api/public/leads", {
       method: "POST",
@@ -116,15 +122,36 @@ export function submitPackageLead(state: PackageBuilderState): void {
           total: cart.total,
           count: cart.count,
         },
-        sessionId: getSessionId(),
-        utm: getUtm(),
+        sessionId,
+        utm,
         metaAttribution: {
           fbp: attr.fbp,
           fbc: attr.fbc,
-          eventId: newMetaEventId("lead"),
         },
+        eventSourceUrl: window.location.href,
       }),
-    }).catch(() => {});
+    })
+      .then(async (res) => {
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          id?: string;
+          scheduleEventId?: string;
+        } | null;
+        if (!data?.ok || !data.id) return;
+        // Browser fbq Schedule — CAPI sunucuda aynı reservation_<id> ile gitti
+        pixelSchedule(
+          data.id,
+          cart.total,
+          {
+            name: state.name,
+            phone: state.phone,
+            externalId: sessionId,
+          },
+          { mirrorCapi: false }
+        );
+        void (data.scheduleEventId ?? reservationScheduleEventId(data.id));
+      })
+      .catch(() => {});
   } catch {
     /* sessiz */
   }

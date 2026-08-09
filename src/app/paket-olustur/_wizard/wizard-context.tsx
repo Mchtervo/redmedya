@@ -30,14 +30,15 @@ import {
 import { calculateTotal, type TotalResult } from "@/lib/paket/calculate-total";
 import { buildShareUrl, parseState, serializeState } from "@/lib/paket/url-state";
 import {
-  pixelAddExtra,
+  pixelAddToCartMain,
   pixelInitiateCheckout,
-  pixelLead,
-  pixelSelectPackage,
+  pixelPackageBuild,
   pixelStepView,
 } from "@/lib/paket/pixel";
 import { syncPackageDraft } from "@/lib/paket/lead-capture";
 import { track, trackSessionEnd } from "@/lib/track/tracker";
+import { captureUtmOnLanding } from "@/lib/track/session";
+import { trackFunnelEvent } from "@/lib/analytics/client";
 
 type AvailabilityInfo = { level: AvailabilityLevel; message: string };
 type AvailabilityMap = Record<string, AvailabilityInfo>;
@@ -72,10 +73,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const hydratedRef = useRef(false);
 
-  // Mount: paylaşılan link query'sinden state restore
+  // Mount: UTM yakala + paylaşılan link query'sinden state restore
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
+    captureUtmOnLanding();
     const parsed =
       typeof window !== "undefined" ? parseState(window.location.search) : null;
     if (parsed) {
@@ -202,6 +204,19 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const goToStep = useCallback(
     (step: WizardStep) => {
       if (step === state.step) return;
+      // Form aşamasına ilk giriş → InitiateCheckout (tek sefer; geri/ileri spam yok)
+      if (step === 3 && state.step < 3) {
+        pixelInitiateCheckout(totalRef.current);
+      }
+      if (step > state.step) {
+        trackFunnelEvent("StepForward", {
+          metadata: { from: state.step, to: step },
+        });
+      } else if (step < state.step) {
+        trackFunnelEvent("StepBack", {
+          metadata: { from: state.step, to: step },
+        });
+      }
       setDir(step >= state.step ? 1 : -1); // §9.10 yön
       const qs = serializeState({ ...state, step });
       const url = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
@@ -234,10 +249,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         return;
       }
       setWarning(null);
-      pixelInitiateCheckout(totals.total);
+      // AddToCart: bilinçli "Devam" — paket+plato tamam, sepete esas seçim
+      const pkg = getPackage(state.packageId);
+      pixelAddToCartMain(`${pkg.name} — ${pkg.subtitle}`, totals.total);
       goToStep(2);
     } else if (state.step === 2) {
-      goToStep(3);
+      goToStep(3); // InitiateCheckout goToStep(3) içinde
     }
   }, [state.step, state.packageId, state.plato, totals.total, goToStep]);
 
@@ -249,13 +266,20 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     const pkg = getPackage(id);
     dispatch({ type: "SELECT_PACKAGE", packageId: id });
     setWarning(null);
-    pixelSelectPackage(`${pkg.name} — ${pkg.subtitle}`, pkg.price);
+    // PackageBuild: ilk gerçek seçim (tek sefer; plato da aynı gate)
+    pixelPackageBuild(`${pkg.name} — ${pkg.subtitle}`, pkg.price);
+    trackFunnelEvent("PackageSelected", {
+      metadata: { package_id: id, price: pkg.price },
+    });
     track("package_selected", { package_id: id, price: pkg.price });
   }, []);
 
   const selectPlato = useCallback((plato: PlatoId) => {
     dispatch({ type: "SELECT_PLATO", plato });
     setWarning(null);
+    // Paket seçilmeden önce plato seçilirse de PackageBuild bir kez
+    pixelPackageBuild(`plato_${plato}`, 0);
+    trackFunnelEvent("PlatoSelected", { metadata: { plato } });
     track("plato_selected", { plato });
   }, []);
 
@@ -274,7 +298,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       const wasSelected = state.addons.some((a) => a.id === id);
       dispatch({ type: "TOGGLE_ADDON", id });
       const def = getAddon(id);
-      if (!wasSelected) pixelAddExtra(def.name, def.price);
+      if (!wasSelected) {
+        trackFunnelEvent("ExtraServiceSelected", {
+          metadata: { addon_id: id, price: def.price },
+        });
+      }
       track(wasSelected ? "addon_removed" : "addon_added", {
         addon_id: id,
         price: def.price,
@@ -285,14 +313,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
   const setAddonQty = useCallback(
     (id: AddonId, qty: number) => {
-      const prev = state.addons.find((a) => a.id === id)?.quantity ?? 0;
       dispatch({ type: "SET_ADDON_QTY", id, quantity: qty });
-      if (qty > prev) {
-        const def = getAddon(id);
-        pixelAddExtra(def.name, def.price);
-      }
     },
-    [state.addons]
+    []
   );
 
   const toggleRemoval = useCallback(
@@ -301,10 +324,9 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   );
 
   // §11 — form tracking: DEĞER asla loglanmaz, yalnızca alan adı
+  // InitiateCheckout form/input/tarih ile TETİKLENMEZ (yalnızca step 2→3 next)
   const formStartedRef = useRef(false);
   const filledFieldsRef = useRef<Set<string>>(new Set());
-  const dateCheckoutFiredRef = useRef(false);
-  // §6 Adım-3 mikro funnel bayrakları (tek sefer)
   const form3StartedRef = useRef(false);
   const date3FilledRef = useRef(false);
   const name3FilledRef = useRef(false);
@@ -319,9 +341,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
       if (!formStartedRef.current) {
         formStartedRef.current = true;
         track("form_started", { total: totalRef.current });
+        trackFunnelEvent("FormStarted", {
+          metadata: { total: totalRef.current },
+        });
       }
 
-      // §6 — Adım 3'e ÖZEL alan bazlı funnel (hangi alanda düşüyorlar)
       if (stepRefForField.current === 3) {
         if (!form3StartedRef.current) {
           form3StartedRef.current = true;
@@ -341,18 +365,16 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         const m = /^(\d{4})-(\d{2})/.exec(value);
         if (m) {
           track("date_selected", {
-            month: `${m[1]}-${m[2]}`, // yalnızca AY
+            month: `${m[1]}-${m[2]}`,
             total: totalRef.current,
           });
-          // Tarih seçimi güçlü niyet sinyali → InitiateCheckout (piksel + CAPI), tek sefer
-          if (!dateCheckoutFiredRef.current) {
-            dateCheckoutFiredRef.current = true;
-            pixelInitiateCheckout(totalRef.current);
-          }
+          trackFunnelEvent("DateSelected", {
+            metadata: { month: `${m[1]}-${m[2]}` },
+          });
         }
       } else if (value.trim() && !filledFieldsRef.current.has(field)) {
         filledFieldsRef.current.add(field);
-        track("form_field_filled", { field, total: totalRef.current }); // ⚠️ DEĞER YOK
+        track("form_field_filled", { field, total: totalRef.current });
       }
     },
     []
@@ -367,19 +389,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  // Adım 3'te form dolunca Lead — tarih + (isim VEYA telefon) yeterli, tek sefer
-  const leadFiredRef = useRef(false);
-  useEffect(() => {
-    if (
-      state.step === 3 &&
-      state.date &&
-      (state.name.trim() || state.phone.trim()) &&
-      !leadFiredRef.current
-    ) {
-      leadFiredRef.current = true;
-      pixelLead(totals.total, { name: state.name, phone: state.phone });
-    }
-  }, [state.step, state.name, state.phone, state.date, totals.total]);
+  // Final conversion = Schedule — yalnızca backend lead kaydı sonrası (goToWhatsApp / submitPackageLead).
+  // Form dolunca Lead / InitiateCheckout YOK.
 
   // Sepet tutarını olaylara yaz — admin "Ort. Sepet" bunu okur (dönüşüm olmasa da)
   const lastTrackedTotalRef = useRef(-1);

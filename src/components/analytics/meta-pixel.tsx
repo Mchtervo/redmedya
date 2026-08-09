@@ -1,18 +1,45 @@
+"use client";
+
 import Script from "next/script";
+import { useEffect, useState } from "react";
 import { siteConfig } from "@/config/site";
+import {
+  isMetaTrackingLiveBrowser,
+  logMetaDebug,
+  uniquePageViewEventId,
+} from "@/lib/meta-tracking";
+import { getSessionId } from "@/lib/track/session";
 
 /**
- * Meta (Facebook) Pixel — site genelinde yüklenir.
- *
- * - Pixel ID `siteConfig.metaPixelId` üzerinden gelir (env veya fallback).
- * - `strategy="beforeInteractive"` Meta crawler'ının pixel'i sayfa açılır
- *   açılmaz görmesini sağlar; "Bu sitede piksel saptanmadı" hatası buradan kaynaklanır.
- * - PageView ilk yüklemede tetiklenir, sonraki SPA navigasyonları
- *   `MetaPageTracker` tarafından yakalanır.
+ * Meta Pixel — yalnızca production düğün domainlerinde yüklenir.
+ * İlk PageView: benzersiz event_id (browser + CAPI aynı).
+ * SPA navigasyonları MetaPageTracker ile (yine unique id).
  */
 export function MetaPixel() {
   const pixelId = siteConfig.metaPixelId;
-  if (!pixelId) return null;
+  const [mode, setMode] = useState<"pending" | "live" | "debug">("pending");
+  const [pageViewId, setPageViewId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const live = isMetaTrackingLiveBrowser();
+    setMode(live ? "live" : "debug");
+    if (live) {
+      // Tek üretim → script içinde fbq + CAPI aynı id
+      setPageViewId(uniquePageViewEventId(getSessionId()));
+    } else {
+      logMetaDebug({
+        event: "PageView",
+        event_id: uniquePageViewEventId(getSessionId() || "debug"),
+        url: window.location.href,
+        source: "browser",
+        reason: "Pixel script yüklenmedi (localhost/dev/preview)",
+      });
+    }
+  }, []);
+
+  if (!pixelId || mode === "pending" || mode === "debug" || !pageViewId) {
+    return null;
+  }
 
   return (
     <>
@@ -30,12 +57,8 @@ export function MetaPixel() {
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '${pixelId}');
-            /* §7 CAPI: ilk PageView de aynı event_id ile SUNUCUDAN aynalanır (dedup).
-               Tarayıcı fbq çağrısına eventID verilir, aynısı /api/meta-events'e POST edilir. */
             (function(){
-              var id = (window.crypto && crypto.randomUUID)
-                ? crypto.randomUUID()
-                : ('pv_' + Date.now() + '_' + Math.floor(Math.random()*1e9));
+              var id = ${JSON.stringify(pageViewId)};
               fbq('track', 'PageView', {}, { eventID: id });
               try {
                 fetch('/api/meta-events', {
@@ -48,14 +71,8 @@ export function MetaPixel() {
                     eventSourceUrl: location.href,
                     currency: 'TRY'
                   })
-                }).then(function(r){ return r.json(); }).then(function(d){
-                  if (!d || !d.ok) {
-                    console.warn('[CAPI] PageView sunucuya gitmedi:',
-                      d && d.skipped ? 'META_CAPI_ACCESS_TOKEN sunucuda TANIMLI DEĞİL (env eksik)'
-                                     : (d && d.error) || 'bilinmeyen');
-                  }
-                }).catch(function(e){ console.warn('[CAPI] PageView istek hatası:', e); });
-              } catch(e) { console.warn('[CAPI] PageView istisna:', e); }
+                }).catch(function(){});
+              } catch(e) {}
             })();
           `,
         }}

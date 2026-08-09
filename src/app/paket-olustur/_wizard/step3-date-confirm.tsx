@@ -20,6 +20,10 @@ import { siteConfig } from "@/config/site";
 import { ACTIVE_CTA_VARIANT, activeCtaText } from "@/config/experiments";
 import { WeddingDatePicker } from "@/components/ui/wedding-date-picker";
 import { goToWhatsApp } from "@/lib/paket/go-to-whatsapp";
+import {
+  trackFormFieldError,
+  trackFunnelEvent,
+} from "@/lib/analytics/client";
 import { buildWizardWhatsAppMessage } from "@/lib/paket/whatsapp-message";
 import { track } from "@/lib/track/tracker";
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
@@ -459,12 +463,34 @@ export function Step3DateConfirm() {
   const canSubmit = Boolean(state.date && state.name.trim());
 
   const handleLock = () => {
+    trackFunnelEvent("FormSubmitAttempt", {
+      metadata: { total: totals.total, package_id: state.packageId ?? 0 },
+    });
     // §6 — ana CTA tıklandı (hangi varyant)
     track("cta_click", {
       variant: ACTIVE_CTA_VARIANT,
       total: totals.total,
       package_id: state.packageId ?? 0,
     });
+
+    if (!state.date) trackFormFieldError("date", "required");
+    if (!state.name.trim()) trackFormFieldError("name", "required");
+    else if (state.name.trim().length < 2)
+      trackFormFieldError("name", "too_short");
+    const digits = state.phone.replace(/\D/g, "");
+    if (!digits) trackFormFieldError("phone", "required");
+    else if (digits.length < 10)
+      trackFormFieldError("phone", "invalid_format");
+
+    // Mevcut UI kuralı: tarih + isim (telefon API’de zorunlu; UX’i bozmadan yalnızca log)
+    if (!canSubmit) {
+      trackFunnelEvent("FormSubmitError", {
+        metadata: { reason: "validation" },
+        error_code: "validation",
+      });
+      return;
+    }
+
     const shouldOffer =
       state.packageId !== 3 &&
       missingKlips.length > 0 &&
@@ -474,7 +500,7 @@ export function Step3DateConfirm() {
       track("lastchance_shown", {});
       return;
     }
-    // Adım 3'te Lead zaten form dolunca ateşlendi → fireLead:false (çift Lead yok)
+    // Schedule: submitPackageLead → backend başarı sonrası (buton ≠ conversion)
     goToWhatsApp(state, { source: "step3" });
   };
 

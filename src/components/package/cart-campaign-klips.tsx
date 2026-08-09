@@ -11,7 +11,7 @@ import { dispatchExpandPackageSection } from "@/lib/package-expand";
 import { CAMPAIGN_KLIP_PRICE } from "@/config/campaign-klips";
 import { formatPrice, cn } from "@/lib/utils";
 import { Check } from "lucide-react";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackGA4 } from "@/lib/analytics";
 
 export function CartCampaignKlips() {
   const services = usePackageStore((s) => s.services);
@@ -51,7 +51,7 @@ export function CartCampaignKlips() {
                 disabled={added}
                 onClick={() => {
                   addCampaignKlip(o.serviceId);
-                  trackMetaEvent("AddToCart", {
+                  trackGA4("campaign_klip_add", {
                     content_name: `campaign_klip_${o.serviceId}`,
                   });
                   dispatchExpandPackageSection({

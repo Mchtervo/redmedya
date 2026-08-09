@@ -9,12 +9,22 @@ import {
   Settings2,
   Database,
   Activity,
+  Filter,
+  Users,
+  Megaphone,
+  FormInput,
+  Bug,
 } from "lucide-react";
 
 export type AdminTabId =
   | "overview"
   | "calendar"
   | "leads"
+  | "funnel"
+  | "sessions"
+  | "ads"
+  | "form_errors"
+  | "tech_errors"
   | "journey"
   | "packages"
   | "rehber"
@@ -32,13 +42,13 @@ export type AdminNavItem = {
 export const ADMIN_NAV: AdminNavItem[] = [
   {
     id: "overview",
-    label: "Genel bakış",
+    label: "Dashboard",
     description: "Özet ve yaklaşan düğünler",
     icon: LayoutDashboard,
   },
   {
     id: "calendar",
-    label: "Takvim",
+    label: "Rezervasyonlar",
     description: "Onaylı rezervasyonlar",
     icon: CalendarDays,
   },
@@ -49,9 +59,39 @@ export const ADMIN_NAV: AdminNavItem[] = [
     icon: Inbox,
   },
   {
+    id: "funnel",
+    label: "Funnel Analizi",
+    description: "Drop-off & dönüşüm",
+    icon: Filter,
+  },
+  {
+    id: "sessions",
+    label: "Sessionlar",
+    description: "Kullanıcı yolculukları",
+    icon: Users,
+  },
+  {
+    id: "ads",
+    label: "Reklam Performansı",
+    description: "UTM & kampanya",
+    icon: Megaphone,
+  },
+  {
+    id: "form_errors",
+    label: "Form Hataları",
+    description: "Validation analizi",
+    icon: FormInput,
+  },
+  {
+    id: "tech_errors",
+    label: "Teknik Hatalar",
+    description: "JS / API hataları",
+    icon: Bug,
+  },
+  {
     id: "journey",
-    label: "Yolculuk",
-    description: "Funnel & yarım kalanlar",
+    label: "Yolculuk (eski)",
+    description: "Legacy funnel",
     icon: Activity,
   },
   {
@@ -86,12 +126,15 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
 ];
 
-/**
- * Sidebar bölüm grupları — eğitim almaya değer olmasa da görsel olarak
- * geniş menüyü 2-3 mantıklı bölüme ayırır.
- */
 export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
-  { title: "Operasyon", ids: ["overview", "calendar", "leads", "journey"] },
+  {
+    title: "Operasyon",
+    ids: ["overview", "calendar", "leads"],
+  },
+  {
+    title: "Analitik",
+    ids: ["funnel", "sessions", "ads", "form_errors", "tech_errors", "journey"],
+  },
   { title: "Müşteri", ids: ["packages", "rehber"] },
   { title: "Ayarlar", ids: ["cms", "operations", "data"] },
 ];

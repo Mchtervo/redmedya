@@ -14,7 +14,7 @@ import {
   buildWhatsAppMessage,
   getWhatsAppUrl,
 } from "@/lib/whatsapp";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelWhatsAppClick } from "@/lib/paket/pixel";
 
 /**
  * Mobil paket sayfası alt çubuğu.
@@ -64,16 +64,10 @@ export function PackageMobileBar() {
         behavior: "smooth",
         block: "start",
       });
-      trackMetaEvent("InitiateCheckout", {
-        content_name: "package_mobile_bar_needs_contact",
-        value: total,
-      });
+      // Meta InitiateCheckout yok — iletişim formu funnel'ında
       return;
     }
-    trackMetaEvent("WhatsAppClick", {
-      content_name: "package_mobile_bar",
-      value: total,
-    });
+    pixelWhatsAppClick("package_mobile_bar", total);
   };
 
   return (
@@ -93,11 +87,6 @@ export function PackageMobileBar() {
       <div className="grid grid-cols-2 gap-2 px-3 py-2.5">
         <a
           href={telUrl}
-          onClick={() =>
-            trackMetaEvent("Lead", {
-              content_name: "package_mobile_bar_phone",
-            })
-          }
           className="flex h-12 items-center justify-center gap-2 rounded-full border border-rm-champagne/40 bg-rm-champagne/8 text-rm-champagne active:bg-rm-champagne/20"
           aria-label={`Ara ${siteConfig.displayPhone}`}
         >

@@ -3,7 +3,7 @@
 import { Phone, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { siteConfig } from "@/config/site";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { pixelWhatsAppClick } from "@/lib/paket/pixel";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 
 /**
@@ -30,7 +30,6 @@ export function StickyActions() {
         transition={{ delay: 0.4 }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        onClick={() => trackMetaEvent("Lead", { content_name: "phone_click" })}
         className="group flex h-11 items-center gap-2 overflow-hidden rounded-full bg-rm-black/85 px-3 text-rm-champagne shadow-[0_8px_25px_rgba(0,0,0,0.35)] ring-1 ring-rm-champagne/25 backdrop-blur-md transition-all hover:px-4"
         aria-label={`Ara ${siteConfig.displayPhone}`}
       >
@@ -49,9 +48,7 @@ export function StickyActions() {
         transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        onClick={() =>
-          trackMetaEvent("WhatsAppClick", { content_name: "sticky_whatsapp" })
-        }
+        onClick={() => pixelWhatsAppClick("sticky_whatsapp")}
         className="group relative flex h-14 items-center gap-2.5 overflow-hidden rounded-full bg-[#25D366] px-4 text-white shadow-[0_10px_35px_rgba(37,211,102,0.4)] transition-all hover:bg-[#1FB957] hover:px-5"
         aria-label="WhatsApp ile yaz"
       >

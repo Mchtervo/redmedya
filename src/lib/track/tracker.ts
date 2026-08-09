@@ -45,7 +45,8 @@ export type TrackEventType =
   | "exit_capture_shown"
   | "exit_capture_copy"
   | "exit_capture_whatsapp"
-  | "session_end";
+  | "session_end"
+  | "package_step_view";
 
 /** payload yalnızca anonim/ürün verisi; form DEĞERİ (isim/telefon/not) ASLA */
 type Payload = Record<string, string | number | boolean | null | undefined | string[]>;

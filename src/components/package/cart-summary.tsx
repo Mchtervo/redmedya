@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { WeddingDatePicker } from "@/components/ui/wedding-date-picker";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackGA4 } from "@/lib/analytics";
 import { trackAnalytics } from "@/lib/analytics";
 import { getPackageSessionId } from "@/lib/package-session-id";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
@@ -64,11 +64,9 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
     if (trackedFields.has(field)) return;
     setTrackedFields((prev) => new Set(prev).add(field));
     if (trackedFields.size === 0) {
-      trackMetaEvent("FormStart", { content_name: "package_form", field });
+      trackGA4("form_start", { content_name: "package_form", field });
     }
-    trackMetaEvent("PackageBuild", {
-      content_name: `field_filled_${field}`,
-    });
+    trackGA4("field_filled", { content_name: `field_filled_${field}` });
   };
 
   const handleCustomerChange = (
@@ -85,7 +83,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
     const ok = applyCouponCode(code);
     if (ok) {
       setCouponError("");
-      trackMetaEvent("DiscountUse", { coupon_code: code.toUpperCase() });
+      trackGA4("discount_use", { coupon_code: code.toUpperCase() });
     } else {
       setCouponError("Geçersiz kupon");
       clearCoupon();
@@ -122,12 +120,8 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
     if (!hasContact) {
       event.preventDefault();
       setShowForm(true);
-      trackMetaEvent("FormStart");
-      trackMetaEvent("InitiateCheckout", {
-        content_name: "cart_needs_contact",
-        value: total,
-        num_items: count,
-      });
+      trackGA4("form_start", { content_name: "cart_needs_contact" });
+      // Meta InitiateCheckout yok
       return;
     }
     trackAnalytics("whatsapp_click", {
@@ -401,7 +395,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
                 onChange={(weddingDate) => {
                   setCustomer({ weddingDate });
                   if (weddingDate) {
-                    trackMetaEvent("PackageBuild", {
+                    trackGA4("field_filled", {
                       content_name: "field_filled_weddingDate",
                     });
                   }

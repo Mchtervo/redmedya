@@ -12,7 +12,6 @@ import { DroneBundleOfferCard } from "@/components/package/drone-bundle-offer-ca
 import { usePackageStore } from "@/stores/package-store";
 import { usePackageDraftSync } from "@/hooks/use-package-draft-sync";
 import { useAutoCampaignKlip } from "@/hooks/use-auto-campaign-klip";
-import { trackMetaEvent } from "@/lib/meta-pixel";
 import { FilmGrain } from "@/components/effects/film-grain";
 
 const ServiceGrid = dynamic(
@@ -55,8 +54,7 @@ export function PackageBuilderClient() {
   }, [hydrateFromCms, hydrateSiteSettings]);
 
   useEffect(() => {
-    trackMetaEvent("ViewContent", { content_name: "package_builder" });
-    trackMetaEvent("InitiateCheckout");
+    // Legacy builder Meta funnel'a event göndermez (aktif sayfa: _wizard)
     reloadSiteData();
   }, [reloadSiteData]);
 

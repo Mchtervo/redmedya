@@ -41,6 +41,11 @@ export function ExitCapture() {
     shownRef.current = true;
     setVisible(true);
     track("exit_capture_shown", { step: stepRef.current });
+    void import("@/lib/analytics/client").then(({ trackFunnelEvent }) => {
+      trackFunnelEvent("ExitIntent", {
+        metadata: { step: stepRef.current },
+      });
+    });
     return true;
   };
 

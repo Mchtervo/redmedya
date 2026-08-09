@@ -1,3 +1,5 @@
+import { getUtm } from "@/lib/track/session";
+
 /** Tarayıcıdan Meta eşleştirme çerezleri (lead kaydında saklanır) */
 export type MetaAttribution = {
   fbp?: string;
@@ -13,7 +15,8 @@ export function readMetaAttributionFromDocument(): MetaAttribution {
     return m ? decodeURIComponent(m[1]) : undefined;
   };
   const params = new URLSearchParams(window.location.search);
-  const fbclid = params.get("fbclid");
+  const storedFbclid = getUtm().fbclid;
+  const fbclid = params.get("fbclid") || storedFbclid;
   const fbc =
     getCookie("_fbc") ||
     (fbclid ? `fb.1.${Date.now()}.${fbclid}` : undefined);

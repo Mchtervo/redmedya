@@ -13,7 +13,7 @@ import {
   droneBundleOfferProgress,
   shouldShowDroneBundleOffer,
 } from "@/lib/package-drone-bundle-offer";
-import { trackMetaEvent } from "@/lib/meta-pixel";
+import { trackGA4 } from "@/lib/analytics";
 import { CAMPAIGN_KLIP_PRICE } from "@/config/campaign-klips";
 import { dispatchExpandPackageSection } from "@/lib/package-expand";
 
@@ -42,7 +42,7 @@ export function DroneBundleOfferCard() {
   useEffect(() => {
     if (show) {
       setVisible(true);
-      trackMetaEvent("ViewContent", {
+      trackGA4("view_drone_offer", {
         content_name: "drone_hediye_karti",
         page_path: "/paket-olustur",
       });
@@ -60,7 +60,7 @@ export function DroneBundleOfferCard() {
       scrollTarget: "albums",
       scrollId: "albums",
     });
-    trackMetaEvent("AddToCart", {
+    trackGA4("drone_bundle_apply", {
       content_name: "drone_bundle_hemen_ekle",
       value: DRONE_GIFT_LIST_VALUE,
     });

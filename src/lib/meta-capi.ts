@@ -1,11 +1,19 @@
 import { siteConfig } from "@/config/site";
 import { hashEmail, hashName, hashPhone } from "@/lib/ads-hash";
+import { createHash } from "crypto";
+import {
+  isMetaTrackingLiveServer,
+  logMetaDebug,
+} from "@/lib/meta-tracking";
+import { META_CAPI_ALLOWED } from "@/lib/meta-pixel";
 
 export type MetaCapiUserData = {
   email?: string;
   phone?: string;
   firstName?: string;
   lastName?: string;
+  /** Ham external id (session/phone) — SHA-256 ile gönderilir */
+  externalId?: string;
   fbp?: string;
   fbc?: string;
   clientIp?: string;
@@ -42,12 +50,19 @@ function accessToken(): string | undefined {
   return process.env.META_CAPI_ACCESS_TOKEN?.trim();
 }
 
+function hashExternalId(raw: string): string | undefined {
+  const v = raw.trim().toLowerCase();
+  if (!v) return undefined;
+  return createHash("sha256").update(v).digest("hex");
+}
+
 function buildUserData(ud: MetaCapiUserData): Record<string, string | undefined> {
   return {
     em: ud.email ? hashEmail(ud.email) : undefined,
     ph: ud.phone ? hashPhone(ud.phone) : undefined,
     fn: ud.firstName ? hashName(ud.firstName) : undefined,
     ln: ud.lastName ? hashName(ud.lastName) : undefined,
+    external_id: ud.externalId ? hashExternalId(ud.externalId) : undefined,
     fbp: ud.fbp?.trim() || undefined,
     fbc: ud.fbc?.trim() || undefined,
     client_ip_address: ud.clientIp?.trim() || undefined,
@@ -55,6 +70,10 @@ function buildUserData(ud: MetaCapiUserData): Record<string, string | undefined>
   };
 }
 
+/**
+ * event_source_url: çağıranın verdiği gerçek URL zorunlu tercihtir.
+ * Root hard-code YOK. Yoksa gönderim atlanır (yanlış attribution olmasın).
+ */
 export async function sendMetaCapiEvent(
   eventName: string,
   options: {
@@ -62,14 +81,50 @@ export async function sendMetaCapiEvent(
     eventTime?: number;
     actionSource?: "website" | "system_generated";
     eventSourceUrl?: string;
+    hostHeader?: string | null;
     userData?: MetaCapiUserData;
     customData?: MetaCapiCustomData;
   }
-): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+): Promise<{ ok: boolean; skipped?: boolean; debug?: boolean; error?: string }> {
+  if (!META_CAPI_ALLOWED.has(eventName)) {
+    logMetaDebug({
+      event: eventName,
+      event_id: options.eventId,
+      url: options.eventSourceUrl,
+      source: "capi",
+      reason: "CAPI allowlist dışı — gönderilmedi",
+    });
+    return { ok: true, skipped: true, debug: true };
+  }
+
+  const live = isMetaTrackingLiveServer({
+    hostHeader: options.hostHeader,
+    eventSourceUrl: options.eventSourceUrl,
+  });
+
+  if (!live) {
+    logMetaDebug({
+      event: eventName,
+      event_id: options.eventId,
+      url: options.eventSourceUrl,
+      source: "capi",
+      reason: "production dışı veya izinli host değil — Meta'ya gönderilmedi",
+    });
+    return { ok: true, skipped: true, debug: true };
+  }
+
   const token = accessToken();
   const pid = pixelId();
   if (!token || !pid) {
     return { ok: false, skipped: true };
+  }
+
+  const eventSourceUrl = options.eventSourceUrl?.trim();
+  if (!eventSourceUrl || !/^https?:\/\//i.test(eventSourceUrl)) {
+    return {
+      ok: false,
+      error: "event_source_url gerekli (gerçek sayfa URL'si).",
+    };
   }
 
   const user_data = Object.fromEntries(
@@ -106,9 +161,8 @@ export async function sendMetaCapiEvent(
         event_name: eventName,
         event_time: options.eventTime ?? Math.floor(Date.now() / 1000),
         event_id: options.eventId,
-        action_source: options.actionSource ?? "system_generated",
-        event_source_url:
-          options.eventSourceUrl ?? `${siteConfig.url}/paket-olustur`,
+        action_source: options.actionSource ?? "website",
+        event_source_url: eventSourceUrl,
         user_data,
         custom_data,
       },

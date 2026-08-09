@@ -62,17 +62,9 @@ type PaletteRow =
       action: () => void;
     };
 
-const NAV_ICONS: Record<AdminTabId, LucideIcon> = {
-  overview: LayoutDashboard,
-  calendar: CalendarDays,
-  leads: Inbox,
-  journey: Activity,
-  packages: ShoppingCart,
-  rehber: Contact,
-  cms: Layers,
-  operations: Settings2,
-  data: Database,
-};
+const NAV_ICONS: Record<AdminTabId, LucideIcon> = Object.fromEntries(
+  ADMIN_NAV.map((n) => [n.id, n.icon])
+) as Record<AdminTabId, LucideIcon>;
 
 type Props = {
   open: boolean;

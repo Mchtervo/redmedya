@@ -2,71 +2,43 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { trackCustomEvent, trackMetaEvent } from "@/lib/meta-pixel";
-import { usePackageStore } from "@/stores/package-store";
+import { trackMetaEvent } from "@/lib/meta-pixel";
+import { uniquePageViewEventId } from "@/lib/meta-tracking";
+import { getSessionId } from "@/lib/track/session";
+import { trackFunnelEvent } from "@/lib/analytics/client";
 
-const PAGE_LABELS: Record<string, string> = {
-  "/": "Ana Sayfa",
-  "/paket-olustur": "Paket Oluştur",
-  "/galeri": "Galeri",
-  "/ankara-dugun-fotografcisi": "SEO Düğün Fotoğrafçısı",
-  "/dis-cekim-fiyatlari": "SEO Dış Çekim",
-  "/ankara-gelin-alma-klibi": "SEO Gelin Alma",
-  "/ankara-dugun-videosu": "SEO Düğün Videosu",
-};
-
-/** Her sayfa geçişinde Meta + sepet durumu (onaysız sepet için) */
+/**
+ * SPA route değişiminde PageView.
+ * Her gerçek navigasyon → yeni benzersiz event_id (browser+CAPI aynı).
+ * İlk yükleme MetaPixel script'inde yapılır — burada atlanır.
+ * ViewContent buradan GİTMEZ (/paket-olustur wizard'da session once).
+ */
 export function MetaPageTracker() {
   const pathname = usePathname();
-  const prevPath = useRef<string | null>(null);
+  const isFirst = useRef(true);
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
-    if (prevPath.current === pathname) return;
-    prevPath.current = pathname;
 
-    const label = PAGE_LABELS[pathname] ?? pathname;
-    trackMetaEvent("ViewContent", {
-      content_name: label,
-      page_path: pathname,
-    });
-    trackCustomEvent("SitePageView", {
-      page_path: pathname,
-      page_title: label,
-    });
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!pathname.startsWith("/paket-olustur")) return;
-
-    const reportCart = () => {
-      const state = usePackageStore.getState();
-      const count = state.getSelectedCount();
-      if (count === 0) return;
-
-      const total = state.getTotal();
-      const items = state
-        .getSelectedLineItems()
-        .map((l) => l.name)
-        .join(" | ");
-
-      trackCustomEvent("PackageCartSnapshot", {
-        item_count: count,
-        value: total,
-        currency: "TRY",
-        cart_items: items.slice(0, 500),
-        page_path: pathname,
+    // İlk mount: Meta Pixel script PageView attı — iç analytics PageView yine kaydedilir
+    if (isFirst.current) {
+      isFirst.current = false;
+      trackFunnelEvent("PageView", {
+        metadata: { page_path: pathname, boot: true },
       });
-    };
+      return;
+    }
 
-    const id = window.setInterval(reportCart, 45_000);
-    const onLeave = () => reportCart();
-    window.addEventListener("pagehide", onLeave);
-
-    return () => {
-      clearInterval(id);
-      window.removeEventListener("pagehide", onLeave);
-    };
+    const eventId = uniquePageViewEventId(getSessionId());
+    trackMetaEvent(
+      "PageView",
+      { content_name: pathname, page_path: pathname },
+      undefined,
+      { eventId, mirrorCapi: true }
+    );
+    trackFunnelEvent("PageView", {
+      metadata: { page_path: pathname },
+    });
   }, [pathname]);
 
   return null;
