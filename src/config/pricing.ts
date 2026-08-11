@@ -87,26 +87,25 @@ export type PackageDef = {
 const ALBUM_OPTIONS_LINE = "40+ çeşit albüm tasarımı arasından seçim";
 
 // ————————————————————————————— ÇAPA DAYANAĞI —————————————————————————————
-// Üstü çizili "değer toplamı" = kampanyasız (normal) paket fiyatı; her pakette
-// TUTARLI ~%20 indirim çıkacak şekilde (satış ≈ değer × 0,8). savings = değer − satış.
-// Bu, paketin kendi normal fiyatıdır (indirimli satış mevzuatına dayanak) ve müşteriye
-// tutarlı görünür. Plato değeri müşteriye TUTAR olarak gösterilmez (yalnızca "ÜCRETSİZ").
+// Üstü çizili "değer toplamı" = kampanyasız paket + hediye kalemler.
+// savings = (değer − satış); LIST_PLATO (₺3.000) kazanca DAHİL ama UI'da
+// "plato ücreti" diye AYRICA yazılmaz — yalnızca "Anlaşmalı plato ÜCRETSİZ".
 //
-//  P1: ₺13.750 → 11.000  (%20, kazanç 2.750)
-//  P2: ₺18.750 → 15.000  (%20, kazanç 3.750)
-//  P3: ₺31.500 → 22.000  (%20 indirim 5.500 + 🚁 drone hediye 4.000 = kazanç 9.500)
-const P1_VALUE = 13750;
-const P2_VALUE = 18750;
-const P3_VALUE = 31500; // 27.500 (%20) + 4.000 drone hediye
+//  P1: ₺16.750 → 11.000  (indirim 2.750 + hediye 3.000 = kazanç 5.750)
+//  P2: ₺21.750 → 15.000  (indirim 3.750 + hediye 3.000 = kazanç 6.750)
+//  P3: ₺34.500 → 22.000  (indirim 5.500 + drone 4.000 + hediye 3.000 = kazanç 12.500)
+const P1_VALUE = 13750 + PRICING.LIST_PLATO; // 16.750
+const P2_VALUE = 18750 + PRICING.LIST_PLATO; // 21.750
+const P3_VALUE = 31500 + PRICING.LIST_PLATO; // 34.500 (27.500 + drone 4.000 + 3.000)
 
 export const PACKAGES: PackageDef[] = [
   {
     id: 1,
     name: "Paket 1",
     subtitle: "Sinematik",
-    valueTotal: P1_VALUE, // 13.750
+    valueTotal: P1_VALUE, // 16.750
     price: 11000,
-    savings: P1_VALUE - 11000, // 2.750
+    savings: P1_VALUE - 11000, // 5.750
     stripImage: "/images/paket-olustur/paket1-cine.webp",
     stripAlt: "Sinematik düğün çekimi ekipmanı",
     contents: [
@@ -127,9 +126,9 @@ export const PACKAGES: PackageDef[] = [
     id: 2,
     name: "Paket 2",
     subtitle: "Sinematik + Albüm",
-    valueTotal: P2_VALUE, // 18.750
+    valueTotal: P2_VALUE, // 21.750
     price: 15000,
-    savings: P2_VALUE - 15000, // 3.750
+    savings: P2_VALUE - 15000, // 6.750
     featured: true,
     ribbon: "⭐ EN ÇOK TERCİH EDİLEN",
     stripImage: "/images/paket-olustur/album-luxury.webp",
@@ -155,9 +154,9 @@ export const PACKAGES: PackageDef[] = [
     id: 3,
     name: "Paket 3",
     subtitle: "Full Prodüksiyon",
-    valueTotal: P3_VALUE, // 31.500
+    valueTotal: P3_VALUE, // 34.500
     price: PRICING.PACKAGE_3_PRICE,
-    savings: P3_VALUE - PRICING.PACKAGE_3_PRICE, // 9.500 (5.500 indirim + 4.000 drone)
+    savings: P3_VALUE - PRICING.PACKAGE_3_PRICE, // 12.500 (5.500 + drone 4.000 + 3.000)
     ribbon: "🚁 DRONE HEDİYE",
     stripImage: "/images/paket-olustur/drone-gift.webp",
     stripAlt: "Hediye dış çekim drone çekimi",
