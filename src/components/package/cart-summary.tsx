@@ -22,6 +22,7 @@ import { X, Tag, ShoppingBag, Check, MessageCircle } from "lucide-react";
 import { CartCampaignKlips } from "@/components/package/cart-campaign-klips";
 import { CartSavingsBreakdown } from "@/components/package/cart-savings-breakdown";
 import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
+import { postJsonDurable } from "@/lib/paket/durable-post";
 import { PackageSalesAdvisor } from "@/components/package/package-sales-advisor";
 import { DateCapacityAlerts } from "@/components/package/date-capacity-alerts";
 
@@ -124,7 +125,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
       trackGA4("form_start", { content_name: "cart_needs_contact" });
       return;
     }
-    onWhatsAppNavClick(event, whatsAppHref, () => {
+    onWhatsAppNavClick(event, whatsAppHref, async () => {
       try {
         trackAnalytics("whatsapp_click", {
           content_name: "package_whatsapp",
@@ -148,51 +149,42 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
       const sessionId = getPackageSessionId();
       const metaAttribution = readMetaAttributionFromDocument();
 
-      try {
-        fetch("/api/public/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          keepalive: true,
-          body: JSON.stringify({
-            source: "package_whatsapp",
-            sessionId,
-            metaAttribution,
-            customer,
-            couponCode: coupon?.code,
-            cart: {
-              selectedIds,
-              lineSummary: lineItems.map((l) => l.name),
-              subtotal,
-              total,
-              count,
-            },
-            lineDetails: lineItems.map((l) => ({
-              serviceId: l.id,
-              label: l.name,
-              price: l.lineTotal,
-              quantity: l.quantity > 0 ? l.quantity : undefined,
-              unitPrice:
-                l.pricingType === "quantity"
-                  ? Number(l.unitPrice) || undefined
-                  : undefined,
-              selectedPages:
-                l.pricingType === "pages" && l.selectedPages
-                  ? l.selectedPages
-                  : undefined,
-              listPrice:
-                l.pricingType === "pages"
-                  ? Number(l.price) || undefined
-                  : undefined,
-              isGift: l.isGift,
-            })),
-            bundleDiscount: bundle.amount,
-            couponDiscount,
-            eventSourceUrl: window.location.href,
-          }),
-        }).catch(() => {});
-      } catch {
-        /* ignore */
-      }
+      await postJsonDurable("/api/public/leads", {
+        source: "package_whatsapp",
+        sessionId,
+        metaAttribution,
+        customer,
+        couponCode: coupon?.code,
+        cart: {
+          selectedIds,
+          lineSummary: lineItems.map((l) => l.name),
+          subtotal,
+          total,
+          count,
+        },
+        lineDetails: lineItems.map((l) => ({
+          serviceId: l.id,
+          label: l.name,
+          price: l.lineTotal,
+          quantity: l.quantity > 0 ? l.quantity : undefined,
+          unitPrice:
+            l.pricingType === "quantity"
+              ? Number(l.unitPrice) || undefined
+              : undefined,
+          selectedPages:
+            l.pricingType === "pages" && l.selectedPages
+              ? l.selectedPages
+              : undefined,
+          listPrice:
+            l.pricingType === "pages"
+              ? Number(l.price) || undefined
+              : undefined,
+          isGift: l.isGift,
+        })),
+        bundleDiscount: bundle.amount,
+        couponDiscount,
+        eventSourceUrl: window.location.href,
+      });
     });
   };
 

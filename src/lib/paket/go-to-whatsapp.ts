@@ -10,9 +10,7 @@ import type { PackageBuilderState } from "@/lib/paket/state";
 
 /**
  * TEK dönüşüm noktası: taslak + lead kaydı + WhatsApp.
- * Final Meta conversion = Schedule (submitPackageLead → backend başarı sonrası).
- * Lead / Purchase burada ateşlenmez.
- * Takip (fbq + CAPI + funnel) try/catch içinde; sonra ~350ms bekleyip yönlendir.
+ * Lead POST keepalive/beacon; en fazla 500ms beklenir, sonra yönlendirilir.
  */
 export function goToWhatsApp(
   state: PackageBuilderState,
@@ -22,12 +20,6 @@ export function goToWhatsApp(
 
   try {
     syncPackageDraft(state, true);
-  } catch {
-    /* ignore */
-  }
-  try {
-    // Schedule: yalnızca /api/public/leads başarılı olunca (buton ≠ conversion)
-    submitPackageLead(state);
   } catch {
     /* ignore */
   }
@@ -55,5 +47,13 @@ export function goToWhatsApp(
 
   const msg = buildWizardWhatsAppMessage(state);
   const url = getWhatsAppUrl(msg, siteConfig.defaultWhatsApp);
-  redirectAfterPixel(url);
+
+  void (async () => {
+    try {
+      await submitPackageLead(state);
+    } catch {
+      /* ignore */
+    }
+    redirectAfterPixel(url, 0);
+  })();
 }

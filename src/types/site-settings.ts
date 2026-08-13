@@ -80,6 +80,8 @@ export type LeadRecord = {
   bundleDiscount?: number;
   couponDiscount?: number;
   couponCode?: string;
+  /** fetch+beacon dedupe anahtarı */
+  client_request_id?: string;
   /** Paket oturumu — GA4 sunucu eşleştirme + journey tracking korelasyonu */
   sessionId?: string;
   /** İlk dokunuş reklam kaynağı (§11) — UTM + fbclid */

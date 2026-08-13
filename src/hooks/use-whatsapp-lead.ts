@@ -14,6 +14,7 @@ import { trackGA4 } from "@/lib/analytics";
 import { getPackageSessionId } from "@/lib/package-session-id";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 import { redirectAfterPixel } from "@/lib/paket/whatsapp-redirect";
+import { postJsonDurable } from "@/lib/paket/durable-post";
 
 type OpenWhatsAppOptions = {
   contentName?: string;
@@ -116,12 +117,9 @@ export function useWhatsAppLead() {
         const sessionId = getPackageSessionId();
         const metaAttribution = readMetaAttributionFromDocument();
 
-        try {
-          fetch("/api/public/leads", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            keepalive: true,
-            body: JSON.stringify({
+        void (async () => {
+          try {
+            await postJsonDurable("/api/public/leads", {
               source: contentName,
               sessionId,
               metaAttribution,
@@ -156,11 +154,13 @@ export function useWhatsAppLead() {
               bundleDiscount: totals.bundle.amount,
               couponDiscount: totals.couponDiscount,
               eventSourceUrl: window.location.href,
-            }),
-          }).catch(() => {});
-        } catch {
-          /* ignore */
-        }
+            });
+          } catch {
+            /* ignore */
+          }
+          redirectAfterPixel(getWhatsAppUrl(message), 0);
+        })();
+        return true;
       }
 
       redirectAfterPixel(getWhatsAppUrl(message));

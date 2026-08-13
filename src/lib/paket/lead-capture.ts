@@ -4,8 +4,8 @@ import type { PackageBuilderState } from "@/lib/paket/state";
 import { getSessionId, getUtm } from "@/lib/track/session";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 import { formatPrice } from "@/lib/utils";
+import { postJsonDurable } from "@/lib/paket/durable-post";
 import { pixelSchedule } from "@/lib/paket/pixel";
-import { reservationScheduleEventId } from "@/lib/meta-tracking";
 
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -96,51 +96,43 @@ export function syncPackageDraft(
 
 /**
  * WhatsApp'a basıldığında tam lead kaydı.
- * Backend başarılı olunca Schedule (browser + CAPI aynı event_id).
- * Sadece buton → Schedule YOK; kayıt başarısı şart.
+ * keepalive fetch; 500ms içinde yanıt yoksa sendBeacon.
+ * Schedule: kayıt başarısı (yanıt) sonrası.
  */
-export function submitPackageLead(state: PackageBuilderState): void {
-  if (typeof window === "undefined" || state.packageId == null) return;
+export async function submitPackageLead(
+  state: PackageBuilderState
+): Promise<"ok" | "timeout" | "error" | "skipped"> {
+  if (typeof window === "undefined" || state.packageId == null) return "skipped";
   const cart = buildCartSummary(state);
   const attr = readMetaAttributionFromDocument();
   const sessionId = getSessionId();
   const utm = getUtm();
-  // Sunucu ile aynı Schedule event_id için client önceden üretir;
-  // sunucu lead.id ile reservation_<id> kullanır — client yanıt sonrası aynı id ile fbq.
+
+  const payload = {
+    source: "whatsapp" as const,
+    customer: customerPayload(state),
+    cart: {
+      selectedIds: cart.selectedIds,
+      lineSummary: cart.lineSummary,
+      subtotal: cart.subtotal,
+      total: cart.total,
+      count: cart.count,
+    },
+    sessionId,
+    utm,
+    metaAttribution: {
+      fbp: attr.fbp,
+      fbc: attr.fbc,
+    },
+    eventSourceUrl: window.location.href,
+  };
+
   try {
-    fetch("/api/public/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        source: "whatsapp",
-        customer: customerPayload(state),
-        cart: {
-          selectedIds: cart.selectedIds,
-          lineSummary: cart.lineSummary,
-          subtotal: cart.subtotal,
-          total: cart.total,
-          count: cart.count,
-        },
-        sessionId,
-        utm,
-        metaAttribution: {
-          fbp: attr.fbp,
-          fbc: attr.fbc,
-        },
-        eventSourceUrl: window.location.href,
-      }),
-    })
-      .then(async (res) => {
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          id?: string;
-          scheduleEventId?: string;
-        } | null;
-        if (!data?.ok || !data.id) return;
-        // Browser fbq Schedule — CAPI sunucuda aynı reservation_<id> ile gitti
+    const result = await postJsonDurable("/api/public/leads", payload);
+    if (result.status === "ok" && result.data?.id) {
+      try {
         pixelSchedule(
-          data.id,
+          result.data.id,
           cart.total,
           {
             name: state.name,
@@ -149,10 +141,12 @@ export function submitPackageLead(state: PackageBuilderState): void {
           },
           { mirrorCapi: false }
         );
-        void (data.scheduleEventId ?? reservationScheduleEventId(data.id));
-      })
-      .catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+    return result.status;
   } catch {
-    /* sessiz */
+    return "error";
   }
 }
