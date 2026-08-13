@@ -32,6 +32,8 @@ try {
     console.log(
       `[entrypoint] DATA_DIR=${DATA_DIR} | ${seeded} dosya tohumlandi, ${kept} canli dosya korundu`
     );
+  } else {
+    console.log(`[entrypoint] DATA_DIR=${DATA_DIR} (volume bagli olmali: docker-compose redmedya-data)`);
   }
 } catch (e) {
   console.error("[entrypoint] veri klasoru hazirlanamadi:", e);

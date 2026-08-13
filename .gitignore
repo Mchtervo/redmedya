@@ -33,9 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# NOT: leads/reservations/rehber/package-drafts dosyaları uygulamanın VERİTABANI.
-# Hostinger GitHub'dan deploy ettiği için repo'da durmaları ZORUNLU (yoksa canlıda veri kaybolur).
-# ⚠️ Bu yüzden repo PRIVATE olmalı — müşteri ad/telefon bilgisi içerirler.
+# Repo'daki data/*.json tohum (seed) dosyalarıdır. Canlı yazmalar üretimde
+# ~/redmedya-data (DATA_DIR) üzerindedir; git checkout canlı dosyayı ezmez.
+# Seed kopyaları PII içerebilir — repo PRIVATE kalmalı.
 
 # vercel
 .vercel
@@ -58,6 +58,12 @@ next-env.d.ts
 
 # Anonim ziyaret sayaci (canli veri, runtime uretilir)
 /data/visits.json
+
+# Funnel / analytics runtime (deploy ile silinmesin diye git'te yok; DATA_DIR'de durur)
+/data/analytics_events.jsonl
+/data/analytics_sessions.json
+/data/analytics_tech_errors.json
+/data/analytics_event_ids.json
 
 # CAPI backfill isaret dosyasi (runtime, mükerrer gönderimi engeller)
 /data/capi_backfill_sent.json

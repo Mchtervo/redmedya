@@ -22,6 +22,11 @@ import {
 
 type ExportPayload = {
   exportedAt: string;
+  storage?: {
+    path: string;
+    source: string;
+    persistent: boolean;
+  };
   cms: { updatedAt?: string; services: unknown[] };
   siteSettings: { updatedAt?: string };
   leads: unknown[];
@@ -166,6 +171,27 @@ export function AdminDataPanel() {
           </div>
         }
       />
+
+      {data.storage ? (
+        <div
+          className={
+            data.storage.persistent
+              ? "rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4 text-sm sm:p-5"
+              : "rounded-2xl border border-red-500/30 bg-red-500/[0.08] p-4 text-sm sm:p-5"
+          }
+        >
+          <p className="font-medium text-rm-off-white">
+            {data.storage.persistent
+              ? "Veri klasörü kalıcı — deploy bu kayıtları silmez"
+              : "Veri klasörü geçici — her deploy analytics ve lead kayıtlarını siler"}
+          </p>
+          <p className="mt-1.5 break-all text-[12px] text-rm-gray-400">
+            <span className="text-rm-gray-500">Yol: </span>
+            <code>{data.storage.path}</code>
+            <span className="text-rm-gray-600"> ({data.storage.source})</span>
+          </p>
+        </div>
+      ) : null}
 
       <div className="rounded-2xl border border-rm-champagne/20 bg-rm-champagne/[0.04] p-4 text-sm text-rm-gray-300 sm:p-5">
         <p className="flex items-center gap-2 font-medium text-rm-off-white">

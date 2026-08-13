@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-api";
+import { DATA_DIR_META } from "@/lib/data-dir";
 import { readCmsConfig } from "@/lib/cms";
 import { readSiteSettings } from "@/lib/site-settings";
 import { readLeads } from "@/lib/leads-store";
@@ -27,6 +28,7 @@ export async function GET() {
 
   return NextResponse.json({
     exportedAt: new Date().toISOString(),
+    storage: DATA_DIR_META,
     cms,
     siteSettings,
     leads,
