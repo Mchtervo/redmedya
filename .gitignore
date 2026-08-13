@@ -58,3 +58,6 @@ next-env.d.ts
 
 # Anonim ziyaret sayaci (canli veri, runtime uretilir)
 /data/visits.json
+
+# CAPI backfill isaret dosyasi (runtime, mükerrer gönderimi engeller)
+/data/capi_backfill_sent.json

@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
 import { META_CAPI_ALLOWED } from "@/lib/meta-pixel";
+import { BACKFILL_EVENT_NAMES } from "@/lib/capi-backfill";
+
+const BACKFILL_EVENTS = new Set<string>(BACKFILL_EVENT_NAMES);
+
+function isAuthorizedBackfill(request: NextRequest, body: { backfill?: unknown }): boolean {
+  if (body.backfill !== true) return false;
+  const expected = process.env.CAPI_BACKFILL_TOKEN?.trim();
+  if (!expected) return false;
+  const header = request.headers.get("x-capi-backfill-token")?.trim();
+  return header === expected;
+}
 
 /**
  * Meta Conversions API (CAPI) — tarayıcı ile AYNI event_id.
- * Allowlist dışı (Lead, Purchase, Contact, SitePageView…) reddedilir.
+ * Allowlist dışı (Lead, Purchase, Contact…) reddedilir.
+ * Backfill: CAPI_BACKFILL_TOKEN + backfill:true ile Lead/Contact/WhatsAppClick
+ * ve orijinal eventTime kabul edilir.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
       eventName?: string;
       eventId?: string;
+      eventTime?: number;
       eventSourceUrl?: string;
       value?: number;
       currency?: string;
@@ -25,6 +39,7 @@ export async function POST(request: NextRequest) {
       };
       fbp?: string;
       fbc?: string;
+      backfill?: boolean;
     };
 
     if (!body.eventName || !body.eventId) {
@@ -34,7 +49,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!META_CAPI_ALLOWED.has(body.eventName)) {
+    const backfill = isAuthorizedBackfill(request, body);
+    const allowed =
+      META_CAPI_ALLOWED.has(body.eventName) ||
+      (backfill && BACKFILL_EVENTS.has(body.eventName));
+
+    if (!allowed) {
       return NextResponse.json({
         ok: true,
         skipped: true,
@@ -50,14 +70,19 @@ export async function POST(request: NextRequest) {
       undefined;
     const clientUserAgent = request.headers.get("user-agent") || undefined;
 
-    // event_source_url: istemcinin gerçek sayfası; yoksa Referer (hard-code root yok)
     const eventSourceUrl =
       body.eventSourceUrl?.trim() ||
       request.headers.get("referer") ||
       undefined;
 
+    const eventTime =
+      typeof body.eventTime === "number" && Number.isFinite(body.eventTime)
+        ? Math.floor(body.eventTime)
+        : undefined;
+
     const result = await sendMetaCapiEvent(body.eventName, {
       eventId: body.eventId,
+      eventTime,
       actionSource: "website",
       eventSourceUrl,
       hostHeader,
