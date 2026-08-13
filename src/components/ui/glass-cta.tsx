@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MagneticButton } from "@/components/effects/magnetic-button";
-import type { ReactNode } from "react";
+import type { ReactNode, MouseEvent } from "react";
 
 type GlassCtaProps = {
   href?: string;
@@ -12,7 +12,7 @@ type GlassCtaProps = {
   variant?: "primary" | "ghost" | "whatsapp";
   className?: string;
   external?: boolean;
-  onClick?: () => void;
+  onClick?: (e: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   type?: "link" | "button";
 };
 

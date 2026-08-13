@@ -2,14 +2,17 @@
 
 import { useEffect } from "react";
 import { trackTechErrorClient } from "@/lib/analytics/client";
+import { isMetaNativeBridgeNoise } from "@/lib/meta-pixel-bridge";
 
 /** Global JS / resource hatalarını anonim session ile kaydet (PII yok). */
 export function TechErrorListener() {
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
+      const message = event.message || "Error";
+      if (isMetaNativeBridgeNoise(message)) return;
       trackTechErrorClient({
         error_type: "js_runtime",
-        message: event.message || "Error",
+        message,
         stack: event.error instanceof Error ? event.error.stack : undefined,
       });
     };
@@ -21,6 +24,7 @@ export function TechErrorListener() {
           : typeof reason === "string"
             ? reason
             : "unhandledrejection";
+      if (isMetaNativeBridgeNoise(msg)) return;
       trackTechErrorClient({
         error_type: "unhandled_rejection",
         message: msg,

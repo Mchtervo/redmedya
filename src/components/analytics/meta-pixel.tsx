@@ -48,6 +48,10 @@ export function MetaPixel() {
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
+            try {
+              if (!window.webkit) window.webkit = { messageHandlers: {} };
+              else if (!window.webkit.messageHandlers) window.webkit.messageHandlers = {};
+            } catch (e) {}
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -56,10 +60,10 @@ export function MetaPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
+            try { fbq('init', '${pixelId}'); } catch (e) {}
             (function(){
               var id = ${JSON.stringify(pageViewId)};
-              fbq('track', 'PageView', {}, { eventID: id });
+              try { fbq('track', 'PageView', {}, { eventID: id }); } catch (e) {}
               try {
                 fetch('/api/meta-events', {
                   method: 'POST',

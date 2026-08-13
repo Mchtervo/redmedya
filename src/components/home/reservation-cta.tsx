@@ -4,6 +4,7 @@ import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { pixelWhatsAppClick } from "@/lib/paket/pixel";
+import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 
 const RES_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
   siteConfig.defaultWhatsApp
@@ -45,7 +46,11 @@ export function ReservationCta() {
             href={RES_WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => pixelWhatsAppClick("reservation_cta")}
+            onClick={(e) =>
+              onWhatsAppNavClick(e, RES_WHATSAPP_URL, () =>
+                pixelWhatsAppClick("reservation_cta")
+              )
+            }
             className="inline-flex w-full max-w-xs items-center justify-center rounded-full border border-rm-black/30 bg-transparent px-6 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-rm-black uppercase transition-colors hover:border-rm-black hover:bg-rm-black hover:text-rm-off-white sm:w-auto sm:min-w-[220px] sm:px-8"
           >
             WhatsApp ile yaz

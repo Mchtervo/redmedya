@@ -15,6 +15,7 @@ import {
   getWhatsAppUrl,
 } from "@/lib/whatsapp";
 import { pixelWhatsAppClick } from "@/lib/paket/pixel";
+import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 
 /**
  * Mobil paket sayfası alt çubuğu.
@@ -64,10 +65,11 @@ export function PackageMobileBar() {
         behavior: "smooth",
         block: "start",
       });
-      // Meta InitiateCheckout yok — iletişim formu funnel'ında
       return;
     }
-    pixelWhatsAppClick("package_mobile_bar", total);
+    onWhatsAppNavClick(event, whatsappUrl, () => {
+      pixelWhatsAppClick("package_mobile_bar", total);
+    });
   };
 
   return (

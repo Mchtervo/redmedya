@@ -13,6 +13,7 @@ import { trackAnalytics } from "@/lib/analytics";
 import { trackGA4 } from "@/lib/analytics";
 import { getPackageSessionId } from "@/lib/package-session-id";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
+import { redirectAfterPixel } from "@/lib/paket/whatsapp-redirect";
 
 type OpenWhatsAppOptions = {
   contentName?: string;
@@ -90,65 +91,79 @@ export function useWhatsAppLead() {
             })
           : buildWhatsAppInquiryMessage(hasContact ? customer : undefined);
 
-      trackAnalytics("whatsapp_click", {
-        content_name: contentName,
-        value: totals.lineItems.length > 0 ? totals.total : undefined,
-        num_items: totals.count,
-      });
+      try {
+        trackAnalytics("whatsapp_click", {
+          content_name: contentName,
+          value: totals.lineItems.length > 0 ? totals.total : undefined,
+          num_items: totals.count,
+        });
+      } catch {
+        /* ignore */
+      }
 
       if (hasContact && totals.lineItems.length > 0) {
-        trackAnalytics("package_complete", {
-          content_name: contentName,
-          value: totals.total,
-          items: totals.count,
-          cart_summary: totals.lineItems.map((l) => l.name).join(" | ").slice(0, 300),
-        });
+        try {
+          trackAnalytics("package_complete", {
+            content_name: contentName,
+            value: totals.total,
+            items: totals.count,
+            cart_summary: totals.lineItems.map((l) => l.name).join(" | ").slice(0, 300),
+          });
+        } catch {
+          /* ignore */
+        }
 
         const sessionId = getPackageSessionId();
         const metaAttribution = readMetaAttributionFromDocument();
 
-        fetch("/api/public/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            source: contentName,
-            sessionId,
-            metaAttribution,
-            customer,
-            couponCode: coupon?.code,
-            cart: {
-              selectedIds: state.selectedIds,
-              lineSummary: totals.lineItems.map((l) => l.name),
-              subtotal: totals.subtotal,
-              total: totals.total,
-              count: totals.count,
-            },
-            lineDetails: totals.lineItems.map((l) => ({
-              serviceId: l.id,
-              label: l.name,
-              price: l.lineTotal,
-              quantity: l.quantity > 0 ? l.quantity : undefined,
-              unitPrice:
-                l.pricingType === "quantity"
-                  ? Number(l.unitPrice) || undefined
-                  : undefined,
-              selectedPages:
-                l.pricingType === "pages" && l.selectedPages
-                  ? l.selectedPages
-                  : undefined,
-              listPrice:
-                l.pricingType === "pages"
-                  ? Number(l.price) || undefined
-                  : undefined,
-              isGift: l.isGift,
-            })),
-            bundleDiscount: totals.bundle.amount,
-            couponDiscount: totals.couponDiscount,
-          }),
-        }).catch(() => {});
+        try {
+          fetch("/api/public/leads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            keepalive: true,
+            body: JSON.stringify({
+              source: contentName,
+              sessionId,
+              metaAttribution,
+              customer,
+              couponCode: coupon?.code,
+              cart: {
+                selectedIds: state.selectedIds,
+                lineSummary: totals.lineItems.map((l) => l.name),
+                subtotal: totals.subtotal,
+                total: totals.total,
+                count: totals.count,
+              },
+              lineDetails: totals.lineItems.map((l) => ({
+                serviceId: l.id,
+                label: l.name,
+                price: l.lineTotal,
+                quantity: l.quantity > 0 ? l.quantity : undefined,
+                unitPrice:
+                  l.pricingType === "quantity"
+                    ? Number(l.unitPrice) || undefined
+                    : undefined,
+                selectedPages:
+                  l.pricingType === "pages" && l.selectedPages
+                    ? l.selectedPages
+                    : undefined,
+                listPrice:
+                  l.pricingType === "pages"
+                    ? Number(l.price) || undefined
+                    : undefined,
+                isGift: l.isGift,
+              })),
+              bundleDiscount: totals.bundle.amount,
+              couponDiscount: totals.couponDiscount,
+              eventSourceUrl: window.location.href,
+            }),
+          }).catch(() => {});
+        } catch {
+          /* ignore */
+        }
       }
 
-      window.open(getWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+      redirectAfterPixel(getWhatsAppUrl(message));
       return true;
     },
     [pathname, router]

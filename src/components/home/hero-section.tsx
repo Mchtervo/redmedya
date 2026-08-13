@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { pixelWhatsAppClick } from "@/lib/paket/pixel";
+import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { EASE_LUXURY } from "@/lib/animations";
@@ -88,7 +89,11 @@ export function HeroSection() {
             href={HERO_WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => pixelWhatsAppClick("hero_whatsapp")}
+            onClick={(e) =>
+              onWhatsAppNavClick(e, HERO_WHATSAPP_URL, () =>
+                pixelWhatsAppClick("hero_whatsapp")
+              )
+            }
             className="inline-flex w-full max-w-xs items-center justify-center rounded-full border border-white/30 bg-white/[0.04] px-6 py-3.5 text-[11px] font-semibold tracking-[0.2em] text-white uppercase backdrop-blur-sm transition-colors hover:border-white hover:bg-white/10 sm:w-auto sm:min-w-[220px] sm:px-8"
           >
             WhatsApp ile yaz

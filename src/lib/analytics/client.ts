@@ -20,6 +20,7 @@ const URGENT_EVENTS = new Set([
   "AddToCart",
   "InitiateCheckout",
   "Schedule",
+  "WhatsAppClick",
   "FormSubmitError",
 ]);
 
@@ -190,18 +191,22 @@ export function trackFunnelEvent(
   }
 ): void {
   if (typeof window === "undefined") return;
-  bindExit();
-  queue.push({
-    client_event_id: newClientEventId(),
-    event_name,
-    event_time: Date.now(),
-    page_url: location.href,
-    metadata: sanitizeMeta(event_name, opts?.metadata),
-    error_code: opts?.error_code ?? null,
-  });
-  const urgent = URGENT_EVENTS.has(String(event_name));
-  if (urgent || queue.length >= FLUSH_SIZE) flush();
-  else if (!timer) timer = setTimeout(() => flush(), FLUSH_MS);
+  try {
+    bindExit();
+    queue.push({
+      client_event_id: newClientEventId(),
+      event_name,
+      event_time: Date.now(),
+      page_url: location.href,
+      metadata: sanitizeMeta(event_name, opts?.metadata),
+      error_code: opts?.error_code ?? null,
+    });
+    const urgent = URGENT_EVENTS.has(String(event_name));
+    if (urgent || queue.length >= FLUSH_SIZE) flush();
+    else if (!timer) timer = setTimeout(() => flush(), FLUSH_MS);
+  } catch {
+    /* analytics hatası sayfayı durdurmasın */
+  }
 }
 
 export function trackFormFieldError(

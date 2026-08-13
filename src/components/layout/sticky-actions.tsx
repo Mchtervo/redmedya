@@ -4,6 +4,7 @@ import { Phone, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { siteConfig } from "@/config/site";
 import { pixelWhatsAppClick } from "@/lib/paket/pixel";
+import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 
 /**
@@ -48,7 +49,11 @@ export function StickyActions() {
         transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        onClick={() => pixelWhatsAppClick("sticky_whatsapp")}
+        onClick={(e) =>
+          onWhatsAppNavClick(e, whatsappUrl, () =>
+            pixelWhatsAppClick("sticky_whatsapp")
+          )
+        }
         className="group relative flex h-14 items-center gap-2.5 overflow-hidden rounded-full bg-[#25D366] px-4 text-white shadow-[0_10px_35px_rgba(37,211,102,0.4)] transition-all hover:bg-[#1FB957] hover:px-5"
         aria-label="WhatsApp ile yaz"
       >

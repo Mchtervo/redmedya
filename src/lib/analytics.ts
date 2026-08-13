@@ -21,7 +21,7 @@ export function trackGA4(event: string, params?: Params): void {
 /**
  * İç analytics yönlendirici.
  * Meta conversion funnel'a (PageView…Schedule) dokunmaz.
- * Yalnızca gerçek WhatsApp tıklamasında custom WhatsAppClick (browser-only).
+ * Yalnızca gerçek WhatsApp tıklamasında custom WhatsAppClick (+ CAPI).
  */
 export function trackAnalytics(
   event: AnalyticsEvent,

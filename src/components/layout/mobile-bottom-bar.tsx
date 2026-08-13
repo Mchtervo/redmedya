@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { formatPhoneForWhatsApp } from "@/lib/utils";
 import { pixelWhatsAppClick } from "@/lib/paket/pixel";
+import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 
 /**
  * Mobil: altta sabit yalnızca ara + WhatsApp.
@@ -56,7 +57,11 @@ export function MobileBottomBar() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => pixelWhatsAppClick("mobile_bar_whatsapp")}
+          onClick={(e) =>
+            onWhatsAppNavClick(e, whatsappUrl, () =>
+              pixelWhatsAppClick("mobile_bar_whatsapp")
+            )
+          }
           className="flex min-h-[52px] items-center justify-center gap-2.5 bg-[#25D366]/12 px-3 py-2.5 text-[#25D366] transition-colors active:bg-[#25D366]/20"
           aria-label="WhatsApp ile yaz"
         >

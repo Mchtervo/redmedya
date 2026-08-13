@@ -12,7 +12,7 @@ import { trackFunnelEvent } from "@/lib/analytics/client";
 /**
  * Ana funnel Meta olayları (tekil + stabil event_id):
  * ViewContent → PackageBuild → AddToCart → InitiateCheckout → Schedule
- * + WhatsAppClick (custom, browser-only, gerçek WA tıklaması)
+ * + WhatsAppClick (custom + CAPI, gerçek WA tıklaması)
  */
 
 export type PixelCustomer = PixelCustomerData;
@@ -108,19 +108,27 @@ export function pixelSchedule(
   const key = `schedule_${eventId}`;
   if (hasFiredOnce(key)) return;
   markFiredOnce(key);
-  trackMetaEvent(
-    "Schedule",
-    {
-      content_name: "wedding_reservation_request",
-      value: total,
-      order_id: leadOrReservationId,
-    },
-    customerWithExternal(customer),
-    { eventId, mirrorCapi: opts?.mirrorCapi ?? false }
-  );
-  trackFunnelEvent("Schedule", {
-    metadata: { total },
-  });
+  try {
+    trackMetaEvent(
+      "Schedule",
+      {
+        content_name: "wedding_reservation_request",
+        value: total,
+        order_id: leadOrReservationId,
+      },
+      customerWithExternal(customer),
+      { eventId, mirrorCapi: opts?.mirrorCapi ?? false }
+    );
+  } catch {
+    /* ignore */
+  }
+  try {
+    trackFunnelEvent("Schedule", {
+      metadata: { total },
+    });
+  } catch {
+    /* ignore */
+  }
 }
 
 /** @deprecated Lead Meta'ya gönderilmez (Schedule kullan). */
@@ -128,30 +136,36 @@ export function pixelLead(_total: number, _customer?: PixelCustomer): void {
   // no-op — legacy çağrılar Meta Lead üretmesin
 }
 
-/** Gerçek WhatsApp tıklaması — custom, browser-only. Lead/Contact/IC yok. */
+/** Gerçek WhatsApp tıklaması — custom + CAPI. Lead/Contact yok. */
 export function pixelWhatsAppClick(
   contentName: string,
   total?: number,
   customer?: PixelCustomer
 ): void {
-  trackCustomEvent(
-    "WhatsAppClick",
-    {
-      content_name: contentName,
-      ...(total != null ? { value: total, currency: "TRY" } : {}),
-    },
-    customerWithExternal(customer),
-    {
-      eventId: `whatsapp_${sid()}_${Date.now()}`,
-      mirrorCapi: false,
-    }
-  );
-  trackFunnelEvent("WhatsAppClick", {
-    metadata: {
-      content_name: contentName.slice(0, 80),
-      ...(total != null ? { total } : {}),
-    },
-  });
+  const eventId = `whatsapp_${sid()}_${Date.now()}`;
+  try {
+    trackCustomEvent(
+      "WhatsAppClick",
+      {
+        content_name: contentName,
+        ...(total != null ? { value: total, currency: "TRY" } : {}),
+      },
+      customerWithExternal(customer),
+      { eventId, mirrorCapi: true }
+    );
+  } catch {
+    /* fbq/CAPI hatası iç analytics'i durdurmasın */
+  }
+  try {
+    trackFunnelEvent("WhatsAppClick", {
+      metadata: {
+        content_name: contentName.slice(0, 80),
+        ...(total != null ? { total } : {}),
+      },
+    });
+  } catch {
+    /* ignore */
+  }
 }
 
 /** @deprecated Contact kaldırıldı — yalnızca WhatsAppClick */

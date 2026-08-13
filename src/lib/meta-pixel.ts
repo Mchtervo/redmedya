@@ -6,6 +6,7 @@ import {
   isMetaTrackingLiveBrowser,
   logMetaDebug,
 } from "@/lib/meta-tracking";
+import { ensureMetaNativeBridge } from "@/lib/meta-pixel-bridge";
 
 /**
  * Production Meta'ya gidebilen STANDART event'ler (fbq track).
@@ -25,7 +26,7 @@ export const META_STANDARD_ALLOWED = new Set([
  */
 export const META_CUSTOM_ALLOWED = new Set(["PackageBuild", "WhatsAppClick"]);
 
-/** CAPI'ye gidebilenler — WhatsAppClick browser-only. */
+/** CAPI'ye gidebilenler (browser ile aynı event_id). */
 export const META_CAPI_ALLOWED = new Set([
   "PageView",
   "ViewContent",
@@ -33,6 +34,7 @@ export const META_CAPI_ALLOWED = new Set([
   "AddToCart",
   "InitiateCheckout",
   "Schedule",
+  "WhatsAppClick",
 ]);
 
 export type MetaPixelEvent =
@@ -96,51 +98,69 @@ function mirrorToCapi(
   params: EventParams,
   customer?: PixelCustomerData
 ): void {
-  if (typeof window === "undefined") return;
-  if (!META_CAPI_ALLOWED.has(eventName)) return;
+  try {
+    if (typeof window === "undefined") return;
+    if (!META_CAPI_ALLOWED.has(eventName)) return;
 
-  const eventSourceUrl = getBrowserEventSourceUrl();
-  const attr = readMetaAttributionFromDocument();
-  const { firstName, lastName } = splitName(customer?.name);
+    const eventSourceUrl = getBrowserEventSourceUrl();
+    const attr = readMetaAttributionFromDocument();
+    const { firstName, lastName } = splitName(customer?.name);
 
-  fetch("/api/meta-events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    keepalive: true,
-    body: JSON.stringify({
-      eventName,
-      eventId,
-      eventSourceUrl,
-      value: typeof params.value === "number" ? params.value : undefined,
-      currency: "TRY",
-      contentName:
-        typeof params.content_name === "string" ? params.content_name : undefined,
-      customer: {
-        phone: customer?.phone,
-        email: customer?.email,
-        firstName,
-        lastName,
-        externalId: customer?.externalId,
-      },
-      fbp: attr.fbp,
-      fbc: attr.fbc,
-    }),
-  })
-    .then(async (res) => {
-      const data = (await res.json().catch(() => null)) as
-        | { ok?: boolean; skipped?: boolean; error?: string; debug?: boolean }
-        | null;
-      if (data?.debug) return;
-      if (!data?.ok) {
-        console.warn(
-          `[CAPI] ${eventName} sunucuya gönderilemedi:`,
-          data?.skipped
-            ? "META_CAPI_ACCESS_TOKEN yok veya production dışı (atlandı)"
-            : (data?.error ?? `HTTP ${res.status}`)
-        );
-      }
+    fetch("/api/meta-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        eventName,
+        eventId,
+        eventSourceUrl,
+        value: typeof params.value === "number" ? params.value : undefined,
+        currency: "TRY",
+        contentName:
+          typeof params.content_name === "string" ? params.content_name : undefined,
+        customer: {
+          phone: customer?.phone,
+          email: customer?.email,
+          firstName,
+          lastName,
+          externalId: customer?.externalId,
+        },
+        fbp: attr.fbp,
+        fbc: attr.fbc,
+      }),
     })
-    .catch((e) => console.warn(`[CAPI] ${eventName} istek hatası:`, e));
+      .then(async (res) => {
+        const data = (await res.json().catch(() => null)) as
+          | { ok?: boolean; skipped?: boolean; error?: string; debug?: boolean }
+          | null;
+        if (data?.debug) return;
+        if (!data?.ok) {
+          console.warn(
+            `[CAPI] ${eventName} sunucuya gönderilemedi:`,
+            data?.skipped
+              ? "META_CAPI_ACCESS_TOKEN yok veya production dışı (atlandı)"
+              : (data?.error ?? `HTTP ${res.status}`)
+          );
+        }
+      })
+      .catch(() => {});
+  } catch {
+    /* CAPI hatası pixel'i durdurmasın */
+  }
+}
+
+function safeFbq(
+  method: "track" | "trackCustom",
+  event: string,
+  payload: EventParams,
+  eventId: string
+): void {
+  ensureMetaNativeBridge();
+  try {
+    window.fbq?.(method, event, payload, { eventID: eventId });
+  } catch {
+    /* iOS webkit / Android WebView köprü hatası fbq'yu yutmasın */
+  }
 }
 
 const META_TO_GA4_EVENT: Record<MetaPixelEvent, string> = {
@@ -232,11 +252,7 @@ export function trackMetaEvent(
 
   if (!siteConfig.metaPixelId) return;
 
-  try {
-    window.fbq?.("track", event, payload, { eventID: eventId });
-  } catch (e) {
-    console.warn("[Pixel] fbq hatası:", e);
-  }
+  safeFbq("track", event, payload, eventId);
   if (mirror) {
     mirrorToCapi(event, eventId, payload, customer);
   }
@@ -281,11 +297,7 @@ export function trackCustomEvent(
   }
 
   const live = isMetaTrackingLiveBrowser();
-  // WhatsAppClick: CAPI yok. PackageBuild: varsayılan mirror.
-  const mirror =
-    event === "WhatsAppClick"
-      ? false
-      : options?.mirrorCapi !== false;
+  const mirror = options?.mirrorCapi !== false;
 
   if (!live) {
     logMetaDebug({
@@ -299,11 +311,7 @@ export function trackCustomEvent(
     return;
   }
 
-  try {
-    window.fbq?.("trackCustom", event, clean, { eventID: eventId });
-  } catch (e) {
-    console.warn("[Pixel] fbq custom hatası:", e);
-  }
+  safeFbq("trackCustom", event, clean, eventId);
   if (mirror) {
     mirrorToCapi(event, eventId, clean, customer);
   }
