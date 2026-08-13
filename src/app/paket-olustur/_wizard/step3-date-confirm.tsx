@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -291,16 +291,40 @@ function TrustBlock() {
   );
 }
 
-/** §1 — Telefon + Not artık varsayılan KAPALI akordeon içinde */
-function OptionalDetails() {
+/** Telefon + not — varsayılan kapalı; WhatsApp CTA telefonsuz basılırsa açılır. */
+function OptionalDetails({
+  open,
+  onOpenChange,
+  phoneError,
+  onPhoneErrorClear,
+  phoneInputRef,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  phoneError: string;
+  onPhoneErrorClear: () => void;
+  phoneInputRef: RefObject<HTMLInputElement | null>;
+}) {
   const { state, setField } = useWizard();
-  const [open, setOpen] = useState(false);
   const filled = state.phone.trim() || state.note.trim();
+
+  useEffect(() => {
+    if (!open || !phoneError) return;
+    const el = phoneInputRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.focus();
+  }, [open, phoneError, phoneInputRef]);
   return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.02]">
+    <div
+      className={cn(
+        "rounded-lg border bg-white/[0.02]",
+        phoneError ? "border-red-500/40" : "border-white/10"
+      )}
+    >
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => onOpenChange(!open)}
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
         aria-expanded={open}
       >
@@ -309,6 +333,11 @@ function OptionalDetails() {
           {filled && !open && (
             <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
               dolu
+            </span>
+          )}
+          {phoneError && !open && (
+            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-300">
+              telefon gerekli
             </span>
           )}
         </span>
@@ -322,17 +351,43 @@ function OptionalDetails() {
             {COPY.step3.optionalHint}
           </p>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
-              {COPY.step3.phoneLabel}
+            <label
+              htmlFor="wizard-phone"
+              className="mb-1.5 block text-sm font-medium text-rm-gray-200"
+            >
+              {COPY.step3.phoneLabel}{" "}
+              <span className="text-rm-champagne">*</span>
             </label>
             <input
+              ref={phoneInputRef}
+              id="wizard-phone"
               type="tel"
               inputMode="tel"
+              autoComplete="tel"
               value={state.phone}
-              onChange={(e) => setField("phone", e.target.value)}
+              onChange={(e) => {
+                setField("phone", e.target.value);
+                if (phoneError) onPhoneErrorClear();
+              }}
               placeholder="05__ ___ __ __"
-              className="h-12 w-full rounded-sm border border-white/10 bg-white/[0.04] px-4 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500 focus:border-rm-champagne/40"
+              aria-invalid={Boolean(phoneError)}
+              aria-describedby={phoneError ? "wizard-phone-error" : undefined}
+              className={cn(
+                "h-12 w-full scroll-mb-32 rounded-sm bg-white/[0.04] px-4 text-sm text-rm-off-white outline-none transition-colors placeholder:text-rm-gray-500",
+                phoneError
+                  ? "border border-red-500/50 focus:border-red-400"
+                  : "border border-white/10 focus:border-rm-champagne/40"
+              )}
             />
+            {phoneError ? (
+              <p
+                id="wizard-phone-error"
+                role="alert"
+                className="mt-1.5 text-xs text-red-300"
+              >
+                {phoneError}
+              </p>
+            ) : null}
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-rm-gray-200">
@@ -453,6 +508,9 @@ export function Step3DateConfirm() {
   const { state, setField, hasAddon, toggleAddon, markLastChanceSeen, back, totals } =
     useWizard();
   const [showLastChance, setShowLastChance] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const phoneInputRef = useRef<HTMLInputElement>(null);
   const kbInset = useKeyboardInset();
 
   const missingKlips = CAMPAIGN_KLIPS.filter((k) => !hasAddon(k.id)).map((k) => ({
@@ -478,11 +536,11 @@ export function Step3DateConfirm() {
     else if (state.name.trim().length < 2)
       trackFormFieldError("name", "too_short");
     const digits = state.phone.replace(/\D/g, "");
-    if (!digits) trackFormFieldError("phone", "required");
-    else if (digits.length < 10)
-      trackFormFieldError("phone", "invalid_format");
+    const phoneMissing = !digits;
+    const phoneInvalid = Boolean(digits) && digits.length < 10;
+    if (phoneMissing) trackFormFieldError("phone", "required");
+    else if (phoneInvalid) trackFormFieldError("phone", "invalid_format");
 
-    // Mevcut UI kuralı: tarih + isim (telefon API’de zorunlu; UX’i bozmadan yalnızca log)
     if (!canSubmit) {
       trackFunnelEvent("FormSubmitError", {
         metadata: { reason: "validation" },
@@ -490,6 +548,20 @@ export function Step3DateConfirm() {
       });
       return;
     }
+
+    // Telefon kapalı akordeondaydı; CTA'ya basınca alan açılsın, WhatsApp'a gitmesin.
+    if (phoneMissing || phoneInvalid) {
+      setPhoneError(
+        phoneMissing ? COPY.step3.phoneRequired : COPY.step3.phoneInvalid
+      );
+      setDetailsOpen(true);
+      trackFunnelEvent("FormSubmitError", {
+        metadata: { reason: "phone" },
+        error_code: phoneMissing ? "phone:required" : "phone:invalid_format",
+      });
+      return;
+    }
+    setPhoneError("");
 
     const shouldOffer =
       state.packageId !== 3 &&
@@ -568,7 +640,13 @@ export function Step3DateConfirm() {
           </div>
 
           {/* §1 — Telefon + Not opsiyonel akordeonda (varsayılan kapalı) */}
-          <OptionalDetails />
+          <OptionalDetails
+            open={detailsOpen}
+            onOpenChange={setDetailsOpen}
+            phoneError={phoneError}
+            onPhoneErrorClear={() => setPhoneError("")}
+            phoneInputRef={phoneInputRef}
+          />
         </div>
 
         <button
