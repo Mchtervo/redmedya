@@ -15,7 +15,7 @@ function isAuthorizedBackfill(request: NextRequest, body: { backfill?: unknown }
 
 /**
  * Meta Conversions API (CAPI) — tarayıcı ile AYNI event_id.
- * Allowlist dışı (Lead, Purchase, Contact…) reddedilir.
+ * Allowlist dışı (Lead, Contact…) reddedilir.
  * Backfill: CAPI_BACKFILL_TOKEN + backfill:true ile Lead/Contact/WhatsAppClick
  * ve orijinal eventTime kabul edilir.
  */

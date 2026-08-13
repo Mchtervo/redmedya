@@ -2,6 +2,7 @@ import { trackMetaEvent, trackCustomEvent, type PixelCustomerData } from "@/lib/
 import {
   hasFiredOnce,
   markFiredOnce,
+  reservationPurchaseEventId,
   reservationScheduleEventId,
   stableFunnelEventId,
 } from "@/lib/meta-tracking";
@@ -12,6 +13,7 @@ import { trackFunnelEvent } from "@/lib/analytics/client";
 /**
  * Ana funnel Meta olayları (tekil + stabil event_id):
  * ViewContent → PackageBuild → AddToCart → InitiateCheckout → Schedule
+ * + Purchase (WhatsApp paket gönderimi = Ads Manager alışveriş)
  * + WhatsAppClick (custom + CAPI, gerçek WA tıklaması)
  */
 
@@ -131,7 +133,38 @@ export function pixelSchedule(
   }
 }
 
-/** @deprecated Lead Meta'ya gönderilmez (Schedule kullan). */
+/**
+ * Paket WhatsApp'a gönderildi → Ads Manager "İnternet Sitesi Alışveriş".
+ * CAPI sunucuda; browser fbq aynı purchase_<leadId> (mirror kapalı).
+ */
+export function pixelPurchase(
+  leadId: string,
+  total: number,
+  customer?: PixelCustomer,
+  opts?: { mirrorCapi?: boolean }
+): void {
+  const eventId = reservationPurchaseEventId(leadId);
+  const key = `purchase_${eventId}`;
+  if (hasFiredOnce(key)) return;
+  markFiredOnce(key);
+  try {
+    trackMetaEvent(
+      "Purchase",
+      {
+        content_name: "whatsapp_package_send",
+        value: total,
+        currency: "TRY",
+        order_id: leadId,
+      },
+      customerWithExternal(customer),
+      { eventId, mirrorCapi: opts?.mirrorCapi ?? false }
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+/** @deprecated Lead Meta'ya gönderilmez (Schedule + Purchase kullan). */
 export function pixelLead(_total: number, _customer?: PixelCustomer): void {
   // no-op — legacy çağrılar Meta Lead üretmesin
 }

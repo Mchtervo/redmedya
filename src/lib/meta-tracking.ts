@@ -18,6 +18,7 @@ export type MetaFunnelEvent =
   | "AddToCart"
   | "InitiateCheckout"
   | "Schedule"
+  | "Purchase"
   | "Lead"
   | "WhatsAppClick"
   | string;
@@ -161,4 +162,10 @@ export function uniquePageViewEventId(sessionId: string): string {
 export function reservationScheduleEventId(reservationOrLeadId: string): string {
   const id = reservationOrLeadId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
   return `reservation_${id}`;
+}
+
+/** Ads Manager "alışveriş" kolonu — Schedule ile ayrı event_id (dedupe çakışmasın). */
+export function reservationPurchaseEventId(leadId: string): string {
+  const id = leadId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+  return `purchase_${id}`;
 }

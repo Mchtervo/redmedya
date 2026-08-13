@@ -80,7 +80,7 @@ export function AdminOverviewPanel({
     {
       label: "WhatsApp teklif",
       value: insights?.totals.leads ?? 0,
-      tab: "leads",
+      tab: "whatsapp_couples",
       icon: Inbox,
       accent: "text-rm-champagne",
     },

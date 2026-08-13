@@ -10,8 +10,8 @@ export type ConversionRequestContext = {
 /**
  * Admin teklif onayı → yalnızca GA4 (sunucu).
  *
- * Meta'ya Purchase / Lead / AddToCart / ReservationApproved GÖNDERİLMEZ.
- * Online ödeme yok; funnel final conversion = Schedule (public lead kaydı).
+ * Meta'ya Lead / ReservationApproved GÖNDERİLMEZ.
+ * Purchase, paket WhatsApp'a gidince public lead kaydında ateşlenir (Ads alışveriş).
  */
 export async function fireReservationApprovedConversions(
   reservation: ReservationRecord,

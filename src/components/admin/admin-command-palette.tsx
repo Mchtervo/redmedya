@@ -156,7 +156,7 @@ export function AdminCommandPalette({ open, onOpenChange, onNavigate }: Props) {
     label: formatCustomerName(l.customer) || "Adsız teklif",
     group: "Teklifler",
     hint: [l.customer.phone, l.status ?? "pending"].filter(Boolean).join(" · "),
-    action: () => goAdmin(`/admin?tab=leads`),
+    action: () => goAdmin(`/admin?tab=whatsapp_couples`),
   }));
 
   const rehberRows: PaletteRow[] = rehber.map((c) => ({

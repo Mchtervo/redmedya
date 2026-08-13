@@ -23,8 +23,9 @@ test("Android postMessage Java object is gone gürültü olarak tanınır", () =
   assert.equal(isMetaNativeBridgeNoise("TypeError: cannot read foo"), false);
 });
 
-test("WhatsAppClick CAPI allowlist'te", () => {
+test("WhatsAppClick ve Purchase CAPI allowlist'te", () => {
   assert.equal(META_CAPI_ALLOWED.has("WhatsAppClick"), true);
+  assert.equal(META_CAPI_ALLOWED.has("Purchase"), true);
   assert.equal(META_CAPI_ALLOWED.has("Lead"), false);
   assert.equal(META_CAPI_ALLOWED.has("Contact"), false);
 });

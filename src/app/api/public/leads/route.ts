@@ -5,7 +5,10 @@ import { readSiteSettings, writeSiteSettings } from "@/lib/site-settings";
 import { markDraftWhatsAppClicked } from "@/lib/package-drafts-store";
 import type { LeadRecord } from "@/types/site-settings";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
-import { reservationScheduleEventId } from "@/lib/meta-tracking";
+import {
+  reservationPurchaseEventId,
+  reservationScheduleEventId,
+} from "@/lib/meta-tracking";
 import { linkSessionLead } from "@/lib/analytics/analytics-sessions-store";
 
 async function readLeadBody(request: NextRequest): Promise<unknown> {
@@ -44,6 +47,7 @@ export async function POST(request: NextRequest) {
         ok: true,
         id: existing.id,
         scheduleEventId: reservationScheduleEventId(existing.id),
+        purchaseEventId: reservationPurchaseEventId(existing.id),
         duplicate: true,
       });
     }
@@ -68,6 +72,7 @@ export async function POST(request: NextRequest) {
     await appendLead(lead);
 
     const scheduleEventId = reservationScheduleEventId(lead.id);
+    const purchaseEventId = reservationPurchaseEventId(lead.id);
 
     if (body.sessionId) {
       await markDraftWhatsAppClicked(body.sessionId, lead.id);
@@ -94,27 +99,44 @@ export async function POST(request: NextRequest) {
       undefined;
     const clientUserAgent = request.headers.get("user-agent") || undefined;
 
+    const capiUser = {
+      phone: lead.customer.phone,
+      firstName: lead.customer.firstName,
+      lastName: lead.customer.lastName,
+      externalId: lead.sessionId,
+      fbp: lead.metaAttribution?.fbp,
+      fbc: lead.metaAttribution?.fbc,
+      clientIp,
+      clientUserAgent,
+    };
+    const capiCustom = {
+      value: lead.cart?.total,
+      currency: "TRY" as const,
+      orderId: lead.id,
+    };
+
     // CAPI yanıtı bloklamasın — lead dosyaya yazıldı, client 500ms içinde 200 alsın.
     void sendMetaCapiEvent("Schedule", {
       eventId: scheduleEventId,
       actionSource: "website",
       eventSourceUrl,
       hostHeader: request.headers.get("host"),
-      userData: {
-        phone: lead.customer.phone,
-        firstName: lead.customer.firstName,
-        lastName: lead.customer.lastName,
-        externalId: lead.sessionId,
-        fbp: lead.metaAttribution?.fbp,
-        fbc: lead.metaAttribution?.fbc,
-        clientIp,
-        clientUserAgent,
-      },
+      userData: capiUser,
       customData: {
-        value: lead.cart?.total,
-        currency: "TRY",
+        ...capiCustom,
         contentName: "wedding_reservation_request",
-        orderId: lead.id,
+      },
+    }).catch(() => {});
+
+    void sendMetaCapiEvent("Purchase", {
+      eventId: purchaseEventId,
+      actionSource: "website",
+      eventSourceUrl,
+      hostHeader: request.headers.get("host"),
+      userData: capiUser,
+      customData: {
+        ...capiCustom,
+        contentName: "whatsapp_package_send",
       },
     }).catch(() => {});
 
@@ -122,6 +144,7 @@ export async function POST(request: NextRequest) {
       ok: true,
       id: lead.id,
       scheduleEventId,
+      purchaseEventId,
     });
   } catch {
     return NextResponse.json({ error: "Kayıt başarısız" }, { status: 500 });

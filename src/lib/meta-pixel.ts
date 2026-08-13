@@ -10,7 +10,8 @@ import { ensureMetaNativeBridge } from "@/lib/meta-pixel-bridge";
 
 /**
  * Production Meta'ya gidebilen STANDART event'ler (fbq track).
- * Lead / Purchase / Contact / Form* vb. kasıtlı olarak YOK.
+ * Purchase = paket WhatsApp'a gönderildi (Ads Manager alışveriş kolonu).
+ * Lead / Contact / Form* yok.
  */
 export const META_STANDARD_ALLOWED = new Set([
   "PageView",
@@ -18,6 +19,7 @@ export const META_STANDARD_ALLOWED = new Set([
   "AddToCart",
   "InitiateCheckout",
   "Schedule",
+  "Purchase",
 ]);
 
 /**
@@ -35,6 +37,7 @@ export const META_CAPI_ALLOWED = new Set([
   "InitiateCheckout",
   "Schedule",
   "WhatsAppClick",
+  "Purchase",
 ]);
 
 export type MetaPixelEvent =
@@ -44,6 +47,7 @@ export type MetaPixelEvent =
   | "ServiceSelect"
   | "InitiateCheckout"
   | "Schedule"
+  | "Purchase"
   | "Lead"
   | "WhatsAppClick"
   | "DiscountUse"
@@ -170,6 +174,7 @@ const META_TO_GA4_EVENT: Record<MetaPixelEvent, string> = {
   ServiceSelect: "select_item",
   InitiateCheckout: "begin_checkout",
   Schedule: "schedule",
+  Purchase: "purchase",
   Lead: "generate_lead",
   WhatsAppClick: "whatsapp_click",
   DiscountUse: "discount_apply",
@@ -187,7 +192,7 @@ function emitGa4(event: string, params?: EventParams): void {
 }
 
 /**
- * Standart Meta event. Allowlist dışı (Lead, Purchase, Form* …) Meta'ya GİTMEZ.
+ * Standart Meta event. Allowlist dışı (Lead, Contact, Form* …) Meta'ya GİTMEZ.
  */
 export function trackMetaEvent(
   event: MetaPixelEvent,

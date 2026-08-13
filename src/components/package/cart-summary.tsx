@@ -23,6 +23,7 @@ import { CartCampaignKlips } from "@/components/package/cart-campaign-klips";
 import { CartSavingsBreakdown } from "@/components/package/cart-savings-breakdown";
 import { onWhatsAppNavClick } from "@/lib/paket/whatsapp-redirect";
 import { postJsonDurable } from "@/lib/paket/durable-post";
+import { pixelPurchase } from "@/lib/paket/pixel";
 import { PackageSalesAdvisor } from "@/components/package/package-sales-advisor";
 import { DateCapacityAlerts } from "@/components/package/date-capacity-alerts";
 
@@ -149,7 +150,7 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
       const sessionId = getPackageSessionId();
       const metaAttribution = readMetaAttributionFromDocument();
 
-      await postJsonDurable("/api/public/leads", {
+      const leadResult = await postJsonDurable("/api/public/leads", {
         source: "package_whatsapp",
         sessionId,
         metaAttribution,
@@ -185,6 +186,24 @@ export function CartSummary({ className, compact }: CartSummaryProps) {
         couponDiscount,
         eventSourceUrl: window.location.href,
       });
+      if (leadResult.status === "ok" && leadResult.data?.id) {
+        try {
+          pixelPurchase(
+            leadResult.data.id,
+            total,
+            {
+              name: [customer.firstName, customer.lastName]
+                .filter(Boolean)
+                .join(" "),
+              phone: customer.phone,
+              externalId: sessionId,
+            },
+            { mirrorCapi: false }
+          );
+        } catch {
+          /* ignore */
+        }
+      }
     });
   };
 

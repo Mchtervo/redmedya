@@ -5,7 +5,7 @@ import { getSessionId, getUtm } from "@/lib/track/session";
 import { readMetaAttributionFromDocument } from "@/lib/meta-attribution";
 import { formatPrice } from "@/lib/utils";
 import { postJsonDurable } from "@/lib/paket/durable-post";
-import { pixelSchedule } from "@/lib/paket/pixel";
+import { pixelPurchase, pixelSchedule } from "@/lib/paket/pixel";
 
 function splitName(name: string): { firstName: string; lastName: string } {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -97,7 +97,7 @@ export function syncPackageDraft(
 /**
  * WhatsApp'a basıldığında tam lead kaydı.
  * keepalive fetch; 500ms içinde yanıt yoksa sendBeacon.
- * Schedule: kayıt başarısı (yanıt) sonrası.
+ * Schedule + Purchase: kayıt başarısı (yanıt) sonrası.
  */
 export async function submitPackageLead(
   state: PackageBuilderState
@@ -131,16 +131,17 @@ export async function submitPackageLead(
     const result = await postJsonDurable("/api/public/leads", payload);
     if (result.status === "ok" && result.data?.id) {
       try {
-        pixelSchedule(
-          result.data.id,
-          cart.total,
-          {
-            name: state.name,
-            phone: state.phone,
-            externalId: sessionId,
-          },
-          { mirrorCapi: false }
-        );
+        const customer = {
+          name: state.name,
+          phone: state.phone,
+          externalId: sessionId,
+        };
+        pixelSchedule(result.data.id, cart.total, customer, {
+          mirrorCapi: false,
+        });
+        pixelPurchase(result.data.id, cart.total, customer, {
+          mirrorCapi: false,
+        });
       } catch {
         /* ignore */
       }

@@ -4,7 +4,12 @@ export const LEAD_WAIT_MS = 500;
 
 export type DurablePostResult = {
   status: "ok" | "timeout" | "error";
-  data?: { ok?: boolean; id?: string; scheduleEventId?: string };
+  data?: {
+    ok?: boolean;
+    id?: string;
+    scheduleEventId?: string;
+    purchaseEventId?: string;
+  };
 };
 
 function newRequestId(): string {

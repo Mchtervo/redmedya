@@ -14,12 +14,14 @@ import {
   Megaphone,
   FormInput,
   Bug,
+  MessageCircle,
 } from "lucide-react";
 
 export type AdminTabId =
   | "overview"
   | "calendar"
   | "leads"
+  | "whatsapp_couples"
   | "funnel"
   | "sessions"
   | "ads"
@@ -57,6 +59,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "Teklifler",
     description: "WhatsApp talepleri",
     icon: Inbox,
+  },
+  {
+    id: "whatsapp_couples",
+    label: "WhatsApp çiftler",
+    description: "Paketini gönderenler",
+    icon: MessageCircle,
   },
   {
     id: "funnel",
@@ -129,7 +137,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
   {
     title: "Operasyon",
-    ids: ["overview", "calendar", "leads"],
+    ids: ["overview", "calendar", "leads", "whatsapp_couples"],
   },
   {
     title: "Analitik",
