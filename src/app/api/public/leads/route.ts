@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       phone: body.customer.phone,
     });
     if (existing) {
+      console.log("[lead-notify] atlandi duplicate", { leadId: existing.id });
       return NextResponse.json({
         ok: true,
         id: existing.id,
@@ -72,7 +73,15 @@ export async function POST(request: NextRequest) {
 
     await appendLead(lead);
 
-    void notifyNewLead(lead).catch(() => {});
+    // Yanıt dönmeden Telegram gitsin — Hostinger isteği bitince fire-and-forget düşer.
+    try {
+      await notifyNewLead(lead);
+    } catch (err) {
+      console.error(
+        "[lead-notify] kayit sonrasi hata",
+        err instanceof Error ? err.message : "unknown"
+      );
+    }
 
     const scheduleEventId = reservationScheduleEventId(lead.id);
     const purchaseEventId = reservationPurchaseEventId(lead.id);

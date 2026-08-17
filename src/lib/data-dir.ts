@@ -160,13 +160,14 @@ export function dataPath(fileName: string): string {
 }
 
 /** Hostinger hPanel env API yok; kalıcı DATA_DIR dosyalarını process.env'e yükle. */
-function loadPersistentEnvFile(filePath: string): void {
+function loadPersistentEnvFile(filePath: string): boolean {
   let raw: string;
   try {
     raw = fs.readFileSync(filePath, "utf8");
   } catch {
-    return;
+    return false;
   }
+  let loaded = 0;
   for (const line of raw.split(/\r?\n/)) {
     const t = line.trim();
     if (!t || t.startsWith("#")) continue;
@@ -181,11 +182,38 @@ function loadPersistentEnvFile(filePath: string): void {
       val = val.slice(1, -1);
     }
     if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) continue;
-    if (!process.env[key]) process.env[key] = val;
+    process.env[key] = val;
+    loaded += 1;
   }
+  return loaded > 0;
+}
+
+/** Lead anında tekrar oku — süreç, dosya yazılmadan önce ayağa kalkmış olabilir. */
+export function reloadPersistentEnv(): {
+  dataDir: string;
+  telegramEnvExists: boolean;
+  tokenSet: boolean;
+  chatIdSet: boolean;
+} {
+  const telegramPath = path.join(DATA_DIR, "telegram.env");
+  const envPath = path.join(DATA_DIR, ".env");
+  loadPersistentEnvFile(envPath);
+  const telegramEnvExists = fs.existsSync(telegramPath);
+  loadPersistentEnvFile(telegramPath);
+  return {
+    dataDir: DATA_DIR,
+    telegramEnvExists,
+    tokenSet: Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim()),
+    chatIdSet: Boolean(process.env.TELEGRAM_CHAT_ID?.trim()),
+  };
 }
 
 if (!isNextBuild()) {
-  loadPersistentEnvFile(path.join(DATA_DIR, ".env"));
-  loadPersistentEnvFile(path.join(DATA_DIR, "telegram.env"));
+  const loaded = reloadPersistentEnv();
+  console.log("[lead-notify] acilis env", {
+    dataDir: loaded.dataDir,
+    telegramEnvExists: loaded.telegramEnvExists,
+    tokenSet: loaded.tokenSet,
+    chatIdSet: loaded.chatIdSet,
+  });
 }

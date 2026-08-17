@@ -1,5 +1,5 @@
 import { formatWeddingDateDisplay } from "@/lib/date-format";
-import "@/lib/data-dir";
+import { reloadPersistentEnv } from "@/lib/data-dir";
 import { leadPackageLabel, leadPlatoLabel, leadSourceLabel } from "@/lib/lead-display";
 import { formatPrice } from "@/lib/utils";
 import type { LeadRecord } from "@/types/site-settings";
@@ -33,11 +33,20 @@ export function buildLeadNotifyText(lead: LeadRecord): string {
 }
 
 async function sendTelegram(text: string): Promise<void> {
+  const loaded = reloadPersistentEnv();
   const token = env("TELEGRAM_BOT_TOKEN");
   const chatId = env("TELEGRAM_CHAT_ID");
-  if (!token || !chatId) return;
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
-  const res = await fetch(url, {
+  console.log("[lead-notify] telegram env", {
+    dataDir: loaded.dataDir,
+    telegramEnvExists: loaded.telegramEnvExists,
+    tokenSet: Boolean(token),
+    chatIdSet: Boolean(chatId),
+  });
+  if (!token || !chatId) {
+    console.error("[lead-notify] telegram atlandi: token veya chat_id bos");
+    return;
+  }
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -47,9 +56,12 @@ async function sendTelegram(text: string): Promise<void> {
     }),
     signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
   });
+  const raw = (await res.text()).slice(0, 240);
   if (!res.ok) {
-    throw new Error("telegram_failed");
+    console.error("[lead-notify] telegram http", { status: res.status, body: raw });
+    throw new Error(`telegram_http_${res.status}`);
   }
+  console.log("[lead-notify] telegram ok", { status: res.status });
 }
 
 async function sendResendEmail(text: string): Promise<void> {
@@ -99,18 +111,22 @@ async function sendWebhook(lead: LeadRecord, text: string): Promise<void> {
 
 /**
  * Yeni lead kaydından sonra Telegram / e-posta / webhook.
- * Lead HTTP yanıtını bloklamaz; hata olursa sessizce geçer.
  * Telefon ve isim loglara yazılmaz.
  */
 export async function notifyNewLead(lead: LeadRecord): Promise<void> {
+  console.log("[lead-notify] cagrildi", { leadId: lead.id });
   const text = buildLeadNotifyText(lead);
   const results = await Promise.allSettled([
     sendTelegram(text),
     sendResendEmail(text),
     sendWebhook(lead, text),
   ]);
-  const failed = results.filter((r) => r.status === "rejected").length;
-  if (failed > 0 && results.every((r) => r.status === "rejected")) {
-    console.error("[lead-notify] kanallar başarısız", { leadId: lead.id });
+  const telegram = results[0];
+  if (telegram.status === "rejected") {
+    const reason = telegram.reason;
+    console.error("[lead-notify] telegram rejected", {
+      leadId: lead.id,
+      message: reason instanceof Error ? reason.message : "unknown",
+    });
   }
 }
