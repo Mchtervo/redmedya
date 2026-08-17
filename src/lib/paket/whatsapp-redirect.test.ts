@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isMetaNativeBridgeNoise } from "@/lib/meta-pixel-bridge";
+import { isIgnorableClientError, isMetaNativeBridgeNoise } from "@/lib/meta-pixel-bridge";
 import { META_CAPI_ALLOWED } from "@/lib/meta-pixel";
 import { PIXEL_REDIRECT_DELAY_MS } from "@/lib/paket/whatsapp-redirect";
 
@@ -21,6 +21,12 @@ test("Android postMessage Java object is gone gürültü olarak tanınır", () =
     true
   );
   assert.equal(isMetaNativeBridgeNoise("TypeError: cannot read foo"), false);
+});
+
+test("js_runtime gürültüsü (Script error / eklenti) yok sayılır", () => {
+  assert.equal(isIgnorableClientError("Script error."), true);
+  assert.equal(isIgnorableClientError("ResizeObserver loop limit exceeded"), true);
+  assert.equal(isIgnorableClientError("TypeError: cannot read foo"), false);
 });
 
 test("WhatsAppClick ve Purchase CAPI allowlist'te", () => {

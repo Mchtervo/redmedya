@@ -25,7 +25,7 @@ export type PackageBuilderState = {
 
 export const initialState: PackageBuilderState = {
   step: 1,
-  packageId: null,
+  packageId: 2,
   plato: null,
   addons: [],
   removals: [],
@@ -40,7 +40,7 @@ export const initialState: PackageBuilderState = {
 export type Action =
   | { type: "SET_STEP"; step: WizardStep }
   | { type: "SELECT_PACKAGE"; packageId: PackageId }
-  | { type: "SELECT_PLATO"; plato: PlatoId }
+  | { type: "SELECT_PLATO"; plato: PlatoId | null }
   | { type: "TOGGLE_ADDON"; id: AddonId }
   | { type: "SET_ADDON_QTY"; id: AddonId; quantity: number }
   | { type: "TOGGLE_REMOVAL"; id: RemovableId }

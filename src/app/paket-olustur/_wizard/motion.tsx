@@ -19,8 +19,8 @@ export function CountUp({
   className?: string;
 }) {
   const reduce = useReducedMotion();
-  const [display, setDisplay] = useState(0); // görünürken 0→hedef
-  const fromRef = useRef(0);
+  const [display, setDisplay] = useState(value);
+  const fromRef = useRef(value);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, Gift, Lock } from "lucide-react";
+import { Check, Clock, Gift } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   CAMPAIGN,
@@ -174,8 +174,8 @@ function PackageCard({ pkg }: { pkg: PackageDef }) {
 }
 
 function PlatoSelector() {
-  const { state, selectPlato, warning } = useWizard();
-  const missing = state.packageId != null && state.plato == null;
+  const { state, selectPlato } = useWizard();
+  const deferred = state.plato == null;
 
   return (
     <section id="plato-secimi" className="mt-12 scroll-mt-24">
@@ -186,26 +186,39 @@ function PlatoSelector() {
         {COPY.step1.platoSubtitle}
       </p>
 
-      {/* Eksik seçim uyarısı — Devam'a basınca vurgulu */}
-      {missing && (
-        <div
-          className={cn(
-            "mt-4 flex items-start gap-2.5 rounded-lg border p-3.5 text-sm transition-colors",
-            warning === "plato"
-              ? "border-red-500/50 bg-red-500/10 text-red-300"
-              : "border-rm-champagne/30 bg-rm-champagne/[0.06] text-rm-champagne"
-          )}
-          role="alert"
-        >
-          <span className="mt-0.5 shrink-0">⚠️</span>
-          <span>
-            <strong>Lütfen bir plato seçin.</strong> Devam edebilmek için dış çekim
-            mekânınızı seçmeniz gerekiyor — anlaşmalı platolar ücretsiz.
-          </span>
-        </div>
-      )}
-
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => selectPlato(null)}
+          aria-pressed={deferred}
+          className={cn(
+            "flex items-center justify-between gap-3 rounded-lg border p-4 text-left transition-all sm:col-span-2",
+            deferred
+              ? "border-emerald-500/60 bg-emerald-500/[0.06] ring-1 ring-emerald-500/40"
+              : "border-white/10 bg-rm-black-elevated/40 hover:border-rm-champagne/40"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                deferred
+                  ? "bg-emerald-500/15 text-emerald-400"
+                  : "bg-rm-champagne/10 text-rm-champagne"
+              )}
+            >
+              <Clock className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-medium text-rm-off-white">
+                {COPY.step1.deferPlatoLabel}
+              </p>
+              <p className="mt-0.5 text-[11px] text-rm-gray-400">
+                Plato seçimini sonra yapabilirsiniz — Devam açık.
+              </p>
+            </div>
+          </div>
+        </button>
         {PLATO_OPTIONS.map((opt) => {
           const selected = state.plato === opt.id;
           const isOwn = opt.id === "own";
@@ -291,6 +304,9 @@ export function Step1PackagePlato() {
   return (
     <div>
       <h2 className="sr-only">{COPY.step1.packagesHeading}</h2>
+      <p className="mb-4 text-center text-xs leading-snug text-rm-gray-300 sm:text-sm">
+        {COPY.step1.topLine}
+      </p>
       <FreePlatoUrgencyCard />
       <div
         id="paket-secimi"
@@ -301,18 +317,6 @@ export function Step1PackagePlato() {
         ))}
       </div>
       <PlatoSelector />
-      <LockedHint />
     </div>
-  );
-}
-
-function LockedHint() {
-  const { state } = useWizard();
-  if (state.packageId != null && state.plato != null) return null;
-  return (
-    <p className="mt-6 flex items-center justify-center gap-2 text-center text-xs text-rm-gray-500">
-      <Lock className="h-3.5 w-3.5" />
-      Devam etmek için bir paket ve dış çekim mekânı seçin.
-    </p>
   );
 }

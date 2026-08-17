@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { FilmGrain } from "@/components/effects/film-grain";
 import { COPY } from "@/content/paketOlustur";
+import { HOME_HERO_WEBP } from "@/config/hero";
 import { pixelViewContentPaket } from "@/lib/paket/pixel";
 import { WizardProvider, useWizard } from "./wizard-context";
 import { CampaignBanner } from "./campaign-banner";
@@ -69,10 +70,11 @@ function WizardInner() {
         {/* §8 Hero — sinematik altın bokeh arka planı (LCP: priority/preload) */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[640px] overflow-hidden" aria-hidden>
           <Image
-            src="/images/paket-olustur/hero-bg.webp"
+            src={HOME_HERO_WEBP}
             alt=""
             fill
             priority
+            fetchPriority="high"
             sizes="100vw"
             className="object-cover object-center"
           />

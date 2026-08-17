@@ -26,14 +26,14 @@ export function buildWizardWhatsAppMessage(state: PackageBuilderState): string {
 
   lines.push(`📦 Paket: ${pkg.name.toUpperCase()} — ${pkg.subtitle.toUpperCase()}`);
 
-  // Plato
-  if (state.plato) {
-    if (ownVenue) {
-      lines.push("🏛 Mekân: Çift ayarlayacak (−₺2.000 indirim uygulandı)");
-    } else {
-      const plato = getPlato(state.plato);
-      lines.push(`🏛 Plato: ${plato.name} (kampanya — ücretsiz)`);
-    }
+  // Plato (seçilmezse "sonra karar vereceğim")
+  if (!state.plato) {
+    lines.push(`🏛 Plato: ${COPY.step1.deferPlatoLabel.toLowerCase()}`);
+  } else if (ownVenue) {
+    lines.push("🏛 Mekân: Çift ayarlayacak (−₺2.000 indirim uygulandı)");
+  } else {
+    const plato = getPlato(state.plato);
+    lines.push(`🏛 Plato: ${plato.name} (kampanya — ücretsiz)`);
   }
 
   // P3 hediye drone

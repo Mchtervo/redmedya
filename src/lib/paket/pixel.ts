@@ -62,7 +62,7 @@ export function pixelPackageBuild(contentName: string, value: number): void {
   });
 }
 
-/** Step1 Devam (paket+plato) — bir kez */
+/** Step1 Devam (paket seçili) — bir kez */
 export function pixelAddToCartMain(packageName: string, total: number): void {
   const key = "add_to_cart";
   if (hasFiredOnce(key)) return;

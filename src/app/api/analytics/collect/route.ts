@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { insertAnalyticsEvents } from "@/lib/analytics/analytics-events-store";
 import { upsertAnalyticsSession } from "@/lib/analytics/analytics-sessions-store";
 import { upsertTechError } from "@/lib/analytics/tech-errors-store";
+import { isIgnorableClientError } from "@/lib/meta-pixel-bridge";
 import {
   loadSeenClientEventIds,
   persistSeenClientEventIds,
@@ -151,12 +152,14 @@ export async function POST(request: NextRequest) {
 
     for (const r of rows) {
       if (r.event_name === "TechError") {
+        const message = sanitizeTechMessage(
+          String(r.metadata.err_msg ?? "error")
+        );
+        if (isIgnorableClientError(message)) continue;
         await upsertTechError({
           session_id: sessionId,
           error_type: String(r.metadata.error_type ?? r.error_code ?? "js"),
-          message: sanitizeTechMessage(
-            String(r.metadata.err_msg ?? "error")
-          ),
+          message,
           funnel_step: r.funnel_step,
           page_url: r.page_url,
           device: r.device,

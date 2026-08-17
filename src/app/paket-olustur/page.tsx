@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { preload } from "react-dom";
 import { PackageWizard } from "./_wizard/wizard";
 import { OfferJsonLd } from "@/components/seo/offer-jsonld";
 import { siteConfig } from "@/config/site";
 import { ANKARA_SEO_KEYWORDS } from "@/config/seo-keywords";
+import { HOME_HERO_WEBP } from "@/config/hero";
 
 // SEO başlığı ve meta korunur; wizard client-side çalışır.
 export const metadata: Metadata = {
@@ -22,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default function PaketOlusturPage() {
+  preload(HOME_HERO_WEBP, { as: "image", type: "image/webp", fetchPriority: "high" });
   return (
     <>
       {/* Paket kartları offers'ı görünür kılar → fiyat zengin sonucu uyumlu */}

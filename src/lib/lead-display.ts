@@ -18,9 +18,9 @@ export function leadPackageLabel(lead: LeadRecord): string {
   return fromSummary?.split(" — ")[0] ?? "Paket seçilmedi";
 }
 
-export function leadPlatoLabel(lead: LeadRecord): string | null {
+export function leadPlatoLabel(lead: LeadRecord): string {
   const raw = lead.cart.selectedIds.find((id) => id.startsWith("plato-"));
-  if (!raw) return null;
+  if (!raw) return "Sonra karar vereceğim";
   const id = raw.slice("plato-".length) as PlatoId;
   if (PLATO_IDS.includes(id)) return getPlato(id).name;
   return id;

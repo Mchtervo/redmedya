@@ -1,7 +1,23 @@
 import type { Metadata } from "next";
+import { preload } from "react-dom";
 import dynamic from "next/dynamic";
 import { siteConfig } from "@/config/site";
 import { ANKARA_SEO_KEYWORDS } from "@/config/seo-keywords";
+import { Navbar } from "@/components/layout/navbar";
+import { HeroSection } from "@/components/home/hero-section";
+import { HOME_HERO_WEBP } from "@/config/hero";
+import { HomePageExtras } from "@/components/home/home-page-extras";
+import { CoupleCaseStudies } from "@/components/home/couple-case-studies";
+import { SocialTrustSection } from "@/components/home/social-trust-section";
+import { StudioShowcase } from "@/components/home/studio-showcase";
+import { TestimonialsTabs } from "@/components/home/testimonials-tabs";
+import { ReservationCta } from "@/components/home/reservation-cta";
+import { FaqSection } from "@/components/home/faq-section";
+import { ContactSection } from "@/components/home/contact-section";
+import { Footer } from "@/components/layout/footer";
+import { FaqJsonLd } from "@/components/seo/faq-jsonld";
+import { OfferJsonLd } from "@/components/seo/offer-jsonld";
+import { GENERAL_FAQ } from "@/config/faq";
 
 export const metadata: Metadata = {
   title: "Ankara Düğün Fotoğrafçısı & Sinematik Düğün Videosu",
@@ -17,21 +33,6 @@ export const metadata: Metadata = {
     images: ["/logo-redmedya.png"],
   },
 };
-import { IntroLoader } from "@/components/layout/intro-loader";
-import { Navbar } from "@/components/layout/navbar";
-import { HeroSection } from "@/components/home/hero-section";
-import { HomePageExtras } from "@/components/home/home-page-extras";
-import { CoupleCaseStudies } from "@/components/home/couple-case-studies";
-import { SocialTrustSection } from "@/components/home/social-trust-section";
-import { StudioShowcase } from "@/components/home/studio-showcase";
-import { TestimonialsTabs } from "@/components/home/testimonials-tabs";
-import { ReservationCta } from "@/components/home/reservation-cta";
-import { FaqSection } from "@/components/home/faq-section";
-import { ContactSection } from "@/components/home/contact-section";
-import { Footer } from "@/components/layout/footer";
-import { FaqJsonLd } from "@/components/seo/faq-jsonld";
-import { OfferJsonLd } from "@/components/seo/offer-jsonld";
-import { GENERAL_FAQ } from "@/config/faq";
 
 const CinematicGallery = dynamic(
   () =>
@@ -42,11 +43,11 @@ const CinematicGallery = dynamic(
 );
 
 export default function HomePage() {
+  preload(HOME_HERO_WEBP, { as: "image", type: "image/webp", fetchPriority: "high" });
   return (
     <>
       <FaqJsonLd items={GENERAL_FAQ} />
       <OfferJsonLd />
-      <IntroLoader />
       <Navbar />
       <main>
         <HeroSection />

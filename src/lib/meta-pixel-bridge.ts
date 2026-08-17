@@ -29,3 +29,24 @@ export function isMetaNativeBridgeNoise(message: string): boolean {
     m.includes("error invoking postmessage")
   );
 }
+
+/**
+ * Tarayıcı / in-app WebView / eklenti gürültüsü.
+ * Admin "Teknik Hatalar" sekmesine yazılmaz.
+ */
+export function isIgnorableClientError(message: string): boolean {
+  if (isMetaNativeBridgeNoise(message)) return true;
+  const m = message.toLowerCase().trim();
+  if (m === "script error" || m === "script error." || m === "javascript error: script error.") {
+    return true;
+  }
+  if (m.includes("resizeobserver loop")) return true;
+  if (m.includes("non-error promise rejection")) return true;
+  if (m.includes("chrome-extension://") || m.includes("moz-extension://")) {
+    return true;
+  }
+  if (m.includes("safari-extension") || m.includes("safari-web-extension")) {
+    return true;
+  }
+  return false;
+}

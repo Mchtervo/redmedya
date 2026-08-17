@@ -22,8 +22,8 @@ test("Paket 1 — kazanç 5.750 (indirim + hediye)", () => {
   assert.equal(r.valueTotal, 16750);
 });
 
-test("Paket 2 — kazanç 6.750 (indirim + hediye)", () => {
-  const r = calculateTotal(make({ packageId: 2, plato: "anka" }));
+test("Paket 2 plato seçilmeden — ₺15.000 / kazanç ₺6.750", () => {
+  const r = calculateTotal(make({ packageId: 2, plato: null }));
   assert.equal(r.total, 15000);
   assert.equal(r.savings, 6750);
   assert.equal(r.valueTotal, 21750);

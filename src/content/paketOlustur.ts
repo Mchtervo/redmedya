@@ -23,6 +23,9 @@ export const COPY = {
 
   step1: {
     packagesHeading: "Paketini seç",
+    topLine:
+      "3 pakete de anlaşmalı plato ÜCRETSİZ — fiyatı görmek 60 saniye, kimse sizi aramaz.",
+    deferPlatoLabel: "Sonra karar vereceğim",
     ownVenueDiscountLabel: "−₺2.000 indirim",
     freeLabel: "ÜCRETSİZ",
     // "Plato ücreti yok" aciliyet kartı (sahte geri sayım YOK)
@@ -34,7 +37,7 @@ export const COPY = {
     },
     platoHeading: "Dış çekim mekânınız — kampanyayla ÜCRETSİZ 🎁",
     platoSubtitle:
-      "Kısa süreliğine: anlaşmalı platolarımızdan birini seçin, plato kullanımı paketinize tamamen HEDİYE — hiçbir ek ücret yok.",
+      "Şimdi seçmek zorunda değilsiniz. Seçmezseniz “sonra karar vereceğim” olarak geçer. Anlaşmalı platolar ÜCRETSİZ.",
     droneRibbon: "🚁 DRONE HEDİYE",
     venueDiscountLine: "Mekân indirimi −₺2.000",
     giftPlatoLine: "Anlaşmalı plato hediye 🎁",

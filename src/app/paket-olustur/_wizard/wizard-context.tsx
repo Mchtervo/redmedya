@@ -56,7 +56,7 @@ type WizardContextValue = {
   next: () => void;
   back: () => void;
   selectPackage: (id: PackageId) => void;
-  selectPlato: (plato: PlatoId) => void;
+  selectPlato: (plato: PlatoId | null) => void;
   toggleAddon: (id: AddonId) => void;
   setAddonQty: (id: AddonId, qty: number) => void;
   toggleRemoval: (id: RemovableId) => void;
@@ -72,6 +72,7 @@ const WizardContext = createContext<WizardContextValue | null>(null);
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const hydratedRef = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
 
   // Mount: UTM yakala + paylaşılan link query'sinden state restore
   useEffect(() => {
@@ -87,7 +88,26 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       window.history.replaceState({ rmStep: parsed ? 1 : 1 }, "");
     }
+    setHydrated(true);
   }, []);
+
+  // Ön seçili paket (P2) veya paylaşım linki — PackageBuild bir kez
+  const defaultPackageTrackedRef = useRef(false);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (defaultPackageTrackedRef.current) return;
+    if (state.packageId == null) return;
+    defaultPackageTrackedRef.current = true;
+    const pkg = getPackage(state.packageId);
+    pixelPackageBuild(`${pkg.name} — ${pkg.subtitle}`, pkg.price);
+    trackFunnelEvent("PackageSelected", {
+      metadata: { package_id: state.packageId, price: pkg.price },
+    });
+    track("package_selected", {
+      package_id: state.packageId,
+      price: pkg.price,
+    });
+  }, [hydrated, state.packageId]);
 
   // Seçim query'sini URL'e senkronla (yeni history girişi eklemeden)
   useEffect(() => {
@@ -240,23 +260,15 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         });
         return;
       }
-      if (state.plato == null) {
-        setWarning("plato");
-        document.getElementById("plato-secimi")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        return;
-      }
       setWarning(null);
-      // AddToCart: bilinçli "Devam" — paket+plato tamam, sepete esas seçim
+      // AddToCart: bilinçli "Devam" — paket seçili (plato opsiyonel)
       const pkg = getPackage(state.packageId);
       pixelAddToCartMain(`${pkg.name} — ${pkg.subtitle}`, totals.total);
       goToStep(2);
     } else if (state.step === 2) {
       goToStep(3); // InitiateCheckout goToStep(3) içinde
     }
-  }, [state.step, state.packageId, state.plato, totals.total, goToStep]);
+  }, [state.step, state.packageId, totals.total, goToStep]);
 
   const back = useCallback(() => {
     if (state.step > 1) goToStep((state.step - 1) as WizardStep);
@@ -274,10 +286,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     track("package_selected", { package_id: id, price: pkg.price });
   }, []);
 
-  const selectPlato = useCallback((plato: PlatoId) => {
+  const selectPlato = useCallback((plato: PlatoId | null) => {
     dispatch({ type: "SELECT_PLATO", plato });
     setWarning(null);
-    // Paket seçilmeden önce plato seçilirse de PackageBuild bir kez
+    if (plato == null) {
+      trackFunnelEvent("PlatoSelected", { metadata: { plato: "later" } });
+      track("plato_selected", { plato: "later" });
+      return;
+    }
     pixelPackageBuild(`plato_${plato}`, 0);
     trackFunnelEvent("PlatoSelected", { metadata: { plato } });
     track("plato_selected", { plato });

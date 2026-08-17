@@ -1,4 +1,5 @@
 import { getPackage, getPlato } from "@/config/pricing";
+import { COPY } from "@/content/paketOlustur";
 import { calculateTotal } from "@/lib/paket/calculate-total";
 import type { PackageBuilderState } from "@/lib/paket/state";
 import { getSessionId, getUtm } from "@/lib/track/session";
@@ -32,7 +33,9 @@ function buildCartSummary(state: PackageBuilderState) {
   if (state.packageId != null) {
     const pkg = getPackage(state.packageId);
     lineSummary.unshift(`${pkg.name} — ${pkg.subtitle}`);
-    if (state.plato) {
+    if (!state.plato) {
+      lineSummary.push(`Plato: ${COPY.step1.deferPlatoLabel.toLowerCase()}`);
+    } else {
       lineSummary.push(
         state.plato === "own"
           ? "Mekân: Çift ayarlayacak (−₺2.000)"

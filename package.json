@@ -14,7 +14,7 @@
     "start:standalone": "DOCKER=1 npm run build && node scripts/start-standalone.mjs",
     "lint": "eslint",
     "capi:backfill": "tsx scripts/capi-backfill-leads.ts",
-    "test": "tsx --test src/lib/analytics/collect-core.test.ts src/lib/analytics/funnel-aggregate.test.ts src/lib/paket/calculate-total.test.ts src/lib/paket/whatsapp-redirect.test.ts src/lib/capi-backfill.test.ts src/lib/leads-dedupe.test.ts"
+    "test": "tsx --test src/lib/analytics/collect-core.test.ts src/lib/analytics/funnel-aggregate.test.ts src/lib/paket/calculate-total.test.ts src/lib/paket/whatsapp-redirect.test.ts src/lib/capi-backfill.test.ts src/lib/leads-dedupe.test.ts src/lib/lead-notify.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

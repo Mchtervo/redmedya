@@ -5,6 +5,7 @@ import { readSiteSettings, writeSiteSettings } from "@/lib/site-settings";
 import { markDraftWhatsAppClicked } from "@/lib/package-drafts-store";
 import type { LeadRecord } from "@/types/site-settings";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
+import { notifyNewLead } from "@/lib/lead-notify";
 import {
   reservationPurchaseEventId,
   reservationScheduleEventId,
@@ -70,6 +71,8 @@ export async function POST(request: NextRequest) {
     };
 
     await appendLead(lead);
+
+    void notifyNewLead(lead).catch(() => {});
 
     const scheduleEventId = reservationScheduleEventId(lead.id);
     const purchaseEventId = reservationPurchaseEventId(lead.id);

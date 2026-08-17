@@ -33,8 +33,7 @@ export function StickyBar() {
 
   if (state.step === 3) return null;
 
-  const canContinue =
-    state.step === 1 ? state.packageId != null && state.plato != null : true;
+  const canContinue = state.step === 1 ? state.packageId != null : true;
 
   // §2 — Adım 2'de "WhatsApp'ta Tamamla" kısayolu (form doldurmadan kaçmasın)
   const showWhatsAppShortcut = state.step === 2 && state.packageId != null;
