@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildLeadNotifyText } from "@/lib/lead-notify";
+import { buildLeadNotifyText, shouldSendLeadNotify } from "@/lib/lead-notify";
 import type { LeadRecord } from "@/types/site-settings";
 
 function sampleLead(): LeadRecord {
@@ -32,4 +32,12 @@ test("lead bildirim metni paket / plato / toplam içerir", () => {
   assert.match(text, /15.000|15000/);
   assert.match(text, /Ayşe Yılmaz/);
   assert.match(text, /05551234567/);
+});
+
+test("Telegram gitmeden yedek istek tekrar dener", () => {
+  assert.equal(shouldSendLeadNotify(sampleLead()), true);
+  assert.equal(
+    shouldSendLeadNotify({ ...sampleLead(), notifiedAt: "2026-08-17T12:00:01.000Z" }),
+    false
+  );
 });

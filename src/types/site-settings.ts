@@ -82,6 +82,8 @@ export type LeadRecord = {
   couponCode?: string;
   /** fetch+beacon dedupe anahtarı */
   client_request_id?: string;
+  /** Telegram sendMessage başarılı olduysa — yedek beacon tekrar atmasın */
+  notifiedAt?: string;
   /** Paket oturumu — GA4 sunucu eşleştirme + journey tracking korelasyonu */
   sessionId?: string;
   /** İlk dokunuş reklam kaynağı (§11) — UTM + fbclid */

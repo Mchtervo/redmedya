@@ -1,6 +1,7 @@
 /** Lead POST: sayfa kapansa bile istek tamamlansın (mobil Safari). */
 
-export const LEAD_WAIT_MS = 3500;
+/** WhatsApp'a geçmeden Telegram bitsin (Hostinger istemci kopunca işi keser). */
+export const LEAD_WAIT_MS = 9000;
 
 export type DurablePostResult = {
   status: "ok" | "timeout" | "error";

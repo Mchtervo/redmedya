@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appendLead, readLeads } from "@/lib/leads-store";
+import { appendLead, readLeads, updateLead } from "@/lib/leads-store";
 import { findDuplicateLead } from "@/lib/leads-dedupe";
 import { readSiteSettings, writeSiteSettings } from "@/lib/site-settings";
 import { markDraftWhatsAppClicked } from "@/lib/package-drafts-store";
 import type { LeadRecord } from "@/types/site-settings";
 import { sendMetaCapiEvent } from "@/lib/meta-capi";
-import { notifyNewLead } from "@/lib/lead-notify";
+import { notifyNewLead, shouldSendLeadNotify } from "@/lib/lead-notify";
 import {
   reservationPurchaseEventId,
   reservationScheduleEventId,
@@ -44,20 +44,22 @@ export async function POST(request: NextRequest) {
       phone: body.customer.phone,
     });
     if (existing) {
-      const incomingReq = body.client_request_id?.trim() ?? "";
-      const sameRequest =
-        incomingReq.length > 0 && existing.client_request_id === incomingReq;
-      if (sameRequest) {
-        console.log("[lead-notify] atlandi duplicate request", {
+      // fetch+beacon aynı id: Telegram gitmediyse (WhatsApp kesmesi) yedek istek göndersin.
+      if (!shouldSendLeadNotify(existing)) {
+        console.log("[lead-notify] atlandi, zaten bildirildi", {
           leadId: existing.id,
         });
       } else {
-        // Aynı telefon 10 dk içinde tekrar gönderildi — kayıt yok ama Telegram gitsin.
-        console.log("[lead-notify] duplicate lead, telegram tekrar", {
+        console.log("[lead-notify] duplicate/retry, telegram", {
           leadId: existing.id,
         });
         try {
-          await notifyNewLead(existing);
+          const sent = await notifyNewLead(existing);
+          if (sent) {
+            await updateLead(existing.id, {
+              notifiedAt: new Date().toISOString(),
+            });
+          }
         } catch (err) {
           console.error(
             "[lead-notify] duplicate notify hata",
@@ -95,7 +97,10 @@ export async function POST(request: NextRequest) {
 
     // Yanıt dönmeden Telegram gitsin — Hostinger isteği bitince fire-and-forget düşer.
     try {
-      await notifyNewLead(lead);
+      const sent = await notifyNewLead(lead);
+      if (sent) {
+        await updateLead(lead.id, { notifiedAt: new Date().toISOString() });
+      }
     } catch (err) {
       console.error(
         "[lead-notify] kayit sonrasi hata",

@@ -99,7 +99,7 @@ export function syncPackageDraft(
 
 /**
  * WhatsApp'a basıldığında tam lead kaydı.
- * keepalive fetch; 500ms içinde yanıt yoksa sendBeacon.
+ * keepalive fetch; 9 sn içinde yanıt yoksa sendBeacon.
  * Schedule + Purchase: kayıt başarısı (yanıt) sonrası.
  */
 export async function submitPackageLead(

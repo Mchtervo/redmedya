@@ -4,7 +4,8 @@ import { leadPackageLabel, leadPlatoLabel, leadSourceLabel } from "@/lib/lead-di
 import { formatPrice } from "@/lib/utils";
 import type { LeadRecord } from "@/types/site-settings";
 
-const TELEGRAM_TIMEOUT_MS = 8_000;
+/** İstemci 9 sn bekler; Telegram bu süreden önce bitsin. */
+const TELEGRAM_TIMEOUT_MS = 6_500;
 const EMAIL_TIMEOUT_MS = 8_000;
 
 function env(name: string): string {
@@ -32,7 +33,7 @@ export function buildLeadNotifyText(lead: LeadRecord): string {
   ].join("\n");
 }
 
-async function sendTelegram(text: string): Promise<void> {
+async function sendTelegram(text: string): Promise<boolean> {
   const loaded = reloadPersistentEnv();
   const token = env("TELEGRAM_BOT_TOKEN");
   const chatId = env("TELEGRAM_CHAT_ID");
@@ -44,7 +45,7 @@ async function sendTelegram(text: string): Promise<void> {
   });
   if (!token || !chatId) {
     console.error("[lead-notify] telegram atlandi: token veya chat_id bos");
-    return;
+    return false;
   }
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
@@ -62,6 +63,7 @@ async function sendTelegram(text: string): Promise<void> {
     throw new Error(`telegram_http_${res.status}`);
   }
   console.log("[lead-notify] telegram ok", { status: res.status });
+  return true;
 }
 
 async function sendResendEmail(text: string): Promise<void> {
@@ -109,11 +111,17 @@ async function sendWebhook(lead: LeadRecord, text: string): Promise<void> {
   }
 }
 
+/** Telegram henüz gitmediyse yedek istek / aynı telefon tekrarında gönder. */
+export function shouldSendLeadNotify(lead: Pick<LeadRecord, "notifiedAt">): boolean {
+  return !lead.notifiedAt;
+}
+
 /**
  * Yeni lead kaydından sonra Telegram / e-posta / webhook.
  * Telefon ve isim loglara yazılmaz.
+ * @returns Telegram sendMessage gerçekten gittiyse true
  */
-export async function notifyNewLead(lead: LeadRecord): Promise<void> {
+export async function notifyNewLead(lead: LeadRecord): Promise<boolean> {
   console.log("[lead-notify] cagrildi", { leadId: lead.id });
   const text = buildLeadNotifyText(lead);
   const results = await Promise.allSettled([
@@ -128,5 +136,7 @@ export async function notifyNewLead(lead: LeadRecord): Promise<void> {
       leadId: lead.id,
       message: reason instanceof Error ? reason.message : "unknown",
     });
+    return false;
   }
+  return telegram.value === true;
 }
