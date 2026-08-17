@@ -33,7 +33,7 @@ export function buildLeadNotifyText(lead: LeadRecord): string {
   ].join("\n");
 }
 
-async function sendTelegram(text: string): Promise<boolean> {
+export async function sendTelegramMessage(text: string): Promise<boolean> {
   const loaded = reloadPersistentEnv();
   const token = env("TELEGRAM_BOT_TOKEN");
   const chatId = env("TELEGRAM_CHAT_ID");
@@ -125,7 +125,7 @@ export async function notifyNewLead(lead: LeadRecord): Promise<boolean> {
   console.log("[lead-notify] cagrildi", { leadId: lead.id });
   const text = buildLeadNotifyText(lead);
   const results = await Promise.allSettled([
-    sendTelegram(text),
+    sendTelegramMessage(text),
     sendResendEmail(text),
     sendWebhook(lead, text),
   ]);

@@ -66,5 +66,9 @@ next-env.d.ts
 /data/analytics_tech_errors.json
 /data/analytics_event_ids.json
 
+# Günlük özet cron (runtime)
+/data/cron.secret
+/data/daily_summary_sent.json
+
 # CAPI backfill isaret dosyasi (runtime, mükerrer gönderimi engeller)
 /data/capi_backfill_sent.json

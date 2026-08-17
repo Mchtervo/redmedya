@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -217,6 +218,9 @@ export function reloadPersistentEnv(): {
   for (const envPath of persistentEnvCandidates(".env")) {
     loadPersistentEnvFile(envPath);
   }
+  for (const cronEnv of persistentEnvCandidates("cron.env")) {
+    loadPersistentEnvFile(cronEnv);
+  }
   let telegramEnvExists = false;
   for (const telegramPath of persistentEnvCandidates("telegram.env")) {
     if (fs.existsSync(telegramPath)) telegramEnvExists = true;
@@ -230,8 +234,38 @@ export function reloadPersistentEnv(): {
   };
 }
 
+/** DATA_DIR/cron.secret — cron Authorization Bearer. Yoksa üretir, loglamaz. */
+export function ensureCronSecret(): string {
+  reloadPersistentEnv();
+  const fromEnv = process.env.CRON_SECRET?.trim() ?? "";
+  if (fromEnv.length >= 16) return fromEnv;
+
+  const secretPath = dataPath("cron.secret");
+  try {
+    const fromFile = fs.readFileSync(secretPath, "utf8").trim();
+    if (fromFile.length >= 16) {
+      process.env.CRON_SECRET = fromFile;
+      return fromFile;
+    }
+  } catch {
+    /* yok */
+  }
+
+  const generated = randomBytes(24).toString("hex");
+  try {
+    fs.writeFileSync(secretPath, `${generated}\n`, { encoding: "utf8", mode: 0o600 });
+  } catch {
+    console.error("[cron] cron.secret yazilamadi");
+  }
+  process.env.CRON_SECRET = generated;
+  return generated;
+}
+
 if (!isNextBuild()) {
   const loaded = reloadPersistentEnv();
+  if (process.env.NODE_ENV === "production") {
+    ensureCronSecret();
+  }
   console.log("[lead-notify] acilis env", {
     dataDir: loaded.dataDir,
     telegramEnvExists: loaded.telegramEnvExists,
