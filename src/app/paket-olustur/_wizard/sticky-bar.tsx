@@ -45,8 +45,9 @@ export function StickyBar() {
 
   return (
     <div
-      className="fixed inset-x-0 z-40 border-t border-white/10 bg-rm-black/95 backdrop-blur-lg lg:sticky lg:bottom-4 lg:mt-8 lg:rounded-lg lg:border"
+      className="fixed inset-x-0 z-50 border-t border-white/10 bg-rm-black/95 backdrop-blur-lg lg:sticky lg:bottom-4 lg:mt-8 lg:rounded-lg lg:border"
       style={{ bottom: kbInset }}
+      data-journey="continue"
     >
       <div
         className="section-container flex items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4"
@@ -99,15 +100,16 @@ export function StickyBar() {
           <button
             type="button"
             onClick={next}
+            aria-label={COPY.cta.next.replace("→", "").trim()}
             className={cn(
-              "btn-luxury inline-flex h-12 items-center gap-1.5 rounded-sm px-4 text-xs font-semibold tracking-wide uppercase transition-all sm:gap-2 sm:px-8 sm:text-sm",
+              "btn-luxury inline-flex min-h-14 min-w-[9.5rem] items-center justify-center gap-2 rounded-sm px-5 text-sm font-bold tracking-[0.12em] uppercase transition-all sm:min-h-14 sm:px-8",
               canContinue
-                ? "bg-rm-champagne text-rm-black hover:bg-rm-champagne-light shadow-[0_0_30px_rgba(196,160,82,0.25)]"
+                ? "bg-rm-champagne text-rm-black hover:bg-rm-champagne-light shadow-[0_0_30px_rgba(196,160,82,0.35)]"
                 : "bg-white/10 text-rm-gray-300 hover:bg-white/15"
             )}
           >
-            {COPY.cta.next.replace("→", "")}
-            <ArrowRight className="h-4 w-4" />
+            {COPY.cta.next.replace("→", "").trim()}
+            <ArrowRight className="h-5 w-5" aria-hidden />
           </button>
         </div>
       </div>

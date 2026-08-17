@@ -8,6 +8,11 @@ import {
   AdminEmptyState,
   AdminPanelHeader,
 } from "@/components/admin/admin-panel-header";
+import {
+  AdminSessionsView,
+  type SessionDetailPayload,
+  type SessionListRow,
+} from "@/components/admin/admin-sessions-view";
 import { Filter, RefreshCw, AlertTriangle } from "lucide-react";
 
 type Range = "today" | "yesterday" | "last_7" | "last_14" | "last_30";
@@ -39,6 +44,11 @@ type Dashboard = {
     sources: Record<string, number>;
     campaigns: Record<string, number>;
     lastAction: string;
+    scroll?: {
+      packages: number;
+      plato: number;
+      continueBtn: number;
+    };
   }[];
   campaigns: {
     campaign: string;
@@ -64,44 +74,12 @@ type Dashboard = {
     lead_id: string | null;
   }[];
   traffic: { name: string; count: number }[];
-  sessions: {
-    session_id: string;
-    first?: string;
-    last?: string;
-    events: number;
-    max_step?: string;
-    converted: boolean;
-    device?: string | null;
-    os?: string | null;
-    source?: string;
-    campaign?: string | null;
-    lead_id?: string | null;
-  }[];
+  sessions: SessionListRow[];
+  ad_buckets?: Record<string, number>;
   form_errors: { label: string; count: number }[];
 };
 
-type SessionDetail = {
-  abandoned: boolean;
-  last_step: string | null;
-  session: {
-    session_id: string;
-    landing_url: string | null;
-    last_url: string | null;
-    utm: Record<string, string | undefined>;
-    device: string | null;
-    os: string | null;
-    browser: string | null;
-    lead_id: string | null;
-    converted: boolean;
-  } | null;
-  timeline: {
-    event_time: string;
-    event_name: string;
-    page_url: string | null;
-    metadata: Record<string, unknown>;
-    error_code: string | null;
-  }[];
-};
+type SessionDetail = SessionDetailPayload;
 
 type ErrorsPayload = {
   form_errors: { label: string; count: number }[];
@@ -217,7 +195,7 @@ export function AdminFunnelPanel({
       <AdminPanelHeader
         eyebrow="Analitik"
         title="Funnel Analizi"
-        description="Paket oluştur → rezervasyon. Meta’dan bağımsız iç analytics."
+        description="Tüm sayfalar → rezervasyon. Meta’dan bağımsız iç analytics."
         icon={Filter}
         meta={data ? data.range.label : undefined}
         actions={
@@ -320,7 +298,7 @@ export function AdminFunnelPanel({
       ) : !data ? (
         <AdminEmptyState
           title="Veri yok"
-          description="Henüz analytics event kaydı oluşmamış. /paket-olustur trafiği bekleniyor."
+          description="Henüz analytics event kaydı oluşmamış. Ana sayfa, galeri ve paket trafiği bekleniyor."
         />
       ) : (
         <>
@@ -411,6 +389,10 @@ export function AdminFunnelPanel({
               <h3 className="text-sm font-semibold text-rm-off-white">
                 İnsanlar nerede çıkıyor?
               </h3>
+              <p className="text-xs text-rm-gray-500">
+                Ort. aktif kalma: sekme arkadayken geçen süre ve 30 sn+ boşluklar
+                dahil edilmez. Kaydırma sayıları yeni ziyaretlerden dolar.
+              </p>
               {data.drop_off.map((d) => (
                 <div
                   key={d.key}
@@ -423,8 +405,15 @@ export function AdminFunnelPanel({
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-rm-gray-500">
-                    Ort. kalma: {fmtSec(d.avgDwellSec)} · Son işlem:{" "}
+                    Ort. aktif kalma: {fmtSec(d.avgDwellSec)} · Son işlem:{" "}
                     {d.lastAction}
+                  </p>
+                  <p className="mt-1 text-xs text-rm-gray-400">
+                    Gördü: paketler {d.scroll?.packages ?? 0}/{d.count}
+                    {" · "}
+                    plato {d.scroll?.plato ?? 0}/{d.count}
+                    {" · "}
+                    DEVAM {d.scroll?.continueBtn ?? 0}/{d.count}
                   </p>
                   <p className="mt-1 text-xs text-rm-gray-500">
                     Cihaz:{" "}
@@ -445,97 +434,16 @@ export function AdminFunnelPanel({
           )}
 
           {sub === "sessions" && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="overflow-x-auto rounded-xl border border-white/8">
-                <table className="w-full min-w-[520px] text-left text-xs">
-                  <thead className="bg-white/[0.03] text-rm-gray-500">
-                    <tr>
-                      <th className="p-2">Session</th>
-                      <th className="p-2">Kaynak</th>
-                      <th className="p-2">Cihaz</th>
-                      <th className="p-2">Dönüşüm</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.sessions.map((s) => (
-                      <tr
-                        key={s.session_id}
-                        className="cursor-pointer border-t border-white/5 hover:bg-white/[0.03]"
-                        onClick={() => {
-                          setDetail(null);
-                          setSessionId(s.session_id);
-                        }}
-                      >
-                        <td className="p-2 font-mono text-rm-gray-300">
-                          {s.session_id.slice(0, 10)}…
-                        </td>
-                        <td className="p-2">
-                          {s.source}
-                          {s.campaign ? ` / ${s.campaign}` : ""}
-                        </td>
-                        <td className="p-2">
-                          {s.device}/{s.os}
-                        </td>
-                        <td className="p-2">
-                          {s.converted ? (
-                            <span className="text-emerald-400">Schedule</span>
-                          ) : (
-                            <span className="text-rm-gray-500">
-                              {s.max_step ?? "—"}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Card title="Session yolculuğu">
-                {!sessionId ? (
-                  <p className="text-sm text-rm-gray-500">
-                    Soldan bir session seçin.
-                  </p>
-                ) : !detail ? (
-                  <p className="text-sm text-rm-gray-500">Yükleniyor…</p>
-                ) : (
-                  <div className="space-y-3">
-                    {detail.abandoned ? (
-                      <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-200">
-                        Session terk edildi · son adım:{" "}
-                        {detail.last_step ?? "—"}
-                      </p>
-                    ) : null}
-                    <p className="text-[11px] text-rm-gray-500">
-                      {detail.session?.landing_url ?? "—"}
-                      {detail.session?.lead_id
-                        ? ` · lead ${detail.session.lead_id}`
-                        : ""}
-                    </p>
-                    <ol className="max-h-96 space-y-2 overflow-y-auto text-xs">
-                      {detail.timeline.map((e, i) => (
-                        <li
-                          key={`${e.event_time}-${i}`}
-                          className="border-l border-rm-champagne/30 pl-3"
-                        >
-                          <span className="tabular-nums text-rm-gray-500">
-                            {new Date(e.event_time).toLocaleTimeString("tr-TR")}
-                          </span>{" "}
-                          <span className="font-medium text-rm-off-white">
-                            {e.event_name}
-                          </span>
-                          {e.error_code ? (
-                            <span className="text-red-300">
-                              {" "}
-                              ({e.error_code})
-                            </span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-              </Card>
-            </div>
+            <AdminSessionsView
+              sessions={data.sessions}
+              adBuckets={data.ad_buckets}
+              sessionId={sessionId}
+              detail={detail}
+              onSelect={(id) => {
+                setDetail(null);
+                setSessionId(id);
+              }}
+            />
           )}
 
           {sub === "ads" && (

@@ -22,6 +22,9 @@ const URGENT_EVENTS = new Set([
   "Schedule",
   "WhatsAppClick",
   "FormSubmitError",
+  "PageLeave",
+  "SessionAbandoned",
+  "SessionStart",
 ]);
 
 type MetaSafe = Record<string, string | number | boolean | null | undefined>;
@@ -77,6 +80,11 @@ function sanitizeMeta(eventName: string, meta?: MetaSafe): MetaSafe {
     const error_type =
       typeof meta.error_type === "string" ? meta.error_type.slice(0, 40) : "";
     return field_name && error_type ? { field_name, error_type } : {};
+  }
+  if (eventName === "FormFieldTouched") {
+    const field_name =
+      typeof meta.field_name === "string" ? meta.field_name.slice(0, 40) : "";
+    return field_name ? { field_name } : {};
   }
   const blocked = new Set([
     "name",

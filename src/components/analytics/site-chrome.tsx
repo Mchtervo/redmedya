@@ -6,6 +6,7 @@ import { MetaPageTracker } from "@/components/analytics/meta-page-tracker";
 import { GA4PageTracker } from "@/components/analytics/ga4-page-tracker";
 import { VisitCounter } from "@/components/analytics/visit-counter";
 import { TechErrorListener } from "@/components/analytics/tech-error-listener";
+import { SiteJourneyTracker } from "@/components/analytics/site-journey-tracker";
 
 const MobileBottomBar = dynamic(
   () =>
@@ -32,6 +33,7 @@ export function SiteChrome() {
   return (
     <>
       <MetaPageTracker />
+      <SiteJourneyTracker />
       <GA4PageTracker />
       <TechErrorListener />
       {/* Anonim sayaç — çerez onayı beklemez (kişisel veri işlemez) */}

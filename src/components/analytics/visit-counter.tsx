@@ -11,7 +11,8 @@ import { captureUtmOnLanding } from "@/lib/track/session";
  * dokunmaz. Sunucuya sadece "bir açılış oldu + yol + varsa utm" gider ve orada
  * günlük TOPLAM sayaca eklenir. Kişi bazlı kayıt oluşmaz.
  *
- * Rızaya bağlı olan journey takibi ayrıdır: lib/track/tracker.ts → /api/track
+ * Rızaya bağlı olmayan first-party yolculuk: SiteJourneyTracker → /api/analytics/collect
+ * (kişisel veri yok). Ziyaret sayacı: /api/hit.
  */
 function VisitCounterInner() {
   const pathname = usePathname();

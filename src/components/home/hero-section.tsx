@@ -18,7 +18,10 @@ const HERO_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-[min(92svh,900px)] items-center justify-center overflow-hidden">
+    <section
+      data-journey="hero"
+      className="relative flex min-h-[min(92svh,900px)] items-center justify-center overflow-hidden"
+    >
       <Image
         src={HOME_HERO_WEBP}
         alt=""

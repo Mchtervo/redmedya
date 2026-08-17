@@ -16,6 +16,7 @@ export const FUNNEL_INTERNAL_EVENTS = [
   "ExtraServiceSelected",
   "DateSelected",
   "FormStarted",
+  "FormFieldTouched",
   "FormFieldError",
   "FormSubmitAttempt",
   "FormSubmitError",
@@ -24,7 +25,10 @@ export const FUNNEL_INTERNAL_EVENTS = [
   "StepForward",
   "ExitIntent",
   "TechError",
+  "SessionStart",
   "SessionAbandoned",
+  "PageLeave",
+  "ScrollDepth",
 ] as const;
 
 export type FunnelEventName =
@@ -75,6 +79,15 @@ export type AnalyticsSession = {
   max_funnel_step: FunnelStep;
   converted: boolean;
   event_count: number;
+  /** Aynı tarayıcıda daha önce sid görülmüş mü (kişisel veri yok). */
+  is_returning: boolean | null;
+  landing_path: string | null;
+  exit_path: string | null;
+  page_sequence: string[];
+  total_duration_ms: number;
+  scroll_hero: boolean;
+  scroll_packages: boolean;
+  scroll_end: boolean;
 };
 
 export type AnalyticsEvent = {
@@ -96,6 +109,7 @@ export type AnalyticsEvent = {
   utm_source: string | null;
   utm_campaign: string | null;
   utm_medium: string | null;
+  utm_content: string | null;
 };
 
 export type TechErrorRow = {
@@ -138,6 +152,7 @@ export function eventNameToFunnelStep(name: string): FunnelStep {
       return "add_to_cart";
     case "InitiateCheckout":
     case "FormStarted":
+    case "FormFieldTouched":
     case "DateSelected":
     case "FormFieldError":
     case "FormSubmitAttempt":

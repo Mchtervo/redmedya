@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, Clock, Gift } from "lucide-react";
+import { Check, Clock, Gift, ArrowRight } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import {
   CAMPAIGN,
@@ -173,12 +173,37 @@ function PackageCard({ pkg }: { pkg: PackageDef }) {
   );
 }
 
+function Step1ContinueCta() {
+  const { next, state } = useWizard();
+  if (state.packageId == null) return null;
+  return (
+    <div className="mt-6 sm:mt-8">
+      <button
+        type="button"
+        onClick={next}
+        data-journey="continue"
+        className="btn-luxury flex min-h-14 w-full items-center justify-center gap-2 rounded-sm bg-rm-champagne px-6 text-sm font-bold tracking-[0.14em] text-rm-black uppercase shadow-[0_0_32px_rgba(196,160,82,0.35)] hover:bg-rm-champagne-light sm:min-h-16 sm:text-base"
+      >
+        {COPY.cta.next.replace("→", "").trim()}
+        <ArrowRight className="h-5 w-5" aria-hidden />
+      </button>
+      <p className="mt-2 text-center text-[11px] text-rm-gray-500">
+        Plato seçimi zorunlu değil — şimdi devam edebilirsiniz.
+      </p>
+    </div>
+  );
+}
+
 function PlatoSelector() {
   const { state, selectPlato } = useWizard();
   const deferred = state.plato == null;
 
   return (
-    <section id="plato-secimi" className="mt-12 scroll-mt-24">
+    <section
+      id="plato-secimi"
+      data-journey="plato"
+      className="mt-12 scroll-mt-24"
+    >
       <h2 className="font-editorial text-2xl text-rm-off-white sm:text-3xl">
         {COPY.step1.platoHeading}
       </h2>
@@ -310,12 +335,14 @@ export function Step1PackagePlato() {
       <FreePlatoUrgencyCard />
       <div
         id="paket-secimi"
+        data-journey="packages"
         className="grid scroll-mt-24 gap-6 pt-4 md:grid-cols-3 md:items-start md:gap-4 lg:gap-6"
       >
         {PACKAGES.map((pkg) => (
           <PackageCard key={pkg.id} pkg={pkg} />
         ))}
       </div>
+      <Step1ContinueCta />
       <PlatoSelector />
     </div>
   );

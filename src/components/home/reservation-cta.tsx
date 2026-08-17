@@ -14,7 +14,10 @@ const RES_WHATSAPP_URL = `https://wa.me/${formatPhoneForWhatsApp(
 
 export function ReservationCta() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-rm-champagne via-rm-champagne-light to-rm-champagne py-16 sm:py-20 md:py-24">
+    <section
+      data-journey="packages"
+      className="relative overflow-hidden bg-gradient-to-br from-rm-champagne via-rm-champagne-light to-rm-champagne py-16 sm:py-20 md:py-24"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-30"

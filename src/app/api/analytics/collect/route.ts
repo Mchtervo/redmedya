@@ -88,6 +88,10 @@ export async function POST(request: NextRequest) {
 
     let maxStep: FunnelStep = "page";
     let converted = false;
+    let isReturning: boolean | null = null;
+    let scrollHero = false;
+    let scrollPackages = false;
+    let scrollEnd = false;
 
     const rows: AnalyticsEvent[] = accepted.map((e) => {
       const step = eventNameToFunnelStep(e.event_name);
@@ -99,6 +103,15 @@ export async function POST(request: NextRequest) {
       }
       if (e.event_name === "Schedule" || e.event_name === "FormSubmitSuccess") {
         converted = true;
+      }
+      if (e.event_name === "SessionStart" && typeof e.metadata.is_returning === "boolean") {
+        isReturning = e.metadata.is_returning;
+      }
+      if (e.event_name === "ScrollDepth") {
+        const m = String(e.metadata.milestone ?? "");
+        if (m === "hero") scrollHero = true;
+        if (m === "packages") scrollPackages = true;
+        if (m === "end") scrollEnd = true;
       }
 
       return {
@@ -118,6 +131,7 @@ export async function POST(request: NextRequest) {
         utm_source: firstTouchIn.utm_source ?? null,
         utm_campaign: firstTouchIn.utm_campaign ?? null,
         utm_medium: firstTouchIn.utm_medium ?? null,
+        utm_content: firstTouchIn.utm_content ?? null,
       };
     });
 
@@ -148,6 +162,10 @@ export async function POST(request: NextRequest) {
       max_funnel_step: maxStep,
       converted,
       event_count: rows.length,
+      is_returning: isReturning,
+      scroll_hero: scrollHero,
+      scroll_packages: scrollPackages,
+      scroll_end: scrollEnd,
     });
 
     for (const r of rows) {

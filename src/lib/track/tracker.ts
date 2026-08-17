@@ -5,13 +5,13 @@ import {
   getUtm,
   getDevice,
   getReferrer,
-  hasAnalyticsConsent,
 } from "./session";
 
 /**
  * §11 — Client-side journey tracker.
  * Batch: 3 sn'de bir veya 10 event'te flush; çıkışta navigator.sendBeacon.
- * KVKK onayı yoksa HİÇBİR şey gönderilmez. Payload'a form DEĞERİ asla girmez.
+ * First-party davranış (sayfa/yolculuk) kişisel veri içermez; çerez onayı beklemez.
+ * Payload'a form DEĞERİ asla girmez. Meta Pixel / GA4 ayrıdır.
  */
 export type TrackEventType =
   | "page_view"
@@ -46,7 +46,10 @@ export type TrackEventType =
   | "exit_capture_copy"
   | "exit_capture_whatsapp"
   | "session_end"
-  | "package_step_view";
+  | "session_start"
+  | "package_step_view"
+  | "page_leave"
+  | "scroll_depth";
 
 /** payload yalnızca anonim/ürün verisi; form DEĞERİ (isim/telefon/not) ASLA */
 type Payload = Record<string, string | number | boolean | null | undefined | string[]>;
@@ -106,7 +109,7 @@ function bindExitListeners() {
 }
 
 export function track(event_type: TrackEventType, payload: Payload = {}) {
-  if (typeof window === "undefined" || !hasAnalyticsConsent()) return;
+  if (typeof window === "undefined") return;
   bindExitListeners();
   queue.push({ event_type, ts: Date.now(), payload });
   if (queue.length >= FLUSH_SIZE) {
@@ -118,7 +121,7 @@ export function track(event_type: TrackEventType, payload: Payload = {}) {
 
 /** Oturum sonu — çıkışta son adımla, sendBeacon ile */
 export function trackSessionEnd(lastStep: number) {
-  if (typeof window === "undefined" || !hasAnalyticsConsent()) return;
+  if (typeof window === "undefined") return;
   queue.push({ event_type: "session_end", ts: Date.now(), payload: { last_step: lastStep } });
   flush(true);
 }

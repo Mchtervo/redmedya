@@ -7,7 +7,7 @@ import { recordHit } from "@/lib/track/visits-store";
  * Neden KVKK'ya takılmaz: burada kişisel veri işlenmiyor. session_id, çerez,
  * IP, user-agent, referrer — hiçbiri saklanmıyor. Sadece günlük TOPLAM sayaç
  * artırılıyor. Kişiye ait bir kayıt oluşmuyor, geriye dönük kimse ayırt
- * edilemiyor. Oturum zaman çizelgesi (journey) ise rızaya bağlı: /api/track.
+ * edilemiyor. Zaman çizelgesi first-party collect ile (PII yok) tutulur.
  */
 
 export const dynamic = "force-dynamic";

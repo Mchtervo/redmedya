@@ -75,7 +75,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   {
     id: "sessions",
     label: "Sessionlar",
-    description: "Kullanıcı yolculukları",
+    description: "Tam yolculuk — tüm sayfalar",
     icon: Users,
   },
   {

@@ -188,6 +188,12 @@ export function groupBySession(
   return map;
 }
 
+export type DropOffScroll = {
+  packages: number;
+  plato: number;
+  continueBtn: number;
+};
+
 export type DropOffBucket = {
   key: string;
   label: string;
@@ -198,13 +204,63 @@ export type DropOffBucket = {
   sources: Record<string, number>;
   campaigns: Record<string, number>;
   lastAction: string;
+  scroll: DropOffScroll;
 };
 
-function dwellSec(evs: AnalyticsEvent[]): number {
+/** Arka plan sekmesi boşluğu — bundan uzun sessizlik aktif süreye girmez. */
+const ACTIVE_GAP_MS = 30_000;
+const ACTIVE_MAX_SEC = 10 * 60;
+
+/**
+ * Gerçek aktif kalma: görünürken biriken active_ms tercih edilir.
+ * Eski kayıtlarda event aralıkları >30 sn (tab arkada / timeout) atılır.
+ */
+export function activeDwellSec(evs: AnalyticsEvent[]): number {
+  let fromActive = 0;
+  let hasActive = false;
+  for (const e of evs) {
+    if (e.event_name !== "PageLeave") continue;
+    const n = e.metadata.active_ms;
+    if (typeof n === "number" && Number.isFinite(n) && n >= 0) {
+      fromActive += n;
+      hasActive = true;
+    }
+  }
+  if (hasActive) {
+    return Math.min(ACTIVE_MAX_SEC, Math.max(0, Math.round(fromActive / 1000)));
+  }
+
   if (evs.length < 2) return 0;
-  const a = new Date(evs[0].event_time).getTime();
-  const b = new Date(evs[evs.length - 1].event_time).getTime();
-  return Math.max(0, Math.round((b - a) / 1000));
+  let sum = 0;
+  for (let i = 1; i < evs.length; i++) {
+    const a = new Date(evs[i - 1].event_time).getTime();
+    const b = new Date(evs[i].event_time).getTime();
+    const d = b - a;
+    if (d > 0 && d <= ACTIVE_GAP_MS) sum += d;
+  }
+  return Math.min(ACTIVE_MAX_SEC, Math.max(0, Math.round(sum / 1000)));
+}
+
+function sawPaketPage(evs: AnalyticsEvent[]): boolean {
+  return evs.some(
+    (e) =>
+      e.event_name === "ViewContent" ||
+      (e.event_name === "PageView" &&
+        (e.page_url ?? "").includes("/paket-olustur"))
+  );
+}
+
+function pressedDevam(evs: AnalyticsEvent[]): boolean {
+  return evs.some((e) => e.event_name === "AddToCart");
+}
+
+function sessionScroll(
+  evs: AnalyticsEvent[],
+  milestone: "packages" | "plato" | "continue"
+): boolean {
+  return evs.some(
+    (e) => e.event_name === "ScrollDepth" && e.metadata.milestone === milestone
+  );
 }
 
 function lastAction(evs: AnalyticsEvent[]): string {
@@ -226,13 +282,9 @@ export function buildDropOffBuckets(
     match: (evs: AnalyticsEvent[]) => boolean;
   }[] = [
     {
-      key: "no_package",
-      label: "Paket seçmeden çıkanlar",
-      match: (evs) =>
-        evs.some((e) => e.event_name === "ViewContent") &&
-        !evs.some((e) =>
-          ["PackageBuild", "PackageSelected"].includes(e.event_name)
-        ),
+      key: "no_continue",
+      label: "DEVAM'a basmadan çıkanlar",
+      match: (evs) => sawPaketPage(evs) && !pressedDevam(evs),
     },
     {
       key: "no_plato",
@@ -242,14 +294,14 @@ export function buildDropOffBuckets(
           ["PackageBuild", "PackageSelected"].includes(e.event_name)
         ) &&
         !evs.some((e) => e.event_name === "PlatoSelected") &&
-        !evs.some((e) => e.event_name === "AddToCart"),
+        !pressedDevam(evs),
     },
     {
-      key: "no_continue",
-      label: "Plato seçip Devam demeyenler",
+      key: "step2_no_form",
+      label: "Adım 2'ye geçip formu açmayanlar",
       match: (evs) =>
-        evs.some((e) => e.event_name === "PlatoSelected") &&
-        !evs.some((e) => e.event_name === "AddToCart"),
+        pressedDevam(evs) &&
+        !evs.some((e) => e.event_name === "InitiateCheckout"),
     },
     {
       key: "form_no_start",
@@ -293,8 +345,17 @@ export function buildDropOffBuckets(
     const sources: Record<string, number> = {};
     const campaigns: Record<string, number> = {};
     let dwellSum = 0;
+    let dwellN = 0;
+    const scroll: DropOffScroll = { packages: 0, plato: 0, continueBtn: 0 };
     for (const evs of matched) {
-      dwellSum += dwellSec(evs);
+      const dsec = activeDwellSec(evs);
+      if (dsec > 0) {
+        dwellSum += dsec;
+        dwellN += 1;
+      }
+      if (sessionScroll(evs, "packages")) scroll.packages += 1;
+      if (sessionScroll(evs, "plato")) scroll.plato += 1;
+      if (sessionScroll(evs, "continue")) scroll.continueBtn += 1;
       const sid = evs[0]?.session_id;
       const meta = sid ? sessionsMeta.get(sid) : undefined;
       bump(devices, meta?.device ?? evs[0]?.device ?? "unknown");
@@ -309,11 +370,12 @@ export function buildDropOffBuckets(
       label: d.label,
       count: matched.length,
       rate: matched.length / total,
-      avgDwellSec: matched.length ? Math.round(dwellSum / matched.length) : 0,
+      avgDwellSec: dwellN ? Math.round(dwellSum / dwellN) : 0,
       devices,
       sources,
       campaigns,
       lastAction: matched[0] ? lastAction(matched[0]) : "—",
+      scroll,
     };
   });
 }

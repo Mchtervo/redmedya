@@ -11,7 +11,7 @@ import {
 
 export const ALLOWED_ANALYTICS_EVENTS = new Set<string>([
   ...FUNNEL_META_EVENTS,
-  ...FUNNEL_INTERNAL_EVENTS.filter((e) => e !== "SessionAbandoned"),
+  ...FUNNEL_INTERNAL_EVENTS,
 ]);
 
 export const LIMITS = {
@@ -170,6 +170,14 @@ export function sanitizeEventMetadata(
       return { ok: false, reason: "form_field_error_incomplete" };
     }
     return { ok: true, metadata: { field_name, error_type } };
+  }
+
+  if (eventName === "FormFieldTouched") {
+    const field_name = clampStr(raw.field_name, 40);
+    if (!field_name) {
+      return { ok: false, reason: "form_field_touched_incomplete" };
+    }
+    return { ok: true, metadata: { field_name } };
   }
 
   const out: Record<string, string | number | boolean | null> = {};

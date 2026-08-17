@@ -6,6 +6,7 @@
 const SID_KEY = "rm_sid";
 const UTM_KEY = "rm_utm";
 const CONSENT_KEY = "rm_consent";
+const VISIT_KIND_KEY = "rm_visit_kind";
 
 function getCookie(name: string): string | undefined {
   if (typeof document === "undefined") return undefined;
@@ -28,14 +29,41 @@ function uuid(): string {
 export function getSessionId(): string {
   if (typeof window === "undefined") return "";
   let id = getCookie(SID_KEY) || localStorage.getItem(SID_KEY) || "";
+  try {
+    if (!sessionStorage.getItem(VISIT_KIND_KEY)) {
+      sessionStorage.setItem(VISIT_KIND_KEY, id ? "returning" : "new");
+    }
+  } catch {
+    /* ignore */
+  }
   if (!id) id = uuid();
   setCookie(SID_KEY, id);
   try {
     localStorage.setItem(SID_KEY, id);
+    sessionStorage.setItem(SID_KEY, id);
   } catch {
     /* ignore */
   }
   return id;
+}
+
+/** Bu sekmede yeni mi tekrar mı — sid yazılmadan önce belirlenir. */
+export function getVisitorKind(): "new" | "returning" {
+  if (typeof window === "undefined") return "new";
+  try {
+    const cached = sessionStorage.getItem(VISIT_KIND_KEY);
+    if (cached === "returning") return "returning";
+    if (cached === "new") return "new";
+  } catch {
+    /* ignore */
+  }
+  getSessionId();
+  try {
+    const cached = sessionStorage.getItem(VISIT_KIND_KEY);
+    return cached === "returning" ? "returning" : "new";
+  } catch {
+    return "new";
+  }
 }
 
 export type Utm = {

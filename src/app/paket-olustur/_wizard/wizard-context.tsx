@@ -354,6 +354,12 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const setField = useCallback(
     (field: "date" | "name" | "phone" | "note", value: string) => {
       dispatch({ type: "SET_FIELD", field, value });
+      if (!filledFieldsRef.current.has(`touch:${field}`)) {
+        filledFieldsRef.current.add(`touch:${field}`);
+        trackFunnelEvent("FormFieldTouched", {
+          metadata: { field_name: field },
+        });
+      }
       if (!formStartedRef.current) {
         formStartedRef.current = true;
         track("form_started", { total: totalRef.current });

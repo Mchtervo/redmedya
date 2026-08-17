@@ -4,6 +4,7 @@ import { dataPath } from "@/lib/data-dir";
 import type { AnalyticsSession, FunnelStep } from "@/lib/analytics/types";
 import { FUNNEL_STEP_RANK } from "@/lib/analytics/types";
 import { mergeAttribution } from "@/lib/analytics/collect-core";
+import { appendPageSequence, pathFromUrl } from "@/lib/analytics/session-journey";
 import { RETENTION } from "@/config/retention";
 
 const FILE = dataPath("analytics_sessions.json");
@@ -64,10 +65,20 @@ export async function upsertAnalyticsSession(
     leadId = patch.lead_id;
   }
 
+  const firstSeen = prev?.first_seen_at ?? patch.first_seen_at ?? now;
+  const lastSeen = patch.last_seen_at ?? now;
+  const totalDuration = Math.max(
+    0,
+    new Date(lastSeen).getTime() - new Date(firstSeen).getTime()
+  );
+  const incomingPath =
+    pathFromUrl(patch.exit_path ?? patch.last_url ?? null) ??
+    pathFromUrl(patch.landing_path ?? patch.landing_url ?? null);
+
   const next: AnalyticsSession = {
     session_id: patch.session_id,
-    first_seen_at: prev?.first_seen_at ?? patch.first_seen_at ?? now,
-    last_seen_at: patch.last_seen_at ?? now,
+    first_seen_at: firstSeen,
+    last_seen_at: lastSeen,
     landing_url: prev?.landing_url ?? patch.landing_url ?? null,
     last_url: patch.last_url ?? prev?.last_url ?? null,
     referrer: prev?.referrer ?? patch.referrer ?? null,
@@ -89,6 +100,19 @@ export async function upsertAnalyticsSession(
     ),
     converted: Boolean(patch.converted || prev?.converted),
     event_count: (prev?.event_count ?? 0) + (patch.event_count ?? 0),
+    is_returning: prev?.is_returning ?? patch.is_returning ?? null,
+    landing_path:
+      prev?.landing_path ??
+      pathFromUrl(patch.landing_path ?? patch.landing_url ?? null),
+    exit_path:
+      pathFromUrl(patch.exit_path ?? patch.last_url ?? null) ??
+      prev?.exit_path ??
+      null,
+    page_sequence: appendPageSequence(prev?.page_sequence, incomingPath),
+    total_duration_ms: Math.max(prev?.total_duration_ms ?? 0, totalDuration),
+    scroll_hero: Boolean(prev?.scroll_hero || patch.scroll_hero),
+    scroll_packages: Boolean(prev?.scroll_packages || patch.scroll_packages),
+    scroll_end: Boolean(prev?.scroll_end || patch.scroll_end),
   };
 
   file.sessions[patch.session_id] = next;
@@ -123,6 +147,14 @@ function normalizeSession(s: AnalyticsSession): AnalyticsSession {
     utm: s.utm ?? first,
     first_touch_utm: first,
     last_touch_utm: last,
+    is_returning: s.is_returning ?? null,
+    landing_path: s.landing_path ?? pathFromUrl(s.landing_url),
+    exit_path: s.exit_path ?? pathFromUrl(s.last_url),
+    page_sequence: Array.isArray(s.page_sequence) ? s.page_sequence : [],
+    total_duration_ms: s.total_duration_ms ?? 0,
+    scroll_hero: Boolean(s.scroll_hero),
+    scroll_packages: Boolean(s.scroll_packages),
+    scroll_end: Boolean(s.scroll_end),
   };
 }
 

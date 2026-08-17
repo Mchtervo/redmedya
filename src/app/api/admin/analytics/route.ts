@@ -19,6 +19,13 @@ import {
   trafficSourceLabel,
 } from "@/lib/analytics/funnel-aggregate";
 import type { DateRangePreset } from "@/lib/analytics/types";
+import {
+  eventLabelTr,
+  formatTimelineMeta,
+  pathFromUrl,
+  summarizeJourney,
+  type AdBucket,
+} from "@/lib/analytics/session-journey";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession();
@@ -37,6 +44,7 @@ export async function GET(request: NextRequest) {
   const utmCampaign = sp.get("utm_campaign");
   const deviceFilter = sp.get("device");
   const convertedFilter = sp.get("converted"); // yes|no|all
+  const adBucket = sp.get("ad_bucket") as AdBucket | null;
 
   let events = await readAnalyticsEventsInRange(fromMs, toMs);
   const allSessions = await readAnalyticsSessions();
@@ -83,9 +91,20 @@ export async function GET(request: NextRequest) {
       meta &&
       !meta.converted &&
       !timeline.some((e) => e.event_name === "Schedule");
+    const journey = summarizeJourney(timeline, meta);
     return NextResponse.json({
       session: meta,
-      timeline,
+      timeline: timeline.map((e) => ({
+        event_time: e.event_time,
+        event_name: e.event_name,
+        event_label: eventLabelTr(e.event_name),
+        page_url: e.page_url,
+        page_path: pathFromUrl(e.page_url),
+        metadata: e.metadata,
+        meta_label: formatTimelineMeta(e.event_name, e.metadata),
+        error_code: e.error_code,
+      })),
+      journey,
       abandoned,
       last_step: timeline[timeline.length - 1]?.event_name ?? null,
     });
@@ -140,9 +159,10 @@ export async function GET(request: NextRequest) {
     traffic.set(src, (traffic.get(src) ?? 0) + 1);
   }
 
-  const sessionList = [...bySession.entries()]
+  const allSessionRows = [...bySession.entries()]
     .map(([id, evs]) => {
-      const meta = sessionsMeta.get(id);
+      const meta = sessionsMeta.get(id) ?? null;
+      const journey = summarizeJourney(evs, meta);
       return {
         session_id: id,
         first: evs[0]?.event_time,
@@ -152,17 +172,40 @@ export async function GET(request: NextRequest) {
         converted: Boolean(
           meta?.converted || evs.some((e) => e.event_name === "Schedule")
         ),
-        device: meta?.device ?? evs[0]?.device,
-        os: meta?.os ?? evs[0]?.os,
+        device: journey.device,
+        os: journey.os,
         source: trafficSourceLabel(meta?.utm.utm_source ?? evs[0]?.utm_source),
-        campaign: meta?.utm.utm_campaign ?? evs[0]?.utm_campaign,
+        campaign: journey.campaign,
+        utm_content: journey.utm_content,
+        ad_bucket: journey.ad_bucket,
         lead_id: meta?.lead_id ?? evs.find((e) => e.lead_id)?.lead_id ?? null,
+        landing_path: journey.landing_path,
+        exit_path: journey.exit_path,
+        total_sec: journey.total_sec,
+        is_returning: journey.is_returning,
+        block_label: journey.block_label,
+        block_reason: journey.block_reason,
+        last_completed_label: journey.last_completed_label,
+        scroll_hero: journey.scroll_hero,
+        scroll_packages: journey.scroll_packages,
+        scroll_end: journey.scroll_end,
       };
     })
     .sort(
       (a, b) =>
         new Date(b.last ?? 0).getTime() - new Date(a.last ?? 0).getTime()
-    )
+    );
+
+  const ad_buckets = allSessionRows.reduce(
+    (acc, s) => {
+      acc[s.ad_bucket] = (acc[s.ad_bucket] ?? 0) + 1;
+      return acc;
+    },
+    { SITE: 0, DM: 0, SICAK: 0, diger: 0 } as Record<string, number>
+  );
+
+  const sessionList = allSessionRows
+    .filter((s) => (adBucket ? s.ad_bucket === adBucket : true))
     .slice(0, 200);
 
   return NextResponse.json({
@@ -178,6 +221,7 @@ export async function GET(request: NextRequest) {
     activity,
     traffic: [...traffic.entries()].map(([name, count]) => ({ name, count })),
     sessions: sessionList,
+    ad_buckets,
     form_errors: formErrorStats(events),
   });
 }

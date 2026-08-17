@@ -21,7 +21,9 @@ test("bilinmeyen event kabul edilmez", () => {
   assert.equal(isAllowedEventName("Purchase"), false);
   assert.equal(isAllowedEventName("Lead"), false);
   assert.equal(isAllowedEventName("PageView"), true);
-  assert.equal(ALLOWED_ANALYTICS_EVENTS.has("SessionAbandoned"), false);
+  assert.equal(ALLOWED_ANALYTICS_EVENTS.has("SessionAbandoned"), true);
+  assert.equal(ALLOWED_ANALYTICS_EVENTS.has("PageLeave"), true);
+  assert.equal(ALLOWED_ANALYTICS_EVENTS.has("FormFieldTouched"), true);
 });
 
 test("duplicate client_event_id ikinci kez yazılmaz", () => {
@@ -59,6 +61,17 @@ test("aşırı büyük metadata reddedilir", () => {
   const res = sanitizeEventMetadata("PackageSelected", huge);
   assert.equal(res.ok, false);
   if (!res.ok) assert.equal(res.reason, "metadata_too_large");
+});
+
+test("FormFieldTouched yalnızca alan adı kabul eder", () => {
+  const res = sanitizeEventMetadata("FormFieldTouched", {
+    field_name: "phone",
+    value: "05551234567",
+  });
+  assert.equal(res.ok, true);
+  if (res.ok) {
+    assert.deepEqual(res.metadata, { field_name: "phone" });
+  }
 });
 
 test("FormFieldError PII engeli — yalnızca field_name + error_type", () => {

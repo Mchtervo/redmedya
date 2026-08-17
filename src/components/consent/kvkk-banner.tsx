@@ -7,7 +7,8 @@ import { track } from "@/lib/track/tracker";
 
 /**
  * §13 — KVKK / çerez aydınlatma banner'ı.
- * Onay verilene kadar journey tracking KAPALI. Reddedince de site normal çalışır.
+ * Onay pazarlama çerezleri (Meta/GA) içindir. First-party sayfa yolculuğu
+ * kişisel veri içermez ve onay beklemez.
  * ⚠️ Aydınlatma metni TASLAKTIR — yayına almadan avukat onayı alın.
  */
 export function KvkkBanner() {
