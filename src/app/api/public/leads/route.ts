@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
       phone: body.customer.phone,
     });
     if (existing) {
+      const incomingReq = body.client_request_id?.trim() ?? "";
       const sameRequest =
-        Boolean(body.client_request_id?.trim()) &&
-        existing.client_request_id === body.client_request_id.trim();
+        incomingReq.length > 0 && existing.client_request_id === incomingReq;
       if (sameRequest) {
         console.log("[lead-notify] atlandi duplicate request", {
           leadId: existing.id,
