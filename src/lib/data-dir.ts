@@ -158,3 +158,34 @@ export const DATA_DIR_META: DataDirMeta = resolved;
 export function dataPath(fileName: string): string {
   return path.join(DATA_DIR, fileName);
 }
+
+/** Hostinger hPanel env API yok; kalıcı DATA_DIR dosyalarını process.env'e yükle. */
+function loadPersistentEnvFile(filePath: string): void {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return;
+  }
+  for (const line of raw.split(/\r?\n/)) {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) continue;
+    const eq = t.indexOf("=");
+    if (eq < 1) continue;
+    const key = t.slice(0, eq).trim();
+    let val = t.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) continue;
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+
+if (!isNextBuild()) {
+  loadPersistentEnvFile(path.join(DATA_DIR, ".env"));
+  loadPersistentEnvFile(path.join(DATA_DIR, "telegram.env"));
+}

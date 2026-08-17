@@ -1,4 +1,5 @@
 import { formatWeddingDateDisplay } from "@/lib/date-format";
+import "@/lib/data-dir";
 import { leadPackageLabel, leadPlatoLabel, leadSourceLabel } from "@/lib/lead-display";
 import { formatPrice } from "@/lib/utils";
 import type { LeadRecord } from "@/types/site-settings";
