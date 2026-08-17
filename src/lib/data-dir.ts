@@ -194,7 +194,10 @@ function persistentEnvCandidates(fileName: string): string[] {
   for (const dir of [
     DATA_DIR,
     path.join(os.homedir(), "redmedya-data"),
+    path.join(os.homedir(), "domains", "redmediadugun.com", "redmedya-data"),
     path.resolve(process.cwd(), "..", "redmedya-data"),
+    "/home/u392730476/redmedya-data",
+    "/home/u392730476/domains/redmediadugun.com/redmedya-data",
   ]) {
     const resolved = path.resolve(dir);
     if (seen.has(resolved)) continue;

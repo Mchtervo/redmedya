@@ -19,8 +19,8 @@ function lead(partial: Partial<LeadRecord> & Pick<LeadRecord, "id" | "createdAt"
   };
 }
 
-test("lead POST bekleme 500ms", () => {
-  assert.equal(LEAD_WAIT_MS, 500);
+test("lead POST bekleme Telegram icin yeterli", () => {
+  assert.equal(LEAD_WAIT_MS, 3500);
 });
 
 test("aynı client_request_id mükerrer lead sayılır", () => {

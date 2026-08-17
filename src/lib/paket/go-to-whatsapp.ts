@@ -10,7 +10,7 @@ import type { PackageBuilderState } from "@/lib/paket/state";
 
 /**
  * TEK dönüşüm noktası: taslak + lead kaydı + WhatsApp.
- * Lead POST keepalive/beacon; en fazla 500ms beklenir, sonra yönlendirilir.
+ * Lead POST keepalive; Telegram bitsin diye 3.5 sn'ye kadar beklenir, sonra yönlendirilir.
  */
 export function goToWhatsApp(
   state: PackageBuilderState,

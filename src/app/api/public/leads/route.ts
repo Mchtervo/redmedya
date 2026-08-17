@@ -44,7 +44,27 @@ export async function POST(request: NextRequest) {
       phone: body.customer.phone,
     });
     if (existing) {
-      console.log("[lead-notify] atlandi duplicate", { leadId: existing.id });
+      const sameRequest =
+        Boolean(body.client_request_id?.trim()) &&
+        existing.client_request_id === body.client_request_id.trim();
+      if (sameRequest) {
+        console.log("[lead-notify] atlandi duplicate request", {
+          leadId: existing.id,
+        });
+      } else {
+        // Aynı telefon 10 dk içinde tekrar gönderildi — kayıt yok ama Telegram gitsin.
+        console.log("[lead-notify] duplicate lead, telegram tekrar", {
+          leadId: existing.id,
+        });
+        try {
+          await notifyNewLead(existing);
+        } catch (err) {
+          console.error(
+            "[lead-notify] duplicate notify hata",
+            err instanceof Error ? err.message : "unknown"
+          );
+        }
+      }
       return NextResponse.json({
         ok: true,
         id: existing.id,

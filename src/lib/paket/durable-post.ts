@@ -1,6 +1,6 @@
 /** Lead POST: sayfa kapansa bile istek tamamlansın (mobil Safari). */
 
-export const LEAD_WAIT_MS = 500;
+export const LEAD_WAIT_MS = 3500;
 
 export type DurablePostResult = {
   status: "ok" | "timeout" | "error";
@@ -34,8 +34,9 @@ function sendBeaconJson(url: string, body: string): boolean {
 }
 
 /**
- * fetch keepalive + 500ms bekleme.
+ * fetch keepalive + kısa bekleme.
  * Yanıt gelmezse sendBeacon yedek (aynı body / client_request_id → sunucu dedupe).
+ * Süre Telegram bildiriminin bitmesine yetecek kadar (Hostinger istemci kopunca işi keser).
  */
 export async function postJsonDurable(
   url: string,
