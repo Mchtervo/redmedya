@@ -188,6 +188,22 @@ function loadPersistentEnvFile(filePath: string): boolean {
   return loaded > 0;
 }
 
+function persistentEnvCandidates(fileName: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const dir of [
+    DATA_DIR,
+    path.join(os.homedir(), "redmedya-data"),
+    path.resolve(process.cwd(), "..", "redmedya-data"),
+  ]) {
+    const resolved = path.resolve(dir);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    out.push(path.join(resolved, fileName));
+  }
+  return out;
+}
+
 /** Lead anında tekrar oku — süreç, dosya yazılmadan önce ayağa kalkmış olabilir. */
 export function reloadPersistentEnv(): {
   dataDir: string;
@@ -195,11 +211,14 @@ export function reloadPersistentEnv(): {
   tokenSet: boolean;
   chatIdSet: boolean;
 } {
-  const telegramPath = path.join(DATA_DIR, "telegram.env");
-  const envPath = path.join(DATA_DIR, ".env");
-  loadPersistentEnvFile(envPath);
-  const telegramEnvExists = fs.existsSync(telegramPath);
-  loadPersistentEnvFile(telegramPath);
+  for (const envPath of persistentEnvCandidates(".env")) {
+    loadPersistentEnvFile(envPath);
+  }
+  let telegramEnvExists = false;
+  for (const telegramPath of persistentEnvCandidates("telegram.env")) {
+    if (fs.existsSync(telegramPath)) telegramEnvExists = true;
+    loadPersistentEnvFile(telegramPath);
+  }
   return {
     dataDir: DATA_DIR,
     telegramEnvExists,
