@@ -137,5 +137,8 @@ export type AiQueueAction =
       name: string;
       phone: string;
       text: string;
+      /** Varsa mesaj bu dosyayla (PDF) gönderilir; text açıklama olur */
+      mediaUrl?: string;
+      fileName?: string;
       reason: string;
     };

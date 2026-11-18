@@ -15,13 +15,18 @@ import {
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
 
+export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
+
 export const CATALOG_LINKS = {
   packages: `${siteConfig.url}/paket-olustur`,
   gallery: `${siteConfig.url}/galeri`,
 };
 
+/** Görüşmede "WhatsApp ekibimiz dönecek" denen sonuçlar → fiyat listesi gider. */
+const CATALOG_OUTCOMES = new Set(["info_requested", "offer_requested", "thinking"]);
+
 function catalogPending(c: AiCouple): boolean {
-  const lastInfoCall = [...c.calls].reverse().find((x) => x.outcome === "info_requested");
+  const lastInfoCall = [...c.calls].reverse().find((x) => CATALOG_OUTCOMES.has(x.outcome));
   if (!lastInfoCall) return false;
   return !c.messages.some(
     (m) => m.kind === "catalog" && m.direction === "out" && m.at >= lastInfoCall.at
@@ -42,7 +47,9 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       name: c.name,
       phone: c.phone,
       text: buildCatalogMessage(c, CATALOG_LINKS),
-      reason: "Telefonda bilgi istedi",
+      mediaUrl: CATALOG_PDF,
+      fileName: "RedMedia-2027-Fiyat-Listesi.pdf",
+      reason: "Görüşme sonrası fiyat listesi",
     });
   }
 

@@ -236,20 +236,28 @@ function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] || "";
 }
 
-/** Bilgi isteyen çifte konuşma biter bitmez giden katalog mesajı. */
+/** Görüşmeden sonra giden katalog mesajı (2027 fiyat listesi PDF'i ekte gider). */
 export function buildCatalogMessage(
   c: AiCouple,
   links: { packages: string; gallery: string; video?: string }
 ): string {
   const hi = firstName(c.name) ? `Merhaba ${firstName(c.name)},` : "Merhaba,";
   const lines = [
-    `${hi} RED MEDIA'dan yazıyoruz, az önceki görüşmemiz için teşekkür ederiz. 🤍`,
+    `${hi} RED MEDIA'dan yazıyoruz, görüşmemiz için teşekkür ederiz. 🤍`,
     "",
-    `📦 Paketlerimiz ve canlı fiyat: ${links.packages}`,
+    "📎 2027 fiyat listemiz ekte:",
+    "• Fotoğraf Çekimi: 5.000 TL",
+    "• Fotoğraf + Sinematik Klip: 9.000 TL",
+    "• Fotoğraf + Klip + Albüm: 14.000 TL",
+    "Pakete eklenen ekstra hizmetlerde %20 indirim, ilk 10 çifte dış çekimde drone hediye.",
+    "",
+    "⏳ Fiyatlar 31 Aralık 2026'ya kadar geçerli. Bir ayın kampanya yerleri dolunca o ay için %40 zam geliyor.",
+    "Tarihinizi 24 saat ücretsiz tutuyoruz; 1.000 TL kapora ile kesinleşiyor (15.000 TL üzeri tutarlarda 2.000 TL). Kalan ödeme çekim günü.",
+    "",
     `📸 Örnek çalışmalarımız: ${links.gallery}`,
   ];
   if (links.video) lines.push(`🎬 Örnek video: ${links.video}`);
-  lines.push("", "Aklınıza takılan her şeyi buradan sorabilirsiniz.");
+  lines.push("", "Düğün tarihinizi bu mesaja yazın, müsaitliği hemen kontrol edelim.");
   return lines.join("\n");
 }
 
