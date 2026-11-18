@@ -443,6 +443,7 @@ function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; 
 function IntegrationBox({ integration }: { integration: Payload["integration"] }) {
   const [show, setShow] = useState(false);
   const [tg, setTg] = useState<string | null>(null);
+  const [botToken, setBotToken] = useState("");
   const base = integration.baseUrl;
   const endpoints = [
     ["POST", "/api/ai/couples", "Yeni çift (Düğün.com / Meta form)"],
@@ -478,23 +479,36 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
         ))}
       </ul>
       <div className="mt-4 flex flex-wrap items-center gap-3">
+        <input
+          type="password"
+          value={botToken}
+          onChange={(e) => setBotToken(e.target.value)}
+          placeholder={integration.telegramReady ? "Bot ayarlı — değiştirmek için yeni anahtar" : "BotFather'dan aldığın bot anahtarı (123456:AA…)"}
+          className="min-w-[16rem] flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-rm-gray-500"
+          autoComplete="off"
+        />
         <button
           type="button"
-          disabled={!integration.telegramReady}
+          disabled={!integration.telegramReady && !botToken.trim()}
           onClick={async () => {
             setTg("Bağlanıyor…");
-            const res = await fetch("/api/admin/ai-telegram", { method: "POST" });
-            const j = (await res.json().catch(() => ({}))) as { error?: string };
-            setTg(res.ok ? "✅ Bağlandı — Telegram'a test mesajı gitti" : `⚠️ ${j.error ?? "Bağlanamadı"}`);
+            const res = await fetch("/api/admin/ai-telegram", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(botToken.trim() ? { token: botToken.trim() } : {}),
+            });
+            const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+            if (j.ok) setBotToken("");
+            setTg(j.ok ? "✅ Bağlandı — Telegram'a test mesajı gitti" : `⚠️ ${j.error ?? "Bağlanamadı"}`);
           }}
           className={pill}
         >
-          <Send className="h-3.5 w-3.5" /> Telegram komutlarını bağla
+          <Send className="h-3.5 w-3.5" /> {"Telegram'ı bağla"}
         </button>
-        <span className="text-xs text-rm-gray-400">
-          {tg ?? (integration.telegramReady ? "Bot ayarlı" : "Telegram bot ayarlı değil (telegram.env)")}
-        </span>
       </div>
+      <p className="mt-2 text-xs text-rm-gray-400">
+        {tg ?? (integration.telegramReady ? "Bot ayarlı" : "1) Telegram'da @BotFather → /newbot  2) Verdiği anahtarı buraya yapıştır  3) Kendi botuna /start yaz  4) Butona bas")}
+      </p>
     </AdminSection>
   );
 }
