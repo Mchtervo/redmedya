@@ -94,30 +94,6 @@ export function JsonLd() {
     url: siteConfig.url,
     inLanguage: "tr-TR",
     publisher: { "@id": `${siteConfig.url}/#business` },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${siteConfig.url}/paket-olustur`,
-      "query-input": "required name=search_term_string",
-    },
-  };
-
-  const breadcrumbHome = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Ana Sayfa",
-        item: siteConfig.url,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Paket Oluştur",
-        item: `${siteConfig.url}/paket-olustur`,
-      },
-    ],
   };
 
   return (
@@ -129,10 +105,6 @@ export function JsonLd() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbHome) }}
       />
     </>
   );

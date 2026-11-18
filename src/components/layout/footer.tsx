@@ -2,12 +2,11 @@ import Link from "next/link";
 import { AtSign, Mail, MapPin, Phone, ExternalLink } from "lucide-react";
 import { siteConfig, navLinks } from "@/config/site";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { SEO_SERVICE_PAGES } from "@/config/seo-pages";
 
 const ankaraSeoLinks = [
-  { href: "/ankara-dugun-fotografcisi", label: "Düğün fotoğrafçısı" },
-  { href: "/ankara-gelin-alma-klibi", label: "Gelin alma klibi" },
-  { href: "/ankara-dugun-videosu", label: "Düğün videosu" },
-  { href: "/dis-cekim-fiyatlari", label: "Dış çekim fiyatları" },
+  ...SEO_SERVICE_PAGES.slice(0, 9),
+  { href: "/rehber", label: "Düğün rehberi" },
 ];
 
 export function Footer() {

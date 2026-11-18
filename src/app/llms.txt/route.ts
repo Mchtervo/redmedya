@@ -1,5 +1,6 @@
 import { siteConfig } from "@/config/site";
-import { PACKAGES } from "@/config/pricing";
+import { PACKAGES, PRICING } from "@/config/pricing";
+import { SEO_SERVICE_PAGES, SEO_GUIDE_PAGES } from "@/config/seo-pages";
 import { ANKARA_DISTRICTS } from "@/config/seo-keywords";
 
 /**
@@ -36,17 +37,21 @@ export function GET() {
 ## Paketler ve fiyatlar
 ${packages}
 
+## Ek hizmetler (etkinlik başına)
+- Gelin alma klibi / Salon girişi & ilk dans klibi: kampanyalı ${tl(PRICING.UPSELL_KLIP_CAMPAIGN)} (normal ${tl(PRICING.UPSELL_KLIP_FULL)})
+- Salon Full Sinematik (girişten after party'ye): ${tl(PRICING.ADDON_SALON_FULL)}
+- Drone: ${tl(PRICING.ADDON_DRONE)} · Omuz kamera: ${tl(PRICING.ADDON_OMUZ)}
+- Kına / nişan / nikah fotoğraf çekimi: ${tl(PRICING.ADDON_FOTO_EKEVENT)}
+- Büyük albüm 30×60: ${tl(PRICING.ADDON_BUYUK_ALBUM)} · Aile albümü: ${tl(PRICING.ADDON_AILE_ALBUM)}
+
 ## Sayfalar
 - [Ana sayfa](${u}/): Hizmetler, yorumlar, iletişim
 - [Paket oluştur](${u}/paket-olustur): Online paket ve anında fiyat, WhatsApp ile rezervasyon
 - [Galeri](${u}/galeri): Gerçek düğün çekimlerinden örnekler
-- [Ankara düğün fotoğrafçısı](${u}/ankara-dugun-fotografcisi)
-- [Ankara düğün videosu](${u}/ankara-dugun-videosu)
-- [Ankara gelin alma klibi](${u}/ankara-gelin-alma-klibi)
-- [Ankara salon düğün çekimi](${u}/ankara-salon-dugun-cekimi)
-- [Ankara kına çekimi](${u}/ankara-kina-cekimi)
-- [Ankara dış çekim mekanları](${u}/ankara-dis-cekim-mekanlari)
-- [Dış çekim fiyatları](${u}/dis-cekim-fiyatlari)
+${SEO_SERVICE_PAGES.map((p) => `- [${p.label}](${u}${p.href}): ${p.summary}`).join("\n")}
+
+## Düğün rehberi
+${SEO_GUIDE_PAGES.map((p) => `- [${p.label}](${u}${p.href}): ${p.summary}`).join("\n")}
 `;
 
   return new Response(body, {

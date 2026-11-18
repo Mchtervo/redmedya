@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FaqBlock } from "@/components/seo/faq-block";
 import { siteConfig } from "@/config/site";
 import { ANKARA_DISTRICTS } from "@/config/seo-keywords";
+import { SEO_SERVICE_PAGES, SEO_GUIDE_PAGES } from "@/config/seo-pages";
 
 export type SeoSection = {
   h2: string;
@@ -24,19 +25,49 @@ export type SeoLandingProps = {
   /** Service + Breadcrumb şeması için: sayfa yolu (/ankara-...) ve hizmet adı */
   path?: string;
   serviceName?: string;
+  /** Rehber yazısı ise yayın tarihi (YYYY-MM-DD) → Article şeması */
+  articleDate?: string;
 };
 
 const SERVICE_LINKS = [
-  { href: "/ankara-dugun-fotografcisi", label: "Ankara düğün fotoğrafçısı" },
-  { href: "/ankara-dugun-videosu", label: "Düğün videosu" },
-  { href: "/ankara-gelin-alma-klibi", label: "Gelin alma klibi" },
-  { href: "/ankara-salon-dugun-cekimi", label: "Salon düğün çekimi" },
-  { href: "/ankara-kina-cekimi", label: "Kına çekimi" },
-  { href: "/ankara-dis-cekim-mekanlari", label: "Dış çekim mekanları" },
-  { href: "/dis-cekim-fiyatlari", label: "Dış çekim fiyatları" },
+  ...SEO_SERVICE_PAGES,
   { href: "/galeri", label: "Galeri" },
   { href: "/paket-olustur", label: "Paket oluştur" },
 ];
+
+/** Rehber yazıları için Article şeması */
+function ArticleJsonLd({ path, h1, intro, date }: { path: string; h1: string; intro: string; date: string }) {
+  const url = `${siteConfig.url}${path}`;
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: h1,
+    description: intro,
+    url,
+    mainEntityOfPage: url,
+    inLanguage: "tr-TR",
+    datePublished: date,
+    dateModified: date,
+    author: { "@id": `${siteConfig.url}/#business` },
+    publisher: { "@id": `${siteConfig.url}/#business` },
+    image: `${siteConfig.url}/gallery/01.png`,
+  };
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ana Sayfa", item: siteConfig.url },
+      { "@type": "ListItem", position: 2, name: "Rehber", item: `${siteConfig.url}/rehber` },
+      { "@type": "ListItem", position: 3, name: h1, item: url },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+    </>
+  );
+}
 
 function ServiceJsonLd({
   path,
@@ -101,12 +132,16 @@ export function SeoLandingPage({
   ctaLabel = "Paket oluştur — canlı fiyat",
   path,
   serviceName,
+  articleDate,
 }: SeoLandingProps) {
   return (
     <>
       <Navbar />
       {path && serviceName && (
         <ServiceJsonLd path={path} serviceName={serviceName} description={intro} h1={h1} />
+      )}
+      {path && articleDate && (
+        <ArticleJsonLd path={path} h1={h1} intro={intro} date={articleDate} />
       )}
       <main className="min-h-screen bg-rm-black pt-24 pb-32 sm:pt-28 lg:pb-24">
         <article className="section-container max-w-3xl">
@@ -177,6 +212,18 @@ export function SeoLandingPage({
             </p>
             <ul className="flex flex-wrap gap-x-4 gap-y-2">
               {SERVICE_LINKS.filter((l) => l.href !== path).map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="hover:text-rm-champagne">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 mb-3 text-[10px] font-semibold tracking-[0.2em] text-rm-gray-600 uppercase">
+              Düğün rehberi
+            </p>
+            <ul className="flex flex-wrap gap-x-4 gap-y-2">
+              {SEO_GUIDE_PAGES.filter((l) => l.href !== path).map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className="hover:text-rm-champagne">
                     {l.label}
