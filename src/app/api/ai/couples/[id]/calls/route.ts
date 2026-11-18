@@ -7,7 +7,8 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
-import { applyCallOutcome, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
+import { applyCallOutcome, displayPhone, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
+import { sendTelegramMessage } from "@/lib/lead-notify";
 import { mutateCouple } from "@/lib/ai-couples/store";
 import type { AiCallOutcome, AiCallRecord } from "@/types/ai-couples";
 
@@ -42,10 +43,19 @@ export async function POST(request: Request, { params }: Ctx) {
     quotedRemaining: Number.isFinite(quoted) && quoted >= 0 ? Math.round(quoted) : undefined,
   };
 
+  // Görüşmede öğrenilen düğün tarihi (YYYY-MM-DD) — kayıtta tarih yoksa yazılır.
+  const learnedDate = str(body.weddingDate, 10);
+  const weddingDate = learnedDate && /^\d{4}-\d{2}-\d{2}$/.test(learnedDate) && !Number.isNaN(Date.parse(learnedDate))
+    ? learnedDate
+    : undefined;
+  let duplicate = false;
   const updated = await mutateCouple((await params).id, (c) => {
     // Aynı arama iki kez gelirse (webhook tekrarı) ikinci kez sayma.
-    if (record.externalId && c.calls.some((x) => x.externalId === record.externalId)) return c;
-    const withCall = { ...c, calls: [...c.calls, record] };
+    if (record.externalId && c.calls.some((x) => x.externalId === record.externalId)) {
+      duplicate = true;
+      return c;
+    }
+    const withCall = { ...c, calls: [...c.calls, record], weddingDate: c.weddingDate ?? weddingDate };
     // Kilitli çift aranmışsa (olmamalı) kayıt tutulur ama kilit bozulmaz.
     if (c.contactLocked) {
       return {
@@ -57,6 +67,22 @@ export async function POST(request: Request, { params }: Ctx) {
     return applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
   });
   if (!updated) return bad("Bulunamadı", 404);
+
+  // Sahibine Telegram: görüşme özeti + "bu tarih müsait mi?" (açmadıysa bildirme).
+  if (!duplicate && outcome !== "no_answer") {
+    const date = updated.weddingDate
+      ? new Date(`${updated.weddingDate}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" })
+      : "tarih öğrenilemedi";
+    const lines = [
+      `📞 ${updated.name} — ${displayPhone(updated.phone)}`,
+      `Sonuç: ${OUTCOME_LABEL[outcome]}${updated.contactLocked ? " (🔒 kara liste)" : ""}`,
+      `Düğün tarihi: ${date}`,
+      record.summary ? `Özet: ${record.summary}` : "",
+      !updated.contactLocked && updated.weddingDate ? `\n❓ ${date} müsait mi? Çifte WhatsApp'tan dönüş yapılacağı söylendi.` : "",
+    ].filter(Boolean);
+    await sendTelegramMessage(lines.join("\n")).catch(() => false);
+  }
+
   return NextResponse.json({
     ok: true,
     couple: updated,
