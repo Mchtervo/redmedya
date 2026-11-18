@@ -15,6 +15,13 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // www → çıplak alan adı (aynı içerik iki adreste olmasın)
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.redmediadugun.com" }],
+        destination: "https://redmediadugun.com/:path*",
+        permanent: true,
+      },
       { source: "/cekimler", destination: "/galeri", permanent: true },
       { source: "/hikayeler", destination: "/galeri", permanent: true },
       { source: "/hizmetler", destination: "/paket-olustur", permanent: true },

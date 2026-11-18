@@ -1,7 +1,9 @@
 export const siteConfig = {
   name: "REDMEDYA.CO",
   tagline: "Ultra Premium Wedding Cinematography",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://redmedya.co",
+  // Canlı alan adı. redmedya.co DNS'te açılmıyor; canonical/sitemap oraya
+  // giderse Google sayfaları ölü bir siteye bağlar. Hostinger'da env boş.
+  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://redmediadugun.com").replace(/\/$/, ""),
   locale: "tr_TR",
   /** 0540 434 06 18 */
   defaultWhatsApp: process.env.NEXT_PUBLIC_WHATSAPP ?? "905404340618",

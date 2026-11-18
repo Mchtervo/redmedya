@@ -15,7 +15,11 @@ export function JsonLd() {
       "Ankara düğün fotoğrafçısı ve sinematik düğün videosu. Dış çekim, gelin alma, kına, nikah, salon düğünü, drone ve paket oluşturucu ile şeffaf fiyat.",
     url: siteConfig.url,
     logo: logoUrl,
-    image: [logoUrl, `${siteConfig.url}/og-image.jpg`],
+    image: [
+      logoUrl,
+      `${siteConfig.url}/gallery/01.png`,
+      `${siteConfig.url}/gallery/02.png`,
+    ],
     address: {
       "@type": "PostalAddress",
       streetAddress: siteConfig.address,
