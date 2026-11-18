@@ -29,6 +29,16 @@ export const SEO_PAGES: SeoPageLink[] = [
   { href: "/rehber/ankara-dugun-fotografcisi-fiyatlari", label: "Düğün fotoğrafçısı fiyatları 2026", kind: "guide", summary: "Ankara'da düğün fotoğraf ve video fiyatları nasıl oluşur" },
   { href: "/rehber/dugun-gunu-akisi", label: "Düğün günü akışı", kind: "guide", summary: "Kuaförden after party'ye örnek düğün günü planı" },
   { href: "/rehber/dugun-fotografcisi-nasil-secilir", label: "Düğün fotoğrafçısı nasıl seçilir", kind: "guide", summary: "Fotoğrafçı seçerken sorulacak sorular" },
+  { href: "/rehber/dugun-masraflari-listesi", label: "Düğün masrafları listesi 2026", kind: "guide", summary: "Düğün masraf kalemleri, kim öder, bütçe nasıl yapılır" },
+  { href: "/rehber/gelin-kuaforu", label: "Gelin kuaförü rehberi", kind: "guide", summary: "Gelin kuaförü kaç saat sürer, neler yapılır, nasıl planlanır" },
+  { href: "/rehber/nisan-hazirligi-listesi", label: "Nişan hazırlığı listesi", kind: "guide", summary: "Nişan için yapılacaklar, nişan tepsisi, kıyafet ve program" },
+  { href: "/rehber/kina-gecesi-organizasyonu", label: "Kına gecesi organizasyonu", kind: "guide", summary: "Kına gecesi nasıl yapılır, sıralaması ve hazırlık listesi" },
+  { href: "/rehber/dis-cekim-pozlari", label: "Dış çekim pozları ve hazırlık", kind: "guide", summary: "Dış çekim pozları, elbise, saç ve çekim günü ipuçları" },
+  { href: "/rehber/save-the-date-nedir", label: "Save the date nedir?", kind: "guide", summary: "Save the date anlamı, ne zaman gönderilir, çekim fikirleri" },
+  { href: "/rehber/gelin-alma-nasil-olur", label: "Gelin alma nasıl olur?", kind: "guide", summary: "Gelin alma gelenekleri, sıralaması ve hazırlık" },
+  { href: "/rehber/dugun-salonu-secimi", label: "Düğün salonu nasıl seçilir", kind: "guide", summary: "Ankara'da düğün salonu seçerken dikkat edilecekler" },
+  { href: "/rehber/kir-dugunu-rehberi", label: "Kır düğünü rehberi", kind: "guide", summary: "Ankara'da kır düğünü planlama, mekân ve hava durumu" },
+  { href: "/rehber/gelinlik-damatlik-secimi", label: "Gelinlik, damatlık ve gelin buketi", kind: "guide", summary: "Fotoğrafta güzel görünen gelinlik, damatlık ve buket seçimi" },
 ];
 
 export const SEO_SERVICE_PAGES = SEO_PAGES.filter((p) => p.kind === "service");
