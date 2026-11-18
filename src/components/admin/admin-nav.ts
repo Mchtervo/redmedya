@@ -15,6 +15,7 @@ import {
   FormInput,
   Bug,
   MessageCircle,
+  Bot,
 } from "lucide-react";
 
 export type AdminTabId =
@@ -22,6 +23,7 @@ export type AdminTabId =
   | "calendar"
   | "leads"
   | "whatsapp_couples"
+  | "ai_couples"
   | "funnel"
   | "sessions"
   | "ads"
@@ -65,6 +67,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "WhatsApp çiftler",
     description: "Paketini gönderenler",
     icon: MessageCircle,
+  },
+  {
+    id: "ai_couples",
+    label: "AI Çift Yönetimi",
+    description: "Arama, takip & kontenjan",
+    icon: Bot,
   },
   {
     id: "funnel",
@@ -137,7 +145,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
   {
     title: "Operasyon",
-    ids: ["overview", "calendar", "leads", "whatsapp_couples"],
+    ids: ["overview", "calendar", "leads", "whatsapp_couples", "ai_couples"],
   },
   {
     title: "Analitik",
