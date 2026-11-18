@@ -1,6 +1,6 @@
 /**
- * Haftalık kontenjan — GERÇEK veri:
- *   kalan = haftalık kapasite − (o haftadaki onaylı rezervasyonlar + elle girilen dolu yer)
+ * AYLIK kontenjan — GERÇEK veri:
+ *   kalan = aylık kapasite − (o aydaki rezervasyonlar + elle girilen dolu yer)
  * Sesli asistan ve takip mesajları bu rakamı kullanır; uydurma sayı yok.
  */
 import { mkdir, readFile, writeFile } from "fs/promises";
@@ -10,21 +10,34 @@ import { readReservations } from "@/lib/reservations-store";
 import type { AiCapacityConfig, AiCapacityInfo } from "@/types/ai-couples";
 
 const FILE = dataPath("ai-capacity.json");
+const MONTH_KEY = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 const DEFAULT: AiCapacityConfig = {
-  defaultPerWeek: 6,
-  weeks: {},
+  defaultPerMonth: 10,
+  months: {},
   manualBooked: {},
   updatedAt: new Date(0).toISOString(),
 };
 
+/** Sadece YYYY-MM anahtarlarını tutar (eski haftalık kayıtlar yok sayılır). */
+function monthMap(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!v || typeof v !== "object") return out;
+  for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+    const num = Number(n);
+    if (MONTH_KEY.test(k) && Number.isFinite(num) && num >= 0 && num <= 200) out[k] = Math.round(num);
+  }
+  return out;
+}
+
 export async function readCapacityConfig(): Promise<AiCapacityConfig> {
   try {
     const raw = JSON.parse(await readFile(FILE, "utf-8")) as Partial<AiCapacityConfig>;
+    const def = Number(raw.defaultPerMonth);
     return {
-      defaultPerWeek: Number.isFinite(raw.defaultPerWeek) ? Number(raw.defaultPerWeek) : DEFAULT.defaultPerWeek,
-      weeks: raw.weeks ?? {},
-      manualBooked: raw.manualBooked ?? {},
+      defaultPerMonth: Number.isFinite(def) && def >= 0 ? def : DEFAULT.defaultPerMonth,
+      months: monthMap(raw.months),
+      manualBooked: monthMap(raw.manualBooked),
       updatedAt: raw.updatedAt ?? DEFAULT.updatedAt,
     };
   } catch {
@@ -37,68 +50,81 @@ export async function writeCapacityConfig(cfg: AiCapacityConfig): Promise<void> 
   await writeFile(FILE, JSON.stringify({ ...cfg, updatedAt: new Date().toISOString() }, null, 2), "utf-8");
 }
 
-function parseYmd(d: string): Date | null {
-  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return null;
-  return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+export { monthMap as cleanMonthMap };
+
+export const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+/** "2027-06-14" → "2027-06" */
+export function monthKeyOf(dateStr: string | undefined): string | null {
+  const m = dateStr?.match(/^(\d{4})-(\d{2})/);
+  if (!m || !MONTH_KEY.test(`${m[1]}-${m[2]}`)) return null;
+  return `${m[1]}-${m[2]}`;
 }
 
-/** ISO hafta anahtarı (2026-W23) ve haftanın Pazartesi'si. */
-export function isoWeek(dateStr: string): { key: string; monday: Date } | null {
-  const d = parseYmd(dateStr);
-  if (!d) return null;
-  const day = d.getUTCDay() || 7;
-  const monday = new Date(d.getTime() - (day - 1) * 86_400_000);
-  const thursday = new Date(monday.getTime() + 3 * 86_400_000);
-  const year = thursday.getUTCFullYear();
-  const jan1 = new Date(Date.UTC(year, 0, 1));
-  const week = Math.ceil(((thursday.getTime() - jan1.getTime()) / 86_400_000 + 1) / 7);
-  return { key: `${year}-W${String(week).padStart(2, "0")}`, monday };
+export function monthLabel(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  return `${MONTHS_TR[m - 1]} ${y}`;
 }
 
-const MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+async function bookedByMonth(): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  for (const r of await readReservations()) {
+    const k = monthKeyOf(r.customer?.weddingDate);
+    if (k) map.set(k, (map.get(k) ?? 0) + 1);
+  }
+  return map;
+}
 
-function weekLabel(monday: Date): string {
-  const sunday = new Date(monday.getTime() + 6 * 86_400_000);
-  const a = `${monday.getUTCDate()} ${MONTHS[monday.getUTCMonth()]}`;
-  const b = `${sunday.getUTCDate()} ${MONTHS[sunday.getUTCMonth()]}`;
-  return `${a} – ${b}`;
+function infoFor(key: string, cfg: AiCapacityConfig, reserved: Map<string, number>): AiCapacityInfo {
+  const total = cfg.months[key] ?? cfg.defaultPerMonth;
+  const booked = (reserved.get(key) ?? 0) + (cfg.manualBooked[key] ?? 0);
+  return { monthKey: key, monthLabel: monthLabel(key), total, booked, remaining: Math.max(0, total - booked) };
 }
 
 export async function getCapacityForDate(
   weddingDate: string | undefined,
   cfgIn?: AiCapacityConfig
 ): Promise<AiCapacityInfo | null> {
-  if (!weddingDate) return null;
-  const wk = isoWeek(weddingDate);
-  if (!wk) return null;
+  const key = monthKeyOf(weddingDate);
+  if (!key) return null;
   const cfg = cfgIn ?? (await readCapacityConfig());
-  const reservations = await readReservations();
-  const reserved = reservations.filter((r) => {
-    const rw = r.customer?.weddingDate ? isoWeek(r.customer.weddingDate) : null;
-    return rw?.key === wk.key;
-  }).length;
-  const total = cfg.weeks[wk.key] ?? cfg.defaultPerWeek;
-  const booked = reserved + (cfg.manualBooked[wk.key] ?? 0);
-  return {
-    weekKey: wk.key,
-    weekLabel: weekLabel(wk.monday),
-    total,
-    booked,
-    remaining: Math.max(0, total - booked),
-  };
+  return infoFor(key, cfg, await bookedByMonth());
 }
 
-/** Bugünden itibaren N hafta için kontenjan tablosu (panel + Telegram). */
-export async function upcomingCapacity(weeks = 12): Promise<AiCapacityInfo[]> {
-  const cfg = await readCapacityConfig();
-  const out: AiCapacityInfo[] = [];
+/** Bu aydan itibaren N ay için kontenjan tablosu (panel, Telegram, sesli asistan). */
+export async function upcomingCapacity(months = 14, cfgIn?: AiCapacityConfig): Promise<AiCapacityInfo[]> {
+  const cfg = cfgIn ?? (await readCapacityConfig());
+  const reserved = await bookedByMonth();
   const now = new Date();
-  for (let i = 0; i < weeks; i++) {
-    const d = new Date(now.getTime() + i * 7 * 86_400_000);
-    const ymd = d.toISOString().slice(0, 10);
-    const info = await getCapacityForDate(ymd, cfg);
-    if (info && !out.some((o) => o.weekKey === info.weekKey)) out.push(info);
+  const ist = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
+  const out: AiCapacityInfo[] = [];
+  for (let i = 0; i < months; i++) {
+    const d = new Date(ist.getFullYear(), ist.getMonth() + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    out.push(infoFor(key, cfg, reserved));
   }
   return out;
+}
+
+/**
+ * Sesli asistan için kısa, gerçek kontenjan cümlesi:
+ * "Mayıs 2027'de 3, Haziran 2027'de 2, Temmuz 2027'de 5 yerimiz kaldı"
+ * Önce çiftin ayı, sonra en çok dolan aylar (en fazla 4 ay).
+ */
+export function capacitySpeech(list: AiCapacityInfo[], coupleMonth?: string | null): string {
+  const open = list.filter((m) => m.total > 0);
+  const pick: AiCapacityInfo[] = [];
+  const own = coupleMonth ? open.find((m) => m.monthKey === coupleMonth) : undefined;
+  if (own) pick.push(own);
+  for (const m of [...open].sort((a, b) => a.remaining - b.remaining || a.monthKey.localeCompare(b.monthKey))) {
+    if (pick.length >= 4) break;
+    if (!pick.includes(m) && m.remaining < m.total) pick.push(m);
+  }
+  // Hiç dolmuş ay yoksa yine gerçek sayıyı söyle: önümüzdeki ilk 3 ay
+  if (!pick.length) pick.push(...open.slice(0, 3));
+  if (!pick.length) return "";
+  return pick
+    .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+    .map((m) => (m.remaining <= 0 ? `${m.monthLabel} tamamen doldu` : `${m.monthLabel} için ${m.remaining} çiftlik yer kaldı`))
+    .join(", ");
 }

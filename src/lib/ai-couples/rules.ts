@@ -246,18 +246,18 @@ export function buildCatalogMessage(
 /**
  * 7. gün takip mesajı — kontenjan rakamı GERÇEK.
  * Önceki konuşmada söylenen rakamdan azaldıysa karşılaştırmalı; değilse sade.
- * Hafta dolduysa kıtlık mesajı yerine dürüst bilgi.
+ * Ay dolduysa kıtlık mesajı yerine dürüst bilgi.
  */
 export function buildFollowUpMessage(c: AiCouple, cap: AiCapacityInfo | null): string {
   const hi = firstName(c.name) ? `Merhaba ${firstName(c.name)},` : "Merhaba,";
   if (cap && cap.remaining <= 0) {
-    return `${hi} RED MEDIA'dan yazıyoruz. Düğün haftanız (${cap.weekLabel}) için kontenjanımız doldu; farklı bir tarih düşünürseniz memnuniyetle yardımcı oluruz. 🤍`;
+    return `${hi} RED MEDIA'dan yazıyoruz. ${cap.monthLabel} için kontenjanımız doldu; farklı bir tarih düşünürseniz memnuniyetle yardımcı oluruz. 🤍`;
   }
   if (cap && typeof c.lastQuotedRemaining === "number" && cap.remaining < c.lastQuotedRemaining) {
     return `${hi} geçen hafta görüştüğümüzde ${c.lastQuotedRemaining} çiftlik kontenjanımız kalmıştı, şu an son ${cap.remaining} çiftlik yerimiz kaldı, bilginiz olsun. 🤍`;
   }
   if (cap) {
-    return `${hi} RED MEDIA'dan yazıyoruz. Düğün haftanız (${cap.weekLabel}) için şu an ${cap.remaining} çiftlik yerimiz var, bilginiz olsun. Sorularınız olursa buradayız. 🤍`;
+    return `${hi} RED MEDIA'dan yazıyoruz. ${cap.monthLabel} için şu an ${cap.remaining} çiftlik yerimiz kaldı, bilginiz olsun. Sorularınız olursa buradayız. 🤍`;
   }
   return `${hi} RED MEDIA'dan yazıyoruz. Geçen hafta görüşmüştük; aklınıza takılan bir şey olursa buradayız, bilginiz olsun. 🤍`;
 }

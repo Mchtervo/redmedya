@@ -98,18 +98,18 @@ export type AiCouple = {
 };
 
 export type AiCapacityConfig = {
-  /** Haftalık varsayılan çift kapasitesi */
-  defaultPerWeek: number;
-  /** ISO hafta (2026-W23) → o haftanın toplam kapasitesi */
-  weeks: Record<string, number>;
+  /** Aylık varsayılan çift kapasitesi */
+  defaultPerMonth: number;
+  /** Ay (2027-06) → o ayın toplam kapasitesi */
+  months: Record<string, number>;
   /** Elle düşülen ek dolu yer (rezervasyon sistemine girmemiş işler) */
   manualBooked: Record<string, number>;
   updatedAt: string;
 };
 
 export type AiCapacityInfo = {
-  weekKey: string;
-  weekLabel: string;
+  monthKey: string;
+  monthLabel: string;
   total: number;
   booked: number;
   remaining: number;
@@ -124,6 +124,8 @@ export type AiQueueAction =
       weddingDate?: string;
       source: AiCoupleSource;
       capacity: AiCapacityInfo | null;
+      /** Sesli asistanın okuyacağı gerçek kontenjan cümlesi (ör. "Haziran 2027 için 2 çiftlik yer kaldı, …") */
+      capacitySpeech: string;
       reason: string;
     }
   | {

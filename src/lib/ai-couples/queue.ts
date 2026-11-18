@@ -5,7 +5,7 @@
  */
 import { siteConfig } from "@/config/site";
 import type { AiCouple, AiQueueAction } from "@/types/ai-couples";
-import { getCapacityForDate, readCapacityConfig } from "@/lib/ai-couples/capacity";
+import { capacitySpeech, getCapacityForDate, monthKeyOf, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
 import {
   buildCatalogMessage,
   buildFollowUpMessage,
@@ -61,6 +61,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   }
 
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler
+  const months = await upcomingCapacity(14, cfg);
   const callable = couples
     .filter((c) => (c.status === "new" || c.callbackRequested) && canContact(c, "call", now).allowed)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -73,6 +74,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       weddingDate: c.weddingDate,
       source: c.source,
       capacity: await getCapacityForDate(c.weddingDate, cfg),
+      capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
       reason: c.callbackRequested ? "Tekrar aranmak istedi" : "Yeni talep",
     });
   }

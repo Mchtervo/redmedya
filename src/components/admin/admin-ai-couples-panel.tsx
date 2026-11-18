@@ -30,7 +30,7 @@ import { displayPhone, GRADE_LABEL, OUTCOME_LABEL, STATUS_LABEL } from "@/lib/ai
 type Payload = {
   couples: AiCouple[];
   capacityConfig: AiCapacityConfig;
-  weeks: AiCapacityInfo[];
+  months: AiCapacityInfo[];
   integration: { baseUrl: string; apiToken: string; telegramReady: boolean };
 };
 
@@ -178,7 +178,7 @@ export function AdminAiCouplesPanel() {
         </ul>
       )}
 
-      <CapacityEditor config={data.capacityConfig} weeks={data.weeks} onSaved={load} />
+      <CapacityEditor config={data.capacityConfig} months={data.months} onSaved={load} />
       <IntegrationBox integration={data.integration} />
     </div>
   );
@@ -371,10 +371,10 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; weeks: AiCapacityInfo[]; onSaved: () => void }) {
-  const [def, setDef] = useState(String(config.defaultPerWeek));
+function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig; months: AiCapacityInfo[]; onSaved: () => void }) {
+  const [def, setDef] = useState(String(config.defaultPerMonth));
   const [totals, setTotals] = useState<Record<string, string>>(() =>
-    Object.fromEntries(Object.entries(config.weeks).map(([k, v]) => [k, String(v)]))
+    Object.fromEntries(Object.entries(config.months).map(([k, v]) => [k, String(v)]))
   );
   const [manual, setManual] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries(config.manualBooked).map(([k, v]) => [k, String(v)]))
@@ -385,11 +385,11 @@ function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; 
     Object.fromEntries(Object.entries(m).filter(([, v]) => v.trim() !== "").map(([k, v]) => [k, Number(v)]));
 
   return (
-    <AdminSection title="Kontenjan" description="Kalan yer = haftalık kapasite − onaylı rezervasyonlar − elle düşülen. Sesli asistan ve takip mesajları bu GERÇEK rakamı söyler.">
+    <AdminSection title="Kontenjan" description="Kalan yer = aylık kapasite − onaylı rezervasyonlar − elle düşülen. Sesli asistan ve takip mesajları bu GERÇEK rakamı söyler.">
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-xs text-rm-gray-400">
-          Haftalık varsayılan kapasite
-          <input type="number" min={0} max={50} value={def} onChange={(e) => setDef(e.target.value)} className={cn(field, "mt-1 w-28")} />
+          Aylık varsayılan kapasite (çift)
+          <input type="number" min={0} max={200} value={def} onChange={(e) => setDef(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
         <button
           type="button"
@@ -398,7 +398,7 @@ function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; 
             await fetch("/api/admin/ai-capacity", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ defaultPerWeek: Number(def), weeks: toNums(totals), manualBooked: toNums(manual) }),
+              body: JSON.stringify({ defaultPerMonth: Number(def), months: toNums(totals), manualBooked: toNums(manual) }),
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
@@ -412,7 +412,7 @@ function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; 
         <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="text-left text-[10px] tracking-[0.16em] text-rm-gray-500 uppercase">
-              <th className="py-2">Hafta</th>
+              <th className="py-2">Ay</th>
               <th>Kapasite</th>
               <th>Rezervasyon + elle</th>
               <th>Elle dolu</th>
@@ -420,15 +420,15 @@ function CapacityEditor({ config, weeks, onSaved }: { config: AiCapacityConfig; 
             </tr>
           </thead>
           <tbody>
-            {weeks.map((w) => (
-              <tr key={w.weekKey} className="border-t border-white/5">
-                <td className="py-2 text-rm-gray-300">{w.weekLabel}</td>
+            {months.map((w) => (
+              <tr key={w.monthKey} className="border-t border-white/5">
+                <td className="py-2 text-rm-gray-300">{w.monthLabel}</td>
                 <td>
-                  <input type="number" min={0} max={50} placeholder={def} value={totals[w.weekKey] ?? ""} onChange={(e) => setTotals({ ...totals, [w.weekKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
+                  <input type="number" min={0} max={200} placeholder={def} value={totals[w.monthKey] ?? ""} onChange={(e) => setTotals({ ...totals, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
                 </td>
                 <td className="tabular-nums text-rm-gray-400">{w.booked}</td>
                 <td>
-                  <input type="number" min={0} max={50} placeholder="0" value={manual[w.weekKey] ?? ""} onChange={(e) => setManual({ ...manual, [w.weekKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
+                  <input type="number" min={0} max={200} placeholder="0" value={manual[w.monthKey] ?? ""} onChange={(e) => setManual({ ...manual, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
                 </td>
                 <td className={cn("font-semibold tabular-nums", w.remaining <= 1 ? "text-orange-300" : "text-rm-off-white")}>{w.remaining}</td>
               </tr>

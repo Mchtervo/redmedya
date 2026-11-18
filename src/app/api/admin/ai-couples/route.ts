@@ -13,15 +13,15 @@ export async function GET() {
   const auth = await requireAdminSession();
   if (!auth.ok) return auth.response;
   reloadPersistentEnv();
-  const [couples, capacityConfig, weeks] = await Promise.all([
+  const [couples, capacityConfig, months] = await Promise.all([
     readCouples(),
     readCapacityConfig(),
-    upcomingCapacity(12),
+    upcomingCapacity(14),
   ]);
   return NextResponse.json({
     couples,
     capacityConfig,
-    weeks,
+    months,
     integration: {
       baseUrl: siteConfig.url,
       apiToken: getAiApiToken(),

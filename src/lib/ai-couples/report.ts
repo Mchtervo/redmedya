@@ -88,7 +88,7 @@ export async function coupleDetailText(c: AiCouple): Promise<string> {
   return [
     `${GRADE_LABEL[c.grade]} — ${c.name}`,
     `📱 ${displayPhone(c.phone)} · ${c.source}`,
-    c.weddingDate ? `💍 ${c.weddingDate}${cap ? ` (o hafta kalan: ${cap.remaining}/${cap.total})` : ""}` : "💍 tarih yok",
+    c.weddingDate ? `💍 ${c.weddingDate}${cap ? ` (${cap.monthLabel} kalan: ${cap.remaining}/${cap.total})` : ""}` : "💍 tarih yok",
     `Durum: ${STATUS_LABEL[c.status]} · Arama: ${c.callCount}`,
     c.contactLocked ? `🚫 ${c.lockReason ?? "İletişim kapalı"}` : "",
     lastCall ? `Son arama: ${OUTCOME_LABEL[lastCall.outcome]}${lastCall.summary ? ` — ${lastCall.summary.slice(0, 300)}` : ""}` : "",
@@ -99,10 +99,10 @@ export async function coupleDetailText(c: AiCouple): Promise<string> {
 }
 
 export async function capacityText(): Promise<string> {
-  const weeks = await upcomingCapacity(10);
+  const months = await upcomingCapacity(14);
   return [
-    "📅 Haftalık kontenjan (kalan / toplam)",
-    ...weeks.map((w) => `• ${w.weekLabel}: ${w.remaining}/${w.total}`),
+    "📅 Aylık kontenjan (kalan / toplam)",
+    ...months.map((m) => `• ${m.monthLabel}: ${m.remaining}/${m.total}`),
   ].join("\n");
 }
 

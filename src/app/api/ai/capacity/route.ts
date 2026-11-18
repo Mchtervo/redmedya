@@ -10,5 +10,5 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const date = new URL(request.url).searchParams.get("date");
   if (date) return NextResponse.json({ ok: true, capacity: await getCapacityForDate(date) });
-  return NextResponse.json({ ok: true, weeks: await upcomingCapacity(12) });
+  return NextResponse.json({ ok: true, months: await upcomingCapacity(14) });
 }
