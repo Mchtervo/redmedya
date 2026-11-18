@@ -198,7 +198,7 @@ export const usePackageStore = create<PackageState>()(
         set((state) => {
           const services = payload.services.map(normalizeService);
           const validIds = new Set(services.map((s) => s.id));
-          let selectedIds = state.selectedIds
+          const selectedIds = state.selectedIds
             .map((id) => {
               if (id === "drone-cekimi") return "drone-dis-cekim";
               if (id === "omuz-kamerasi") return "";
@@ -243,7 +243,7 @@ export const usePackageStore = create<PackageState>()(
           const isRemoving = state.selectedIds.includes(id);
           let selectedIds = state.selectedIds;
           let campaignPricedIds = state.campaignPricedIds;
-          let serviceQuantities = { ...state.serviceQuantities };
+          const serviceQuantities = { ...state.serviceQuantities };
           const servicePages = { ...state.servicePages };
 
           if (isRemoving) {

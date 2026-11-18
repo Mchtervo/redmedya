@@ -115,7 +115,9 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
     }
   };
 
-  const Sidebar = ({ className }: { className?: string }) => (
+  // Bileşen değil render fonksiyonu: render içinde bileşen tanımlamak her
+  // render'da menüyü yeniden kurar (kaydırma/durum sıfırlanır).
+  const renderSidebar = (className?: string) => (
     <aside
       className={cn(
         "flex h-full flex-col border-r border-white/8 bg-gradient-to-b from-rm-black via-rm-black to-rm-black-elevated/40 backdrop-blur-xl",
@@ -210,7 +212,7 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-rm-black">
       <div className="hidden w-[260px] shrink-0 lg:block">
-        <Sidebar className="fixed inset-y-0 left-0 z-40 w-[260px]" />
+        {renderSidebar("fixed inset-y-0 left-0 z-40 w-[260px]")}
       </div>
 
       <AnimatePresence>
@@ -230,7 +232,7 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
               transition={{ ease: EASE_LUXURY, duration: 0.25 }}
               className="fixed inset-y-0 left-0 z-50 w-[280px] lg:hidden"
             >
-              <Sidebar />
+              {renderSidebar()}
             </motion.div>
           </>
         )}
