@@ -373,6 +373,7 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
 
 function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig; months: AiCapacityInfo[]; onSaved: () => void }) {
   const [def, setDef] = useState(String(config.defaultPerMonth));
+  const [gift, setGift] = useState(String(config.droneGiftLeft ?? 10));
   const [totals, setTotals] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries(config.months).map(([k, v]) => [k, String(v)]))
   );
@@ -385,11 +386,15 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
     Object.fromEntries(Object.entries(m).filter(([, v]) => v.trim() !== "").map(([k, v]) => [k, Number(v)]));
 
   return (
-    <AdminSection title="Kontenjan" description="Kalan yer = aylık kapasite − onaylı rezervasyonlar − elle düşülen. Sesli asistan ve takip mesajları bu GERÇEK rakamı söyler.">
+    <AdminSection title="Kontenjan" description="Kalan yer = aylık kapasite − onaylı rezervasyonlar − elle düşülen. Sesli asistan ve takip mesajları bu rakamı söyler — sadece GERÇEK rezervasyonları girin (yanıltıcı kıtlık reklamı yasal risk).">
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-xs text-rm-gray-400">
           Aylık varsayılan kapasite (çift)
           <input type="number" min={0} max={200} value={def} onChange={(e) => setDef(e.target.value)} className={cn(field, "mt-1 w-28")} />
+        </label>
+        <label className="text-xs text-rm-gray-400">
+          Drone hediyesi kalan (ilk 10 çift)
+          <input type="number" min={0} max={100} value={gift} onChange={(e) => setGift(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
         <button
           type="button"
@@ -398,7 +403,7 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
             await fetch("/api/admin/ai-capacity", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ defaultPerMonth: Number(def), months: toNums(totals), manualBooked: toNums(manual) }),
+              body: JSON.stringify({ defaultPerMonth: Number(def), droneGiftLeft: Number(gift), months: toNums(totals), manualBooked: toNums(manual) }),
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);

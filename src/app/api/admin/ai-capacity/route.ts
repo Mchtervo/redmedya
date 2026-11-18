@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-api";
-import { cleanMonthMap, readCapacityConfig, upcomingCapacity, writeCapacityConfig } from "@/lib/ai-couples/capacity";
+import { cleanGiftLeft, cleanMonthMap, readCapacityConfig, upcomingCapacity, writeCapacityConfig } from "@/lib/ai-couples/capacity";
 import { bad, readJson } from "@/lib/ai-couples/http";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,7 @@ export async function PUT(request: Request) {
     defaultPerMonth: Number.isFinite(def) && def >= 0 && def <= 200 ? Math.round(def) : cur.defaultPerMonth,
     months: body.months !== undefined ? cleanMonthMap(body.months) : cur.months,
     manualBooked: body.manualBooked !== undefined ? cleanMonthMap(body.manualBooked) : cur.manualBooked,
+    droneGiftLeft: cleanGiftLeft(body.droneGiftLeft, cur.droneGiftLeft),
     updatedAt: cur.updatedAt,
   });
   return NextResponse.json({ ok: true, capacityConfig: await readCapacityConfig(), months: await upcomingCapacity(14) });

@@ -16,8 +16,14 @@ const DEFAULT: AiCapacityConfig = {
   defaultPerMonth: 10,
   months: {},
   manualBooked: {},
+  droneGiftLeft: 10,
   updatedAt: new Date(0).toISOString(),
 };
+
+export function cleanGiftLeft(v: unknown, fallback: number): number {
+  const n = Number(v);
+  return v !== undefined && v !== null && v !== "" && Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n) : fallback;
+}
 
 /** Sadece YYYY-MM anahtarlarını tutar (eski haftalık kayıtlar yok sayılır). */
 function monthMap(v: unknown): Record<string, number> {
@@ -38,6 +44,7 @@ export async function readCapacityConfig(): Promise<AiCapacityConfig> {
       defaultPerMonth: Number.isFinite(def) && def >= 0 ? def : DEFAULT.defaultPerMonth,
       months: monthMap(raw.months),
       manualBooked: monthMap(raw.manualBooked),
+      droneGiftLeft: cleanGiftLeft(raw.droneGiftLeft, DEFAULT.droneGiftLeft),
       updatedAt: raw.updatedAt ?? DEFAULT.updatedAt,
     };
   } catch {

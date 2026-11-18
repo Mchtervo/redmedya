@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson } from "@/lib/ai-couples/http";
 import {
+  cleanGiftLeft,
   cleanMonthMap,
   getCapacityForDate,
   readCapacityConfig,
@@ -21,7 +22,8 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const date = new URL(request.url).searchParams.get("date");
   if (date) return NextResponse.json({ ok: true, capacity: await getCapacityForDate(date) });
-  return NextResponse.json({ ok: true, months: await upcomingCapacity(14) });
+  const cfg = await readCapacityConfig();
+  return NextResponse.json({ ok: true, months: await upcomingCapacity(14, cfg), droneGiftLeft: cfg.droneGiftLeft });
 }
 
 export async function PUT(request: Request) {
@@ -35,7 +37,9 @@ export async function PUT(request: Request) {
     defaultPerMonth: body.defaultPerMonth !== undefined && Number.isFinite(def) && def >= 0 && def <= 200 ? Math.round(def) : cur.defaultPerMonth,
     months: body.months !== undefined ? { ...cur.months, ...cleanMonthMap(body.months) } : cur.months,
     manualBooked: body.manualBooked !== undefined ? { ...cur.manualBooked, ...cleanMonthMap(body.manualBooked) } : cur.manualBooked,
+    droneGiftLeft: cleanGiftLeft(body.droneGiftLeft, cur.droneGiftLeft),
     updatedAt: cur.updatedAt,
   });
-  return NextResponse.json({ ok: true, months: await upcomingCapacity(14) });
+  const cfg = await readCapacityConfig();
+  return NextResponse.json({ ok: true, months: await upcomingCapacity(14, cfg), droneGiftLeft: cfg.droneGiftLeft });
 }

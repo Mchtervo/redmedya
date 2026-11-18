@@ -104,6 +104,8 @@ export type AiCapacityConfig = {
   months: Record<string, number>;
   /** Elle düşülen ek dolu yer (rezervasyon sistemine girmemiş işler) */
   manualBooked: Record<string, number>;
+  /** "İlk 10 çifte dış çekimde drone hediye" — kalan hediye hakkı (elle güncellenir) */
+  droneGiftLeft: number;
   updatedAt: string;
 };
 
