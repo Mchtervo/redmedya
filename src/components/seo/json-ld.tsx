@@ -7,7 +7,9 @@ export function JsonLd() {
 
   const localBusiness = {
     "@context": "https://schema.org",
-    "@type": "ProfessionalService",
+    // ProfessionalService, LocalBusiness'ın alt türü; ikisini birden yazmak
+    // basit tarayıcıların da işletmeyi tanımasını sağlar.
+    "@type": ["LocalBusiness", "ProfessionalService"],
     "@id": `${siteConfig.url}/#business`,
     name: "RED MEDIA — REDMEDYA",
     alternateName: ["REDMEDYA", "REDMEDYA.CO", "Red Media Ankara"],
@@ -43,6 +45,14 @@ export function JsonLd() {
     telephone: `+${siteConfig.defaultPhone}`,
     email: siteConfig.email,
     sameAs: [siteConfig.instagram, siteConfig.dugun],
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: `+${siteConfig.defaultPhone}`,
+      contactType: "customer service",
+      areaServed: "TR",
+      availableLanguage: ["Turkish"],
+      url: `${siteConfig.url}/iletisim`,
+    },
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",

@@ -3,7 +3,7 @@ import { siteConfig } from "@/config/site";
 import { SEO_PAGES } from "@/config/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const core = ["", "/paket-olustur", "/galeri", "/rehber"];
+  const core = ["", "/paket-olustur", "/galeri", "/rehber", "/hakkimizda", "/iletisim", "/gizlilik"];
   const routes = [...core, ...SEO_PAGES.map((p) => p.href)];
 
   return routes.map((route) => {

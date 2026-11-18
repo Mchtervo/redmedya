@@ -13,6 +13,21 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
+  async headers() {
+    return [
+      {
+        // RFC 8288: ajanlara site özetini ve Markdown halini göster
+        source: "/",
+        headers: [
+          {
+            key: "Link",
+            value:
+              '</llms.txt>; rel="describedby"; type="text/plain", </index.md>; rel="alternate"; type="text/markdown"',
+          },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       // www → çıplak alan adı (aynı içerik iki adreste olmasın)
@@ -31,8 +46,6 @@ const nextConfig: NextConfig = {
       { source: "/cekimler/:path+", destination: "/galeri", permanent: true },
       { source: "/hikayeler/:path+", destination: "/galeri", permanent: true },
       { source: "/hizmetler/:path+", destination: "/paket-olustur", permanent: true },
-      { source: "/hakkimizda", destination: "/#hakkimizda", permanent: true },
-      { source: "/iletisim", destination: "/#iletisim", permanent: true },
       { source: "/admin/services", destination: "/admin", permanent: false },
       { source: "/admin/coupons", destination: "/admin", permanent: false },
       { source: "/admin/stories", destination: "/admin", permanent: false },

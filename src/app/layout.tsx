@@ -6,6 +6,7 @@ import { ANKARA_SEO_KEYWORDS } from "@/config/seo-keywords";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { GA4 } from "@/components/analytics/ga4";
 import { JsonLd } from "@/components/seo/json-ld";
+import { WebMcpTools } from "@/components/seo/webmcp-tools";
 import { SiteChrome } from "@/components/analytics/site-chrome";
 import { KvkkBanner } from "@/components/consent/kvkk-banner";
 
@@ -85,6 +86,7 @@ export default function RootLayout({
     <html lang="tr" className={`${cormorant.variable} ${instrument.variable} ${dmSans.variable}`}>
       <body className="min-h-screen overflow-x-clip bg-rm-black pb-16 text-rm-off-white antialiased lg:pb-0">
         <JsonLd />
+        <WebMcpTools />
         <MetaPixel />
         <GA4 />
         <SiteChrome />

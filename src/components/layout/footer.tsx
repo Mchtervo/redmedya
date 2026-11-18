@@ -127,6 +127,17 @@ export function Footer() {
           <p>
             © {new Date().getFullYear()} {siteConfig.name}. Tüm hakları saklıdır.
           </p>
+          <nav aria-label="Kurumsal" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/hakkimizda" className="transition-colors hover:text-rm-champagne">
+              Hakkımızda
+            </Link>
+            <Link href="/iletisim" className="transition-colors hover:text-rm-champagne">
+              İletişim
+            </Link>
+            <Link href="/gizlilik" className="transition-colors hover:text-rm-champagne">
+              Gizlilik &amp; KVKK
+            </Link>
+          </nav>
           <Link
             href="/admin/login"
             className="tracking-wide text-rm-gray-600 uppercase transition-colors hover:text-rm-champagne"
