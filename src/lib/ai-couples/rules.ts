@@ -125,7 +125,7 @@ export function canContact(
       return { allowed: false, reason: "Arama saatleri dışında (10:00–20:00)" };
     }
     const max = MAX_CALLS[c.source] ?? 1;
-    if (c.callCount >= max && !c.callbackRequested) {
+    if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now)) {
       return {
         allowed: false,
         reason: `Arama hakkı doldu (${c.callCount}/${max}); takip WhatsApp'tan`,
@@ -190,6 +190,16 @@ export function applyCallOutcome(
     timeline: [...c.timeline, { at, type: "call", text: `Arama: ${OUTCOME_LABEL[outcome]}` }],
   };
   if (next.status === "new") next.status = "contacted";
+
+  // "Düşüneyim" takibi için yapılan 2. arama açıldıysa takip tamamlanmış sayılır
+  // (ayrıca WhatsApp takip mesajı gitmez, yeni takip planlanmaz → döngü yok).
+  if (outcome !== "no_answer" && c.followUpAt && !c.followUpSentAt && new Date(c.followUpAt).getTime() <= now.getTime()) {
+    next = {
+      ...next,
+      followUpSentAt: at,
+      timeline: [...next.timeline, { at, type: "follow_up", text: "1 hafta sonraki takip araması yapıldı" }],
+    };
+  }
 
   switch (outcome) {
     case "booked_elsewhere":
@@ -288,7 +298,10 @@ export function detectInboundIntent(text: string): InboundIntent {
   if (/(baska (bir )?(fotografci|firma|yer|ekip)|baskasiyla anlastik|baska yerle anlastik|fotografcimiz var|fotografci bulduk|fotografci ayarladik)/.test(t)) {
     return "booked_elsewhere";
   }
-  if (/(dusun|nisanlima sor|esime sor|danisayim|konusup donecegiz|haber verir|donus yapar|sonra yaz|bakip donecegim)/.test(t)) {
+  if (
+    /(dusun|danisayim|konusup don|haber verir|donus yapar|sonra yaz|bakip don|kararsiz|netlestir|emin degil|simdilik bakiyoruz|daha erken)/.test(t) ||
+    /(nisanli|esim|esime|kocam|karim|sevgilim|ailem|annem|babam|kayinvalide)\w*\s+(bir\s+)?(sor|danis|konus)/.test(t)
+  ) {
     return "thinking";
   }
   if (/(fiyat|teklif|paket|musait|tarih|ne kadar|bilgi alabilir|detay|kapora|kaparo|rezervasyon|sizinle anlas|anlasalim|onayliyoruz)/.test(t)) {
@@ -297,11 +310,23 @@ export function detectInboundIntent(text: string): InboundIntent {
   return "unknown";
 }
 
-/** Takip mesajı şu an gönderilmeli mi? */
-export function isFollowUpDue(c: AiCouple, now: Date): boolean {
+/** "Düşüneyim" takibinin zamanı geldi mi? (önce arama, açmazsa WhatsApp) */
+function followUpTime(c: AiCouple, now: Date): boolean {
   if (!c.followUpAt || c.followUpSentAt) return false;
   if (c.contactLocked || c.status === "won" || c.status === "lost") return false;
   return new Date(c.followUpAt).getTime() <= now.getTime();
+}
+
+/** Takip zamanı geldi ve 1 haftalık tekrar araması henüz yapılmadı → ARA. */
+export function isFollowUpCallDue(c: AiCouple, now: Date): boolean {
+  if (!followUpTime(c, now)) return false;
+  const since = new Date(c.followUpAt as string).getTime();
+  return !c.calls.some((x) => new Date(x.at).getTime() >= since);
+}
+
+/** Takip WhatsApp mesajı: tekrar araması denendi ama açılmadı → MESAJ. */
+export function isFollowUpDue(c: AiCouple, now: Date): boolean {
+  return followUpTime(c, now) && !isFollowUpCallDue(c, now);
 }
 
 export const AI_EVENTS = ["thinking", "no_reply", "offer_requested", "won", "do_not_contact", "booked_elsewhere"] as const;

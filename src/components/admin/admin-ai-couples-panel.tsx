@@ -228,7 +228,7 @@ function CoupleCard({
             </p>
           )}
           {c.followUpAt && !c.followUpSentAt && !c.contactLocked && (
-            <p className="text-sm text-amber-200">⏰ Otomatik takip mesajı: {fmt(c.followUpAt)}</p>
+            <p className="text-sm text-amber-200">⏰ Düşünüyor — tekrar arama: {fmt(c.followUpAt)} (açmazsa WhatsApp)</p>
           )}
 
           {/* İşlemler */}

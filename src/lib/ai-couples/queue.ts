@@ -10,6 +10,7 @@ import {
   buildCatalogMessage,
   buildFollowUpMessage,
   canContact,
+  isFollowUpCallDue,
   isFollowUpDue,
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
@@ -63,7 +64,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler
   const months = await upcomingCapacity(14, cfg);
   const callable = couples
-    .filter((c) => (c.status === "new" || c.callbackRequested) && canContact(c, "call", now).allowed)
+    .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now)) && canContact(c, "call", now).allowed)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   for (const c of callable) {
     actions.push({
@@ -75,7 +76,12 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       source: c.source,
       capacity: await getCapacityForDate(c.weddingDate, cfg),
       capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
-      reason: c.callbackRequested ? "Tekrar aranmak istedi" : "Yeni talep",
+      followUp: isFollowUpCallDue(c, now),
+      reason: isFollowUpCallDue(c, now)
+        ? "Düşüneyim dedi — 1 hafta sonra tekrar arama"
+        : c.callbackRequested
+          ? "Tekrar aranmak istedi"
+          : "Yeni talep",
     });
   }
 

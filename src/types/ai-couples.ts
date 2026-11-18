@@ -126,6 +126,8 @@ export type AiQueueAction =
       capacity: AiCapacityInfo | null;
       /** Sesli asistanın okuyacağı gerçek kontenjan cümlesi (ör. "Haziran 2027 için 2 çiftlik yer kaldı, …") */
       capacitySpeech: string;
+      /** "Düşüneyim" diyen çiftin 1 hafta sonraki 2. araması */
+      followUp: boolean;
       reason: string;
     }
   | {
