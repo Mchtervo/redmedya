@@ -250,7 +250,7 @@ export function buildCatalogMessage(
     "• Fotoğraf + Sinematik Klip: 9.000 TL",
     "• Fotoğraf + Klip + Albüm: 14.000 TL (1 büyük + 2 aile albümü, 22 düzenlenmiş fotoğraf hediye)",
     "Tüm paketlerde poz sınırı yok, çekilenlerin tümü teslim.",
-    "Pakete eklenen ekstra hizmetlerde %20 indirim, ilk 10 çifte dış çekimde drone hediye.",
+    "Pakete eklenen ekstra hizmetlerde %20 indirim; kampanya yerlerinden ayırtan çiftlere dış çekimde drone hediye.",
     "",
     "⏳ Fiyatlar 31 Aralık 2026'ya kadar geçerli. Bir ayın kampanya yerleri dolunca o ay için %40 zam geliyor.",
     "Tarihinizi 24 saat ücretsiz tutuyoruz; 1.000 TL kapora ile kesinleşiyor (15.000 TL üzeri tutarlarda 2.000 TL). Kalan ödeme çekim günü.",
