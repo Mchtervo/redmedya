@@ -4,6 +4,12 @@ import { Footer } from "@/components/layout/footer";
 
 export const dynamic = "force-static";
 
+// Müşteriye özel sayfa — dizine eklenmesin.
+export const metadata = {
+  title: "Rezervasyon bilgileri | REDMEDYA",
+  robots: { index: false, follow: false },
+};
+
 /**
  * Public rezervasyon detayı kapatıldı — müşterinin tam adı ve ödeme bilgilerini
  * herkese açık göstermemek için. Müşteriler WhatsApp üzerinden bilgi alır.

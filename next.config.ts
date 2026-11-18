@@ -25,7 +25,12 @@ const nextConfig: NextConfig = {
       { source: "/cekimler", destination: "/galeri", permanent: true },
       { source: "/hikayeler", destination: "/galeri", permanent: true },
       { source: "/hizmetler", destination: "/paket-olustur", permanent: true },
-      { source: "/blog", destination: "/", permanent: true },
+      { source: "/blog", destination: "/rehber", permanent: true },
+      // Eski site yapısından kalan alt sayfalar 404 vermesin
+      { source: "/blog/:path+", destination: "/rehber", permanent: true },
+      { source: "/cekimler/:path+", destination: "/galeri", permanent: true },
+      { source: "/hikayeler/:path+", destination: "/galeri", permanent: true },
+      { source: "/hizmetler/:path+", destination: "/paket-olustur", permanent: true },
       { source: "/hakkimizda", destination: "/#hakkimizda", permanent: true },
       { source: "/iletisim", destination: "/#iletisim", permanent: true },
       { source: "/admin/services", destination: "/admin", permanent: false },
