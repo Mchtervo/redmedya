@@ -11,6 +11,7 @@ import { applyCallOutcome, BUSY_MAX_RETRIES, BUSY_RETRY_MS, displayPhone, OUTCOM
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { mutateCouple } from "@/lib/ai-couples/store";
 import { checkDate } from "@/lib/ai-couples/capacity";
+import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import type { AiCallOutcome, AiCallRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -116,13 +117,23 @@ export async function POST(request: Request, { params }: Ctx) {
       };
     }
     const after = applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
-    // Çift "yarım saat sonra arayın" dediyse o süreye göre (5 dk – 3 gün arası); demediyse kural: 2 saat
+    if (outcome !== "callback_requested") return after;
+    // Çiftin söylediği zaman: önce sözlü ifade ("yarın 15:00", "akşam"), sonra dakika; ikisi de yoksa kural: 2 saat sonra
+    const said = parseCallbackTime(str(body.callbackText, 120), now);
     const inMin = Number(body.callbackInMin);
-    if (outcome === "callback_requested" && Number.isFinite(inMin) && inMin > 0) {
-      const ms = Math.min(Math.max(inMin, 5), 3 * 24 * 60) * 60_000;
-      return { ...after, callbackAt: new Date(now.getTime() + ms).toISOString() };
-    }
-    return after;
+    const when = said
+      ? said
+      : Number.isFinite(inMin) && inMin > 0
+        ? new Date(now.getTime() + Math.min(Math.max(inMin, 5), 3 * 24 * 60) * 60_000)
+        : null;
+    if (!when) return after;
+    const bounded = new Date(Math.min(Math.max(when.getTime(), now.getTime() + 5 * 60_000), now.getTime() + 14 * 86_400_000));
+    const label = bounded.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    return {
+      ...after,
+      callbackAt: bounded.toISOString(),
+      timeline: [...after.timeline, { at: record.at, type: "callback", text: `Tekrar arama zamanı: ${label}${str(body.callbackText, 120) ? ` (çift: "${str(body.callbackText, 120)}")` : ""}` }],
+    };
   });
   if (!updated) return bad("Bulunamadı", 404);
 

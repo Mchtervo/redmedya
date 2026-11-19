@@ -60,8 +60,11 @@ export function hitapFor(full: string | undefined | null): Hitap {
   return { hitap: pretty, cinsiyet: "bilinmiyor" };
 }
 
-/** Sesli asistanın açılışı: "Merhabalar Ayşe Hanım" / "Merhabalar Deniz" / "Merhabalar" */
+/**
+ * Sesli asistanın İLK cümlesi (kısa, kişiyi teyit eder):
+ *  "Merhabalar, Ayşe Hanım ile mi görüşüyorum?" / isim yoksa "Merhabalar, iyi günler. Sizi RED MEDIA'dan arıyorum, uygun musunuz?"
+ */
 export function selamFor(full: string | undefined | null): string {
   const h = hitapFor(full).hitap;
-  return h ? `Merhabalar ${h}` : "Merhabalar";
+  return h ? `Merhabalar, ${h} ile mi görüşüyorum?` : "Merhabalar, iyi günler. Sizi RED MEDIA'dan arıyorum, uygun musunuz?";
 }
