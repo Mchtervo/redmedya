@@ -95,6 +95,8 @@ export type AiCouple = {
   callbackAt?: string;
   /** Art arda "hat meşgul" denemesi (en fazla 2 tekrar, sonra normal "açmadı" akışı) */
   busyRetries?: number;
+  /** Admin planlanan/otomatik aramaları iptal etti — otomatik aranmaz (WhatsApp ve elle arama devam) */
+  callsPaused?: boolean;
   calls: AiCallRecord[];
   messages: AiMessageRecord[];
 

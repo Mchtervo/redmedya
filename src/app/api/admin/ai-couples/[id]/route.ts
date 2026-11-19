@@ -54,6 +54,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
     }
     if (typeof body.note === "string") next.note = body.note.trim().slice(0, 1000) || undefined;
     if (typeof body.callbackRequested === "boolean" && !next.contactLocked) next.callbackRequested = body.callbackRequested;
+    if (typeof body.callsPaused === "boolean" && Boolean(next.callsPaused) !== body.callsPaused) {
+      const was = next.callbackAt ? ` (planlanan: ${new Date(next.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })})` : "";
+      next = body.callsPaused
+        ? { ...next, callsPaused: true, callbackRequested: false, callbackAt: undefined, busyRetries: 0, timeline: [...next.timeline, { at, type: "edit", text: `🚫 Otomatik arama İPTAL edildi (panelden)${was}` }] }
+        : { ...next, callsPaused: false, timeline: [...next.timeline, { at, type: "edit", text: "✅ Otomatik arama tekrar açıldı (panelden)" }] };
+    }
     if (typeof body.weddingDate === "string") {
       const wd = body.weddingDate.trim();
       if (wd === "") next.weddingDate = undefined;

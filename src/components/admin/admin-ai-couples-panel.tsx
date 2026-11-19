@@ -660,7 +660,25 @@ function DrawerBody({
             <Calendar className="h-4 w-4 shrink-0" /> 📅 {weddingText(c)}: {dayState.text}
           </p>
         )}
-        <p className={cn("mt-2 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>➡️ {step.text}</p>
+        <div className={cn("mt-2 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>
+          <span className="min-w-0 flex-1">➡️ {step.text}</span>
+          {!c.contactLocked && c.status !== "won" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (c.callsPaused) return onPatch({ callsPaused: false });
+                if (confirm(`${c.name} için planlanan / otomatik aramalar iptal edilsin mi?\n(WhatsApp ve elle arama devam eder; istediğinizde geri açabilirsiniz.)`)) onPatch({ callsPaused: true });
+              }}
+              className={cn(
+                "shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold disabled:opacity-40",
+                c.callsPaused ? "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50" : "border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
+              )}
+            >
+              {c.callsPaused ? "✅ Aramayı geri aç" : "🚫 Aramayı iptal et"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">

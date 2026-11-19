@@ -45,6 +45,8 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
   if ((c.note ?? "").includes("Numara hatalı")) return { text: "Numara hatalı (WhatsApp yok) — otomatik işlem yok.", tone: "stop" };
   if (c.status === "lost") return { text: "İlgilenmediğini söyledi — takip durdu.", tone: "stop" };
 
+  if (c.callsPaused) return { text: "Otomatik arama iptal edildi (panelden) — aranmayacak. WhatsApp ve elle arama açık.", tone: "stop" };
+
   const msgs = c.messages;
   const last = msgs[msgs.length - 1];
   if (last?.direction === "in") return { text: "Çift yazdı — SİZ dönün (otomatik cevap yok).", tone: "you" };

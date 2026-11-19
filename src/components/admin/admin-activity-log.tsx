@@ -168,6 +168,14 @@ export function AdminActivityLog() {
   }, [load]);
   useAdminDataSync(load);
 
+  // Planlanan / otomatik aramayı iptal et ya da geri aç
+  const togglePause = async (c: AiCouple) => {
+    if (!c.callsPaused && !confirm(`${c.name} için planlanan / otomatik aramalar iptal edilsin mi?
+(WhatsApp ve elle arama devam eder; istediğinizde geri açabilirsiniz.)`)) return;
+    await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callsPaused: !c.callsPaused }) }).catch(() => null);
+    load();
+  };
+
   const events = useMemo(() => {
     const out: Ev[] = [];
     for (const c of couples ?? []) {
@@ -254,7 +262,7 @@ export function AdminActivityLog() {
               <p className="mb-2 px-1 text-xs font-semibold tracking-[0.08em] text-slate-500 uppercase">{g.day}</p>
               <ul className="rm-card divide-y divide-slate-100 overflow-hidden">
                 {g.items.map((e) => (
-                  <EventRow key={e.key} e={e} onOpen={() => setOpen(e)} />
+                  <EventRow key={e.key} e={e} onOpen={() => setOpen(e)} onTogglePause={togglePause} />
                 ))}
               </ul>
             </section>
@@ -272,7 +280,7 @@ export function AdminActivityLog() {
   );
 }
 
-function EventRow({ e, onOpen }: { e: Ev; onOpen: () => void }) {
+function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onTogglePause: (c: AiCouple) => void }) {
   const Icon = e.icon === "noanswer" ? PhoneOff : e.icon === "call" ? Phone : e.icon === "test" ? FlaskConical : e.icon === "system" ? Activity : MessageCircle;
   const who = e.couple ? `${e.couple.name} · ${displayPhone(e.couple.phone)}` : e.test ? `${e.test.name} · ${displayPhone(e.test.phone)}` : "";
   const hasDetail = Boolean(e.call || e.test || e.msg);
@@ -290,7 +298,20 @@ function EventRow({ e, onOpen }: { e: Ev; onOpen: () => void }) {
           {e.call?.durationSec ? ` · ${dur(e.call.durationSec)}` : e.test?.durationSec ? ` · ${dur(e.test.durationSec)}` : ""}
         </p>
         {e.text && <p className={cn("mt-1 line-clamp-4 text-sm whitespace-pre-line", e.icon === "msg-in" ? "font-medium text-rose-800" : "text-slate-700")}>{e.text}</p>}
-        {e.next && <p className="mt-1.5 inline-block rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800">➡️ Sırada: {e.next}</p>}
+        {e.next && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <p className="inline-block rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800">➡️ Sırada: {e.next}</p>
+            {e.couple && !e.couple.contactLocked && e.couple.status !== "won" && e.couple.status !== "lost" && (
+              <button
+                type="button"
+                onClick={() => onTogglePause(e.couple!)}
+                className={cn("rounded-lg border px-2 py-1 text-xs font-semibold", e.couple.callsPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
+              >
+                {e.couple.callsPaused ? "✅ Aramayı geri aç" : "🚫 Aramayı iptal et"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {hasDetail && (
         <button type="button" onClick={onOpen} className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50">
