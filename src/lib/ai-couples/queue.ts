@@ -66,6 +66,14 @@ export function isUrgentLead(c: AiCouple, now: Date): boolean {
   return !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < 2 * 3600_000;
 }
 
+/** Yeni form / web talebine aramadan önce WhatsApp haberi gitmeli mi? (henüz aranmamış, hiç yazılmamış, son 12 saatte gelmiş) */
+function needsPreCallNotice(c: AiCouple, now: Date): boolean {
+  if (c.source !== "meta_form" && c.source !== "web") return false;
+  if (c.status !== "new" || c.calls.length || c.contactLocked || c.messagesPaused) return false;
+  if (c.messages.some((m) => m.direction === "out")) return false;
+  return now.getTime() - Date.parse(c.createdAt) < 12 * 3600_000;
+}
+
 export function callPriority(c: AiCouple, now: Date): number {
   if (isUrgentLead(c, now)) return -1; // EN ÖNCE: yeni gelen (Düğün.com / Instagram / Facebook / web)
   const fresh = !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < FRESH_LEAD_MS;
@@ -82,27 +90,35 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const couples = all.filter((c) => c.sourceRef !== "test");
   const actions: AiQueueAction[] = [];
 
-  // 0) Arama saati DIŞINDA gelen form / web talebi: hemen "talebiniz ulaştı" WhatsApp'ı (Düğün.com'a zaten SMS gidiyor)
-  if (!isWithinCallWindow(now)) {
-    for (const c of couples) {
-      if (c.source !== "meta_form" && c.source !== "web") continue;
-      if (c.status !== "new" || c.calls.length || c.contactLocked || c.messagesPaused) continue;
-      if (c.messages.some((m) => m.direction === "out")) continue;
-      if (now.getTime() - Date.parse(c.createdAt) > 12 * 3600_000) continue;
-      const h = hitapFor(c.name).hitap;
-      actions.push({
-        type: "whatsapp",
-        kind: "welcome",
-        night: true,
-        coupleId: c.id,
-        name: c.name,
-        phone: c.phone,
-        text: `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍 Sabah 09:30'dan itibaren sizi 0312 963 23 47 numaramızdan arayıp tarihinizin müsaitliğini ve 2027 erken rezervasyon fiyatlarımızı ileteceğiz.
+  // 0) Yeni form / web talebi: aramadan ÖNCE WhatsApp'tan haber ver (numarayı tanısın → açma ihtimali artar).
+  //    Gece geldiyse "sabah arayacağız". Düğün.com talebine aynı işi Düğün.com SMS'i yapıyor.
+  const night = !isWithinCallWindow(now);
+  for (const c of couples) {
+    if (!needsPreCallNotice(c, now)) continue;
+    const h = hitapFor(c.name).hitap;
+    const hi = `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍`;
+    actions.push({
+      type: "whatsapp",
+      kind: "welcome",
+      night: true,
+      coupleId: c.id,
+      name: c.name,
+      phone: c.phone,
+      text: night
+        ? `${hi} Sabah 09:30'dan itibaren sizi 0312 963 23 47 numaramızdan arayıp tarihinizin müsaitliğini ve fiyatlarımızı ileteceğiz. Size uygun bir saat varsa buraya yazmanız yeterli, o saatte arayalım.\n\nÇalışmalarımız: ${INSTAGRAM_URL}`
+        : `${hi} Birkaç dakika içinde sizi 0312 963 23 47 numaramızdan arayıp tarihinizin müsaitliğini ve fiyatlarımızı ileteceğiz. Şu an müsait değilseniz uygun saati buraya yazmanız yeterli, o saatte arayalım.\n\nÇalışmalarımız: ${INSTAGRAM_URL}`,
+      reason: night ? "Gece gelen form talebi — anında karşılama" : "Yeni form talebi — aramadan önce haber",
+    });
+  }
 
-Bu arada çalışmalarımıza Instagram hesabımızdan göz atabilirsiniz: ${INSTAGRAM_URL}`,
-        reason: "Gece gelen form talebi — anında karşılama",
-      });
-    }
+  // 0b) WhatsApp'tan "şu saatte arayın" yazan çifte onay ("Tamamdır, o saatte arıyoruz")
+  for (const c of couples) {
+    const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
+    if (!cb || !cb.text.includes("WhatsApp'tan yazdı") || !c.callbackRequested || !c.callbackAt) continue;
+    if (Date.parse(c.callbackAt) <= now.getTime() || c.messagesPaused || c.contactLocked) continue;
+    if (c.messages.some((m) => m.direction === "out" && m.at >= cb.at)) continue;
+    const label = new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+    actions.push({ type: "whatsapp", kind: "welcome", night: true, coupleId: c.id, name: c.name, phone: c.phone, text: `Tamamdır, ${label} civarında sizi 0312 963 23 47 numaramızdan arıyoruz 🤍`, reason: "WhatsApp'tan saat verdi — onay" });
   }
 
   // 1) Bilgi isteyen çifte katalog (en acil)
@@ -158,6 +174,7 @@ Bu arada çalışmalarımıza Instagram hesabımızdan göz atabilirsiniz: ${INS
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
+    .filter((c) => !needsPreCallNotice(c, now) || now.getTime() - Date.parse(c.createdAt) > 4 * 60_000) // önce "birazdan arıyoruz" WhatsApp'ı
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now) || isSecondCallDue(c, now))
     .filter((c) => (c.status === "new" || (CAMPAIGN_CALLS_ENABLED && c.sourceRef !== undefined && CAMPAIGN_REFS.has(c.sourceRef) && !c.calls.length) || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için

@@ -69,7 +69,7 @@ export function parseCallbackTime(raw: string | undefined | null, from: Date = n
   // Saat: "15:30", "saat 3", "3 gibi", "3'te"
   let hour: number | null = null, minute = 0;
   const hm = t.match(/(\d{1,2})[:.](\d{2})/);
-  const h1 = t.match(/saat\s*(\d{1,2})(?:\s*buçuk)?/) || t.match(/(\d{1,2})\s*(?:gibi|['’]?(?:te|ta|de|da|e|a))\b/);
+  const h1 = t.match(/saat\s*(\d{1,2})(?:\s*buçuk)?/) || t.match(/(\d{1,2})\s*['’]?(?:den|dan|ten|tan)\s+sonra/) || t.match(/(\d{1,2})\s*(?:gibi|['’]?(?:te|ta|de|da|e|a))\b/);
   if (hm) { hour = Number(hm[1]); minute = Number(hm[2]); }
   else if (h1) { hour = Number(h1[1]); if (/buçuk/.test(t)) minute = 30; }
   if (hour !== null) {

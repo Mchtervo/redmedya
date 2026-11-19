@@ -52,6 +52,9 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
 
   const msgs = c.messages;
   const last = msgs[msgs.length - 1];
+  if (last?.direction === "in" && c.callbackRequested && c.callbackAt && Date.parse(c.callbackAt) > now.getTime()) {
+    return { text: `WhatsApp'tan saat verdi — ${new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })} aranacak (onay mesajı otomatik gider).`, tone: "action" };
+  }
   if (last?.direction === "in") return { text: "Çift yazdı — SİZ dönün (otomatik cevap yok).", tone: "you" };
 
   const calls = c.calls;
@@ -141,6 +144,8 @@ export function historyForAgent(c: AiCouple): string {
           ? `${callNo}. arama açılmadı.`
           : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}${e.x.summary ? ` — özet: ${e.x.summary.split("\n")[0].replace(/\s+/g, " ").slice(0, 220)}` : ""}.`
       );
+    } else if (e.m.direction === "out" && e.m.kind === "welcome" && e.m.channel === "whatsapp") {
+      parts.push(e.m.text.startsWith("Tamamdır") ? "Çift WhatsApp'tan bu saati yazdı, onay mesajı gönderildi." : "WhatsApp'tan \"sizi 0312'li numaramızdan arayacağız\" haberi gönderildi.");
     } else if (e.m.direction === "out" && e.m.text.startsWith("[✓")) {
       parts.push("Çiftin mesajına ekibimiz telefondan cevap verdi.");
     } else if (e.m.direction === "out" && e.m.kind === "reply") {

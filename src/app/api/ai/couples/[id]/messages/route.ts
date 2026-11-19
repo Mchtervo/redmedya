@@ -21,6 +21,7 @@ import {
 } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
+import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import type { AiCouple, AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export async function POST(request: Request, { params }: Ctx) {
     const d =
       kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms")) ||
       // Yeni talebe ilk karşılama WhatsApp'ı (gece gelen form): henüz aranmamış ve hiç yazılmamışsa saat kuralı yok
-      (kind === "welcome" && channel === "whatsapp" && !c.calls.length && !c.messagesPaused && !c.messages.some((m) => m.direction === "out"))
+      (kind === "welcome" && channel === "whatsapp" && !c.messagesPaused && !c.contactLocked && c.status !== "won" && c.status !== "lost")
         ? c.contactLocked
           ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" }
           : { allowed: true as const }
@@ -116,6 +117,23 @@ export async function POST(request: Request, { params }: Ctx) {
         timeline: [...next.timeline, { at: msg.at, type: "lost", text: "WhatsApp: ilgilenmediğini / bütçenin uymadığını söyledi" }] };
     }
     if (intent === "thinking") next = markThinking(next, now, "WhatsApp: düşüneceğini söyledi");
+    // "Akşam 7'de arayın / yarın öğlen müsaitim" → aramayı o saate kur (henüz telefonda konuşulmadıysa)
+    const wantsCall = /(aray[ıi]n|arayabilir|arars[aı]n[ıi]z|ararsan|m[üu]sait(im|iz)|uygunum|uygunuz|d[öo]n[üu]n|g[öo]r[üu][şs]elim|g[öo]r[üu][şs]ebiliriz)/i.test(text) && !/(tl|lira|fiyat|[üu]cret|\bbin\b|\d{3})/i.test(text);
+    const hasMonth = /(^|[\s\d])(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)/i.test(text); // düğün tarihi yazmışsa saat sanma
+    const talked = next.calls.some((x) => x.outcome !== "no_answer");
+    if (wantsCall && !hasMonth && !talked && !next.callsPaused && intent !== "thinking" && next.status !== "won" && next.status !== "lost") {
+      const t = parseCallbackTime(text, now);
+      if (t && t.getTime() > now.getTime() + 5 * 60_000 && t.getTime() < now.getTime() + 14 * 86_400_000) {
+        const label = t.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+        next = {
+          ...next,
+          callbackRequested: true,
+          callbackAt: t.toISOString(),
+          busyRetries: 0,
+          timeline: [...next.timeline, { at: msg.at, type: "callback", text: `Tekrar arama zamanı: ${label} (çift WhatsApp'tan yazdı: "${text.replace(/\s+/g, " ").slice(0, 80)}")` }],
+        };
+      }
+    }
     if (intent === "interested" && !next.contactLocked) {
       next = { ...next, grade: "hot", followUpAt: next.followUpSentAt ? next.followUpAt : undefined };
     }
