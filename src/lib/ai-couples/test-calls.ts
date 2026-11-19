@@ -53,8 +53,20 @@ export async function startTestCall(input: { phone: string; name?: string }): Pr
     const r = await ingestCouple({ name: name || "Deneme", phone: input.phone, source: "manual", sourceRef: TEST_REF, note: "🧪 Panelden test araması" });
     if (!r.ok) return { ok: false, error: r.error };
     couple = r.couple;
-  } else if (couple.sourceRef === TEST_REF && name && couple.name !== name) {
-    couple = (await mutateCouple(couple.id, (c) => ({ ...c, name }))) ?? couple;
+  } else if (couple.sourceRef === TEST_REF) {
+    // Her test temiz başlar: önceki denemenin sonucu (ilgilenmiyor, sonra arayın…) yenisini engellemesin; geçmiş kalır (hafıza testi)
+    couple =
+      (await mutateCouple(couple.id, (c) => ({
+        ...c,
+        name: name || c.name,
+        status: "new",
+        grade: "cold",
+        callbackRequested: false,
+        callbackAt: undefined,
+        busyRetries: 0,
+        followUpAt: undefined,
+        followUpSentAt: undefined,
+      }))) ?? couple;
   }
   if (couple.contactLocked) return { ok: false, error: `Bu numara kara listede (${couple.lockReason ?? "iletişim kapalı"}) — aranamaz` };
   if (couple.status === "won" && couple.sourceRef !== TEST_REF) return { ok: false, error: "Bu numara rezervasyon yapmış gerçek bir çift — test için başka numara kullanın" };

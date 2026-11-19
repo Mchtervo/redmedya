@@ -75,7 +75,7 @@ export function AdminTestCallBox() {
 
   const start = async () => {
     setBusy(true);
-    setInfo({ ok: true, text: "Arama başlatılıyor…" });
+    setInfo({ ok: true, text: "📞 Arama başlatılıyor… telefon 20-40 saniye içinde çalar, bu sayfada bekleyin." });
     const res = await fetch("/api/admin/ai-test-call", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
