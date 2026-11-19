@@ -13,6 +13,7 @@ import {
   isFollowUpCallDue,
   isCallbackDue,
   isWithinCallWindow,
+  isGoodCallWindow,
   INSTAGRAM_URL,
   isSecondCallDue,
   isFollowUpDue,
@@ -174,6 +175,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
+    // Yeni gelen talep, meşgul tekrarı ve müşterinin istediği saat HEMEN; eski liste / takip / tekrar denemeler sadece "iyi saat"te (öğle 12–14, akşam 18–20:30)
+    .filter((c) => callPriority(c, now) <= 0 || isCallbackDue(c, now) || isGoodCallWindow(now))
     .filter((c) => !needsPreCallNotice(c, now) || now.getTime() - Date.parse(c.createdAt) > 4 * 60_000) // önce "birazdan arıyoruz" WhatsApp'ı
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now) || isSecondCallDue(c, now))
     .filter((c) => (c.status === "new" || (CAMPAIGN_CALLS_ENABLED && c.sourceRef !== undefined && CAMPAIGN_REFS.has(c.sourceRef) && !c.calls.length) || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)

@@ -6,7 +6,7 @@
  */
 import type { AiCouple } from "@/types/ai-couples";
 import { followCallNote, followStepText, isFollowCallDue } from "@/lib/ai-couples/followup";
-import { CALL_WINDOW, isWithinCallWindow, OUTCOME_LABEL, SECOND_CALL_GAP_MS, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
+import { CALL_WINDOW, isWithinCallWindow, OUTCOME_LABEL, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
 
 const CAMPAIGN_REF = "kampanya-2027";
 
@@ -87,7 +87,7 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
   }
   if (!calls.length) {
     return callsEnabled
-      ? { text: `1. arama ${when(nextCallSlot(now), now)}. Ardından WhatsApp.`, tone: "action" }
+      ? { text: /eski talep|kampanyası/i.test(c.note ?? "") ? "Arama sırasında — öğle (12–14) ya da akşam (18–20:30) saatinde aranacak. Ardından WhatsApp." : `1. arama ${when(nextCallSlot(now), now)}. Ardından WhatsApp.`, tone: "action" }
       : { text: "Aranmayı bekliyor — otomatik arama KAPALI (panelden başlatın). Aramadan WhatsApp gitmez.", tone: "you" };
   }
   const inAns = [...c.timeline].reverse().find((e) => e.type === "inbound");
@@ -105,12 +105,11 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
       return { text: `Görüşüldü (${OUTCOME_LABEL[lastCall.outcome]}) — notlara göre WhatsApp birkaç dakika içinde.`, tone: "action" };
   }
   if (lastCall.outcome === "no_answer" && calls.length === 1) {
-    const due = nextCallSlot(new Date(Math.max(now.getTime(), lastAt + SECOND_CALL_GAP_MS)));
-    return { text: `WhatsApp'a dönmezse 2. (son) arama ${when(due, now)}${offNote}. Dönerse aranmayacak.`, tone: "wait" };
+    return { text: `WhatsApp'a dönmezse 2. deneme bir sonraki uygun saatte (öğle 12–14 ya da akşam 18–20:30)${offNote}. Dönerse aranmayacak.`, tone: "wait" };
   }
   if (lastCall.outcome === "no_answer" && calls.every((x) => x.outcome === "no_answer") && !c.callsPaused) {
-    if (calls.length === 2) return { text: `2 arama açılmadı — WhatsApp'a dönmezse 3. deneme ertesi gün akşam 18:00'den sonra${offNote}.`, tone: "wait" };
-    if (calls.length === 3) return { text: `3 arama açılmadı — son (4.) deneme ertesi gün öğlen 12:30'dan sonra${offNote}.`, tone: "wait" };
+    if (calls.length === 2) return { text: `2 arama açılmadı — WhatsApp'a dönmezse 3. deneme ertesi gün öğle ya da akşam saatinde${offNote}.`, tone: "wait" };
+    if (calls.length === 3) return { text: `3 arama açılmadı — son (4.) deneme ertesi gün öğle ya da akşam saatinde${offNote}.`, tone: "wait" };
   }
   if (lastCall.outcome === "no_answer") return { text: `${calls.length} arama açılmadı — bir daha aranmayacak. Takip WhatsApp'tan, cevap bekleniyor.`, tone: "done" };
   const inb = [...c.timeline].reverse().find((e) => e.type === "inbound" || e.type === "inbound_missed");

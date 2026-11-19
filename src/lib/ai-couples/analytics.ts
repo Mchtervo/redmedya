@@ -177,7 +177,7 @@ export function adviceFor(rows: FunnelRow[], adRows: FunnelRow[]): Advice[] {
   }
   for (const r of real) {
     const reach = r.called ? r.talked / r.called : 0;
-    if (r.called >= 5 && reach < 0.35) out.push({ tone: "warn", text: `${r.label}: aranan çiftlerin sadece %${Math.round(reach * 100)}'i telefonu açıyor. Arama saatini (öğle 12–14 veya akşam 18–20) deneyin; WhatsApp'ı daha erken gönderin.` });
+    if (r.called >= 5 && reach < 0.35) out.push({ tone: "warn", text: `${r.label}: aranan çiftlerin sadece %${Math.round(reach * 100)}'iyle konuşulabildi (kalanı açmadı, hattı kapalıydı ya da dinlemeden kapattı). Tekrar aramalar artık öğle 12–14 ve akşam 18–20:30 saatlerinde yapılıyor; WhatsApp'ı daha erken gönderin.` });
     const noResp = r.leads ? r.noResponse / r.leads : 0;
     if (noResp > 0.4) out.push({ tone: "warn", text: `${r.label}: çiftlerin %${Math.round(noResp * 100)}'i hiç dönmedi. İlk mesajı kısaltıp tek bir soruyla bitirmek ("Tarihiniz hangi ay?") cevap oranını artırır.` });
     if (r.thought >= 3 && r.cameBack / r.thought < 0.3) out.push({ tone: "info", text: `${r.label}: "düşüneyim" diyen ${r.thought} çiftten sadece ${r.cameBack}'i geri döndü. 3. gün kısa bir hatırlatma + kontenjan bilgisi ekleyin.` });
