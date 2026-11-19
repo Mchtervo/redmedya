@@ -42,6 +42,22 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (grade === "blacklist") next = lockCouple(next, str(body.reason, 200) ?? "n8n tarafından kara listeye alındı", now);
     else if (grade && !next.contactLocked) next = { ...next, grade, updatedAt: now.toISOString() };
     if (note) next = { ...next, note, updatedAt: now.toISOString() };
+    // Yanlış sınıflanan aramayı düzelt: { fixCall: { externalId, summary? } } → "açtı ama dinlemeden kapattı" (no_answer)
+    const fx = body.fixCall as { externalId?: unknown; summary?: unknown } | undefined;
+    const fxId = fx && typeof fx.externalId === "string" ? fx.externalId : "";
+    if (fxId && next.calls.some((x) => x.externalId === fxId) && !next.contactLocked) {
+      const sum = typeof fx?.summary === "string" ? fx.summary.slice(0, 300) : "Açtı ama tanıtımı dinlemeden kapattı — konuşulmadı.";
+      const wasThinking = next.status === "thinking";
+      next = {
+        ...next,
+        calls: next.calls.map((x) => (x.externalId === fxId ? { ...x, outcome: "no_answer" as const, summary: sum } : x)),
+        status: wasThinking ? "contacted" : next.status,
+        grade: wasThinking ? "cold" : next.grade,
+        followUpAt: wasThinking ? undefined : next.followUpAt,
+        timeline: [...next.timeline.filter((e) => !(wasThinking && e.type === "thinking")), { at: now.toISOString(), type: "edit", text: `Arama sonucu düzeltildi: ${sum}` }],
+        updatedAt: now.toISOString(),
+      };
+    }
     return next;
   });
   if (!updated) return bad("Bulunamadı", 404);
