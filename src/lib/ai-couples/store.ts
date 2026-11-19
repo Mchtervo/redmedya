@@ -107,12 +107,21 @@ export function ingestCouple(input: IngestInput, now = new Date()): Promise<Inge
     if (idx >= 0) {
       const cur = list[idx];
       // Panelden test edilmiş numaradan GERÇEK talep geldi → test etiketi kalkar, gerçek çift gibi aranır/sayılır
-      const fromTest = cur.sourceRef === "test" && input.sourceRef !== "test";
+      const fromTest = (cur.sourceRef === "test" || /^TESTs/.test(cur.name)) && input.sourceRef !== "test";
       list[idx] = {
         ...cur,
-        ...(fromTest ? { source: input.source, sourceRef: input.sourceRef, note: input.note ?? cur.note, name, status: cur.calls.length ? cur.status : "new" } : {}),
+        // Test kaydı gerçek talebe dönüşür: deneme aramaları/mesajları sayılmaz, yeni gelen talep gibi en baştan işlenir
+        ...(fromTest && !cur.contactLocked
+          ? {
+              source: input.source, sourceRef: input.sourceRef, note: input.note ?? cur.note, name,
+              status: "new" as const, grade: "cold" as const, createdAt: at,
+              calls: [], messages: [], callCount: 0,
+              callbackRequested: false, callbackAt: undefined, busyRetries: 0, followUpAt: undefined, followUpSentAt: undefined,
+              callsPaused: false, messagesPaused: false, inboundAt: undefined,
+            }
+          : {}),
         name: fromTest ? name : cur.name === "İsimsiz çift" ? name : cur.name,
-        weddingDate: cur.weddingDate ?? weddingDate,
+        weddingDate: fromTest ? weddingDate ?? cur.weddingDate : cur.weddingDate ?? weddingDate,
         city: cur.city ?? input.city,
         timeline: [
           ...cur.timeline,
