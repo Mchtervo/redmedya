@@ -50,7 +50,10 @@ export async function POST(request: Request, { params }: Ctx) {
 
   if (direction === "out") {
     // Düğün.com panel mesajı çiftin kendi talebine cevaptır; saat kuralı yine geçerli.
-    const decision = canContact(existing, channel === "sms" ? "sms" : "whatsapp", now);
+    // Panelden personelin elle yazdığı cevap (kind "reply"): saat kuralı yok, kara liste kuralı var.
+    const decision = kind === "reply"
+      ? (existing.contactLocked ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" } : { allowed: true as const })
+      : canContact(existing, channel === "sms" ? "sms" : "whatsapp", now);
     if (!decision.allowed) {
       return NextResponse.json({ ok: false, allowed: false, reason: decision.reason }, { status: 423 });
     }

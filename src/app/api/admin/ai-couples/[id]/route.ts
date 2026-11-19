@@ -47,6 +47,14 @@ export async function PATCH(request: Request, { params }: Ctx) {
     else if (status && !next.contactLocked) next.status = status;
     if (typeof body.note === "string") next.note = body.note.trim().slice(0, 1000) || undefined;
     if (typeof body.callbackRequested === "boolean" && !next.contactLocked) next.callbackRequested = body.callbackRequested;
+    if (typeof body.weddingDate === "string") {
+      const wd = body.weddingDate.trim();
+      if (wd === "") next.weddingDate = undefined;
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(wd) && !Number.isNaN(Date.parse(wd))) {
+        next.weddingDate = wd;
+        next.timeline = [...next.timeline, { at, type: "edit", text: `Düğün tarihi güncellendi: ${wd}` }];
+      }
+    }
     next.updatedAt = at;
     return next;
   });

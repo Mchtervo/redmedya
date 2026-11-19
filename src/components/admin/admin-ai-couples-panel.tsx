@@ -66,8 +66,9 @@ function weddingText(c: AiCouple): string {
   return fromNote ? fromNote[1].trim() : "tarih yok";
 }
 
-type Stage = "queued" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
+type Stage = "needsReply" | "queued" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
 const STAGE_LABEL: Record<Stage, string> = {
+  needsReply: "Cevap yazdı – SİZ DÖNÜN",
   queued: "Sırada (henüz ulaşılmadı)",
   called: "Arandı",
   written: "Yazıldı – cevap bekleniyor",
@@ -79,6 +80,7 @@ const STAGE_LABEL: Record<Stage, string> = {
   badnumber: "Numara hatalı",
 };
 const STAGE_STYLE: Record<Stage, string> = {
+  needsReply: "border-red-400/60 bg-red-500/15 text-red-200 font-semibold",
   queued: "border-white/15 text-rm-gray-400",
   called: "border-sky-300/40 text-sky-200",
   written: "border-rm-champagne/40 text-rm-champagne",
@@ -94,6 +96,8 @@ function stageOf(c: AiCouple): Stage {
   if (c.status === "won") return "won";
   if ((c.note ?? "").includes("Numara hatalı")) return "badnumber";
   if (c.status === "lost") return "lost";
+  const lastMsg = c.messages[c.messages.length - 1];
+  if (lastMsg?.direction === "in") return "needsReply";
   if (c.messages.some((m) => m.direction === "in")) return "replied";
   const out = c.messages.filter((m) => m.direction === "out");
   if (out.some((m) => m.text.includes("fiyat listemize göz atabildiniz"))) return "followup";
@@ -146,6 +150,10 @@ export function AdminAiCouplesPanel() {
         (!q || c.name.toLocaleLowerCase("tr-TR").includes(q) || (digits.length >= 3 && c.phone.includes(digits)))
     );
   }, [couples, filter, stage, search]);
+  const sorted = useMemo(() => {
+    const rank = (c: AiCouple) => (stageOf(c) === "needsReply" ? 0 : c.calls.at(-1)?.notes?.tarihTut && !c.contactLocked ? 1 : c.grade === "hot" ? 2 : 3);
+    return [...visible].sort((a, b) => rank(a) - rank(b) || b.updatedAt.localeCompare(a.updatedAt));
+  }, [visible]);
   const stageCounts = useMemo(() => {
     const m = {} as Record<Stage, number>;
     for (const c of couples) { const s = stageOf(c); m[s] = (m[s] ?? 0) + 1; }
@@ -185,6 +193,8 @@ export function AdminAiCouplesPanel() {
         icon={Bot}
         meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık`}
       />
+
+      <CampaignControl />
 
       {msg && <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">{msg}</p>}
 
@@ -236,7 +246,7 @@ export function AdminAiCouplesPanel() {
         <AdminEmptyState title="Çift yok" description="Düğün.com / Meta form bağlandığında yeni talepler burada görünür." />
       ) : (
         <ul className="space-y-3">
-          {visible.map((c) => (
+          {sorted.map((c) => (
             <li key={c.id}>
               <CoupleCard couple={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onPatch={(b) => patch(c.id, b)} busy={busy} />
             </li>
@@ -277,7 +287,20 @@ function CoupleCard({
             <span>{SOURCE_LABEL[c.source]}</span>
             <span>📞 {c.callCount}</span>
           </p>
+          {(lastCall?.notes?.paket || lastCall?.notes?.ekstralar || lastCall?.notes?.tarihTut) && (
+            <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-rm-gray-300">
+              {lastCall?.notes?.paket && <span>📦 {lastCall.notes.paket}</span>}
+              {lastCall?.notes?.ekstralar && <span>➕ {lastCall.notes.ekstralar}</span>}
+              {lastCall?.notes?.tarihTut && <span className="text-orange-300">🔥 Tarihi tutalım dedi</span>}
+            </p>
+          )}
           {lastCall?.summary && <p className="mt-2 line-clamp-2 text-sm text-rm-gray-300">{lastCall.summary}</p>}
+          {c.messages.length > 0 && (
+            <p className={cn("mt-1.5 line-clamp-1 text-xs", c.messages[c.messages.length - 1].direction === "in" ? "text-red-200" : "text-rm-gray-500")}>
+              {c.messages[c.messages.length - 1].direction === "in" ? "💬 Çift: " : "↗ Biz: "}
+              {c.messages[c.messages.length - 1].text.replace(/s+/g, " ").slice(0, 140)}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className={cn("rounded-full border px-3 py-1 text-[11px]", STAGE_STYLE[stageOf(c)])}>{STAGE_LABEL[stageOf(c)]}</span>
@@ -336,6 +359,8 @@ function CoupleCard({
               </button>
             )}
           </div>
+
+          {!c.contactLocked && <ActionBox couple={c} onDone={() => onPatch({})} />}
 
           <div className="flex gap-2">
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Not" className={field} />
@@ -410,6 +435,106 @@ function CoupleCard({
         </div>
       )}
     </article>
+  );
+}
+
+function ActionBox({ couple: c, onDone }: { couple: AiCouple; onDone: () => void }) {
+  const [text, setText] = useState("");
+  const [date, setDate] = useState(c.weddingDate ?? "");
+  const [info, setInfo] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const run = async (body: Record<string, unknown>, ok: string) => {
+    setSending(true);
+    setInfo("Gönderiliyor…");
+    const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    setSending(false);
+    setInfo(res.ok ? ok : `⚠️ ${j.error ?? j.message ?? "İşlem yapılamadı"}`);
+    if (res.ok) { setText(""); onDone(); }
+  };
+  return (
+    <div className="space-y-2 rounded-xl border border-white/8 bg-white/[0.02] p-3">
+      <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">Müdahale</p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        placeholder={`${c.name.split(" ")[0]} için WhatsApp mesajı yaz (0540 hattından gider)`}
+        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-rm-off-white outline-none placeholder:text-rm-gray-600 focus:border-rm-champagne/40"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" disabled={sending || !text.trim()} onClick={() => run({ action: "whatsapp", text: text.trim() }, "✅ WhatsApp mesajı gönderildi")} className={pill}>
+          WhatsApp gönder
+        </button>
+        <button
+          type="button"
+          disabled={sending}
+          onClick={() => { if (confirm(`${c.name} şimdi sesli asistanla aransın mı?`)) run({ action: "call" }, "📞 Arama başlatıldı — sonuç birkaç dakika içinde burada"); }}
+          className={pill}
+        >
+          <Phone className="h-3 w-3" /> Şimdi ara
+        </button>
+        <span className="flex items-center gap-1.5 text-xs text-rm-gray-400">
+          Düğün tarihi
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={cn(field, "h-8 w-40")} />
+          <button
+            type="button"
+            disabled={sending || date === (c.weddingDate ?? "")}
+            onClick={async () => {
+              const res = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weddingDate: date }) });
+              setInfo(res.ok ? "✅ Tarih kaydedildi" : "⚠️ Tarih kaydedilemedi");
+              if (res.ok) onDone();
+            }}
+            className={pill}
+          >
+            Kaydet
+          </button>
+        </span>
+      </div>
+      {info && <p className="text-xs text-rm-gray-300">{info}</p>}
+    </div>
+  );
+}
+
+type CampaignState = { ok?: boolean; kampanya?: boolean; arama?: boolean; bugunWhatsapp?: number; bugunArama?: number; error?: string };
+
+function CampaignRow({ label, on, today, busy, onToggle }: { label: string; on?: boolean; today?: number; busy: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className={cn("inline-block h-2.5 w-2.5 rounded-full", on ? "bg-emerald-400" : "bg-rm-gray-600")} />
+      <span className="text-sm text-rm-off-white">{label}</span>
+      <span className="text-xs text-rm-gray-400">{on === undefined ? "…" : on ? "Çalışıyor" : "Durdu"}{typeof today === "number" ? ` · bugün ${today}/40` : ""}</span>
+      <button type="button" disabled={busy || on === undefined} onClick={onToggle} className={pill}>{on ? "Durdur" : "Başlat"}</button>
+    </div>
+  );
+}
+
+function CampaignControl() {
+  const [st, setSt] = useState<CampaignState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => {
+    fetch("/api/admin/ai-campaign").then((r) => r.json()).then(setSt).catch(() => setSt({ error: "Otomasyona ulaşılamadı" }));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const toggle = async (target: "kampanya" | "arama", on: boolean) => {
+    const ad = target === "kampanya" ? "WhatsApp kampanyası" : "Otomatik arama";
+    if (!confirm(`${ad} ${on ? "BAŞLATILSIN" : "DURDURULSUN"} mu?`)) return;
+    setBusy(true);
+    await fetch("/api/admin/ai-campaign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, op: on ? "resume" : "pause" }) }).catch(() => null);
+    setBusy(false);
+    load();
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4">
+      {st?.error ? (
+        <p className="text-sm text-amber-200">⚠️ {st.error}</p>
+      ) : (
+        <>
+          <CampaignRow label="WhatsApp kampanyası" on={st?.kampanya} today={st?.bugunWhatsapp} busy={busy} onToggle={() => toggle("kampanya", !st?.kampanya)} />
+          <CampaignRow label="Otomatik arama" on={st?.arama} today={st?.bugunArama} busy={busy} onToggle={() => toggle("arama", !st?.arama)} />
+        </>
+      )}
+    </div>
   );
 }
 
