@@ -39,10 +39,8 @@ function fmt(iso: string) {
 }
 
 export function AdminTestCallBox() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<{ ok: boolean; text: string } | null>(null);
   const [calls, setCalls] = useState<TestCall[] | null>(null);
@@ -69,13 +67,12 @@ export function AdminTestCallBox() {
   }, [open, live, load]);
 
   const start = async () => {
-    if (!confirm(`${phone} numarası şimdi sesli asistanla TEST amaçlı aransın mı?`)) return;
     setBusy(true);
     setInfo({ ok: true, text: "Arama başlatılıyor…" });
     const res = await fetch("/api/admin/ai-test-call", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, name, weddingDate: date }),
+      body: JSON.stringify({ phone }),
     });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
@@ -100,10 +97,8 @@ export function AdminTestCallBox() {
 
       {open && (
         <div className="space-y-4 border-t border-slate-100 p-4 sm:p-5">
-          <div className="grid gap-2 sm:grid-cols-[1.2fr_1fr_0.9fr_auto]">
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={field} />
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Hitap edilecek isim (ops.)" className={field} />
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={field} title="Düğün tarihi (ops.)" />
+          <div className="flex gap-2">
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={cn(field, "max-w-xs")} onKeyDown={(e) => { if (e.key === "Enter" && !busy && phone.replace(/D/g, "").length >= 10) start(); }} />
             <button
               type="button"
               disabled={busy || phone.replace(/\D/g, "").length < 10}
@@ -113,9 +108,7 @@ export function AdminTestCallBox() {
               <Phone className="h-4 w-4" /> Test et
             </button>
           </div>
-          <p className="text-[11px] text-slate-500">
-            İsim boşsa asistan isimsiz hitap eder. Tarih girersen takvimden o tarihi kontrol eder; boşsa tarihi sana sorar. Saat sınırı yoktur.
-          </p>
+          <p className="text-[11px] text-slate-500">Basınca hemen arar. Asistan normal bir çifte konuşur gibi konuşur; tarihi ve isteklerini sana sorar.</p>
           {info && (
             <p className={cn("rounded-xl border px-3 py-2 text-sm", info.ok ? "border-violet-100 bg-violet-50 text-violet-800" : "border-rose-200 bg-rose-50 text-rose-800")}>{info.text}</p>
           )}
