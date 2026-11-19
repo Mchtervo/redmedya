@@ -85,6 +85,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
         };
       }
     }
+    // Test kaydı işareti: sayılara girmez, otomatik aranmaz / yazılmaz
+    if (typeof body.markTest === "boolean") {
+      next = body.markTest
+        ? { ...next, sourceRef: "test", callbackRequested: false, callbackAt: undefined, followUpAt: undefined, timeline: [...next.timeline, { at: at, type: "edit", text: "🧪 Test kaydı olarak işaretlendi — istatistiğe sayılmaz, otomatik aranmaz" }] }
+        : { ...next, sourceRef: next.sourceRef === "test" ? undefined : next.sourceRef, timeline: [...next.timeline, { at: at, type: "edit", text: "Test işareti kaldırıldı — gerçek çift olarak sayılır" }] };
+    }
     if (typeof body.messagesPaused === "boolean" && Boolean(next.messagesPaused) !== body.messagesPaused) {
       next = body.messagesPaused
         ? { ...next, messagesPaused: true, timeline: [...next.timeline, { at, type: "edit", text: "🚫 Otomatik WhatsApp mesajları İPTAL edildi (panelden) — kampanya / takip / hatırlatma gitmez" }] }

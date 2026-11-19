@@ -358,6 +358,7 @@ export function AdminAiCouplesPanel() {
       <AiKpiRow couples={couples} months={data.months} onOpenStage={openStage} />
 
       <AiAgentsCard status={status} onToggle={toggleCampaign} horizontal />
+      <AdminTestCallBox />
 
       {msg && (
         <p
@@ -446,7 +447,6 @@ export function AdminAiCouplesPanel() {
       </div>
 
       <AdminAutomationSettings />
-      <AdminTestCallBox />
 
       <details ref={capacityRef} className="group rm-card scroll-mt-28 overflow-hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 sm:px-5 [&::-webkit-details-marker]:hidden">
@@ -692,6 +692,14 @@ function DrawerBody({
         )}
         {!c.contactLocked && c.status !== "won" && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => (c.sourceRef === "test" ? onPatch({ markTest: false }) : confirm(`${c.name} TEST kaydı yapılsın mı? (Sayılara girmez, otomatik aranmaz ve yazılmaz.)`) && onPatch({ markTest: true }))}
+              className={cn("rounded-lg border bg-white px-3 py-2 font-semibold disabled:opacity-40", c.sourceRef === "test" ? "border-violet-300 text-violet-700" : "border-slate-200 text-slate-500")}
+            >
+              {c.sourceRef === "test" ? "🧪 Test kaydı — gerçek çift yap" : "🧪 Test kaydı (sayma)"}
+            </button>
             <span className="text-slate-500">Müşteri bizi geri aradıysa:</span>
             <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "talked" })} className="rounded-lg border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40">
               📞 Geri aradı, konuştum

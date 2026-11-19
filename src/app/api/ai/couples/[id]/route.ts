@@ -42,6 +42,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (grade === "blacklist") next = lockCouple(next, str(body.reason, 200) ?? "n8n tarafından kara listeye alındı", now);
     else if (grade && !next.contactLocked) next = { ...next, grade, updatedAt: now.toISOString() };
     if (note) next = { ...next, note, updatedAt: now.toISOString() };
+    // Test kaydı işareti: sayılara girmez, otomatik aranmaz / yazılmaz
+    if (typeof body.markTest === "boolean") {
+      next = body.markTest
+        ? { ...next, sourceRef: "test", callbackRequested: false, callbackAt: undefined, followUpAt: undefined, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "🧪 Test kaydı olarak işaretlendi — istatistiğe sayılmaz, otomatik aranmaz" }] }
+        : { ...next, sourceRef: next.sourceRef === "test" ? undefined : next.sourceRef, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "Test işareti kaldırıldı — gerçek çift olarak sayılır" }] };
+    }
     const leadAt = str(body.leadAt, 40);
     if (leadAt && !Number.isNaN(Date.parse(leadAt)) && Date.parse(leadAt) <= now.getTime()) next = { ...next, leadAt: new Date(leadAt).toISOString() };
     // Yanlış sınıflanan aramayı düzelt: { fixCall: { externalId, summary? } } → "açtı ama dinlemeden kapattı" (no_answer)
