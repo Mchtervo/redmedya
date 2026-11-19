@@ -281,7 +281,7 @@ export function buildFollowUpMessage(c: AiCouple, cap: AiCapacityInfo | null): s
   return `${hi} RED MEDIA'dan yazıyoruz. Geçen hafta görüşmüştük; aklınıza takılan bir şey olursa buradayız, bilginiz olsun. 🤍`;
 }
 
-export type InboundIntent = "stop" | "booked_elsewhere" | "thinking" | "interested" | "unknown";
+export type InboundIntent = "stop" | "booked_elsewhere" | "not_interested" | "thinking" | "interested" | "unknown";
 
 function fold(s: string): string {
   return s
@@ -300,12 +300,15 @@ function fold(s: string): string {
  */
 export function detectInboundIntent(text: string): InboundIntent {
   const t = fold(text);
-  if (/(aramayin|aranmak istemiyorum|rahatsiz etmeyin|mesaj atmayin|yazmayin|listeden cikar|bir daha (arama|yazma|mesaj)|iletisim istemiyorum|\bstop\b|\biptal\b)/.test(t)) {
+  if (/(aramayin|aranmak istemiyorum|rahatsiz etmeyin|mesaj atmayin|yazmayin|listeden cikar|bir daha (arama|yazma|mesaj)|iletisim istemiyorum|^istemiyorum|^istemiyoruz|yazmayiniz|numarami sil|\bstop\b|\biptal\b)/.test(t)) {
     return "stop";
   }
   // "Sizinle anlaştık" yanlışlıkla kilitlemesin diye yalnızca "başka" geçen kalıplar.
   if (/(baska (bir )?(fotografci|firma|yer|ekip)|baskasiyla anlastik|baska yerle anlastik|fotografcimiz var|fotografci bulduk|fotografci ayarladik)/.test(t)) {
     return "booked_elsewhere";
+  }
+  if (/(ilgilenmiyor|butce(miz)? (uymuyor|yetmiyor|uygun degil)|pahali geldi|cok pahali|vazgectik|gerek yok|dusunmuyoruz)/.test(t)) {
+    return "not_interested";
   }
   if (
     /(dusun|danisayim|konusup don|haber verir|donus yapar|sonra yaz|bakip don|kararsiz|netlestir|emin degil|simdilik bakiyoruz|daha erken)/.test(t) ||

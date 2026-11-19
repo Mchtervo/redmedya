@@ -16,8 +16,10 @@ import {
   detectInboundIntent,
   lockCouple,
   markThinking,
+  displayPhone,
   type InboundIntent,
 } from "@/lib/ai-couples/rules";
+import { sendTelegramMessage } from "@/lib/lead-notify";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import type { AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
 
@@ -26,7 +28,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const CHANNELS: AiMessageChannel[] = ["whatsapp", "sms", "dugun_com", "telegram"];
 const KINDS = ["welcome", "catalog", "follow_up", "reply", "other"] as const;
-const INTENTS: InboundIntent[] = ["stop", "booked_elsewhere", "thinking", "interested", "unknown"];
+const INTENTS: InboundIntent[] = ["stop", "booked_elsewhere", "not_interested", "thinking", "interested", "unknown"];
 
 export async function POST(request: Request, { params }: Ctx) {
   const denied = requireAiApi(request);
@@ -73,12 +75,31 @@ export async function POST(request: Request, { params }: Ctx) {
     // gelen mesaj
     if (intent === "stop") return lockCouple(next, "Mesajla iletişim istemediğini söyledi", now);
     if (intent === "booked_elsewhere") return lockCouple(next, "Başka fotoğrafçıyla anlaştı (mesaj)", now);
+    if (intent === "not_interested") {
+      return { ...next, grade: "cold", status: "lost", followUpAt: undefined,
+        timeline: [...next.timeline, { at: msg.at, type: "lost", text: "WhatsApp: ilgilenmediğini / bütçenin uymadığını söyledi" }] };
+    }
     if (intent === "thinking") next = markThinking(next, now, "WhatsApp: düşüneceğini söyledi");
     if (intent === "interested" && !next.contactLocked) {
       next = { ...next, grade: "hot", followUpAt: next.followUpSentAt ? next.followUpAt : undefined };
     }
     return next;
   });
+
+  // Gelen her cevap Telegram'a (otomatik cevap YOK; sahibi/ekip cevaplar)
+  if (direction === "in" && updated) {
+    const who = `${updated.name} - ${displayPhone(updated.phone)}${updated.weddingDate ? ` - Düğün: ${updated.weddingDate}` : ""}`;
+    const label: Record<InboundIntent, string> = {
+      interested: "SICAK", thinking: "ILIK", not_interested: "SOĞUK", booked_elsewhere: "SOĞUK (başka firmayla anlaşmış)",
+      stop: "İSTEMİYOR", unknown: "DEĞERLENDİR",
+    };
+    const tg = intent === "stop"
+      ? `İstemiyor: ${who}
+Mesajı: ${text}
+(Kara listeye alındı, bir daha yazılmayacak.)`
+      : `${intent === "interested" ? "ACİL - " : ""}CEVAP: ${who} - ${label[intent]} - Mesajı: ${text}`;
+    await sendTelegramMessage(tg).catch(() => false);
+  }
 
   return NextResponse.json({ ok: true, allowed: true, intent, couple: updated });
 }
