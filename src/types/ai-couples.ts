@@ -169,6 +169,8 @@ export type AiQueueAction =
       selam?: string;
       /** Son arama sonucu ya da meşgul kaydının zamanı */
       lastResultAt?: string;
+      /** Son 2 saatte gelen GERÇEK yeni talep: günlük arama sınırına takılmaz, en önce aranır */
+      urgent?: boolean;
       /** Asistanın aramadan önce bilmesi gereken geçmiş (SMS, önceki aramalar, WhatsApp, cevaplar) */
       history: string;
       /** "Düşüneyim" diyen çiftin 1 hafta sonraki 2. araması */

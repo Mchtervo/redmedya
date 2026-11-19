@@ -56,8 +56,17 @@ function catalogPending(c: AiCouple): boolean {
 /** Yeni talebin "taze" sayıldığı süre: bu süre içinde gelenler en önce aranır */
 export const FRESH_LEAD_MS = 48 * 3600 * 1000;
 
+/** Sonradan panele aktarılan eski talep (Düğün.com geçmişinden) "yeni gelen" sayılmaz */
+const isBackfill = (c: AiCouple) => /eski talep|kampanyası/i.test(c.note ?? "") || (c.sourceRef !== undefined && CAMPAIGN_REFS.has(c.sourceRef));
+
+/** Gerçekten yeni gelen talep (son 2 saat, hiç aranmamış) — 1 saat içinde aranmalı */
+export function isUrgentLead(c: AiCouple, now: Date): boolean {
+  return !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < 2 * 3600_000;
+}
+
 export function callPriority(c: AiCouple, now: Date): number {
-  const fresh = !c.calls.length && c.status === "new" && now.getTime() - Date.parse(c.createdAt) < FRESH_LEAD_MS;
+  if (isUrgentLead(c, now)) return -1; // EN ÖNCE: yeni gelen (Düğün.com / Instagram / Facebook / web)
+  const fresh = !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < FRESH_LEAD_MS;
   if (fresh) return 0;
   if ((c.busyRetries ?? 0) > 0 && isCallbackDue(c, now)) return 0; // meşgul çıkan yeni çift: hemen tekrar
   if (isSecondCallDue(c, now) || isCallbackDue(c, now)) return 1;
@@ -131,7 +140,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     //  1) 2. arama zamanı gelenler / "tekrar arayın" diyenler
     //  2) "Düşüneyim" dedi, 1 hafta doldu
     //  3) Daha eski, hiç aranmamış talepler
-    .sort((a, b) => callPriority(a, now) - callPriority(b, now) || a.createdAt.localeCompare(b.createdAt));
+    // Aynı öncelikte: yeni gelenlerde en yeni talep önce (sıcakken), diğerlerinde en uzun bekleyen önce
+    .sort((a, b) => callPriority(a, now) - callPriority(b, now) || (callPriority(a, now) === -1 ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt)));
   for (const c of callable) {
     actions.push({
       type: "call",
@@ -146,6 +156,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       // Son arama sonucu / meşgul kaydı zamanı: n8n "arama sürüyor" kilidini buna göre açar
       lastResultAt: [c.calls.at(-1)?.at, [...c.timeline].reverse().find((e) => e.type === "busy")?.at].filter(Boolean).sort().at(-1),
       history: historyForAgent(c),
+      urgent: isUrgentLead(c, now) || undefined,
       followUp: isFollowUpCallDue(c, now),
       reason: isSecondCallDue(c, now)
         ? "1. arama açılmadı, WhatsApp’a da dönmedi — 2. (son) arama"
