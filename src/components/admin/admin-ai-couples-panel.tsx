@@ -220,6 +220,8 @@ export function AdminAiCouplesPanel() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
   const [stage, setStage] = useState<Stage | "all">("all");
+  // Sayfalama: sayfa başına 10 çift; süzgeç/arama değişince 1. sayfaya döner
+  const [pg, setPg] = useState({ key: "", n: 1 });
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<{ id: string; focusWa?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -263,6 +265,15 @@ export function AdminAiCouplesPanel() {
     const rank = (c: AiCouple) => (stageOf(c) === "needsReply" ? 0 : c.calls.at(-1)?.notes?.tarihTut && !c.contactLocked ? 1 : c.grade === "hot" ? 2 : 3);
     return [...visible].sort((a, b) => rank(a) - rank(b) || b.updatedAt.localeCompare(a.updatedAt));
   }, [visible]);
+  const PAGE = 10;
+  const pgKey = `${filter}|${stage}|${search}`;
+  const pages = Math.max(1, Math.ceil(sorted.length / PAGE));
+  const page = Math.min(pages, pg.key === pgKey ? pg.n : 1);
+  const pageRows = sorted.slice((page - 1) * PAGE, page * PAGE);
+  const goPage = (n: number) => {
+    setPg({ key: pgKey, n: Math.min(pages, Math.max(1, n)) });
+    listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const stageCounts = useMemo(() => {
     const m = {} as Record<Stage, number>;
     for (const c of real) {
@@ -379,7 +390,7 @@ export function AdminAiCouplesPanel() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-editorial text-lg text-slate-900">Çiftler</h3>
-              <p className="text-xs text-slate-500">{sorted.length} çift gösteriliyor · cevap bekleyenler en üstte</p>
+              <p className="text-xs text-slate-500">{sorted.length} çift · sayfa {page}/{pages} · cevap bekleyenler en üstte</p>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <label className="relative block sm:w-72">
@@ -433,7 +444,7 @@ export function AdminAiCouplesPanel() {
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {sorted.map((c) => (
+            {pageRows.map((c) => (
               <CoupleRow
                 key={c.id}
                 c={c}
@@ -443,6 +454,31 @@ export function AdminAiCouplesPanel() {
               />
             ))}
           </ul>
+        )}
+        {pages > 1 && (
+          <nav aria-label="Sayfalar" className="flex flex-wrap items-center justify-center gap-1.5 border-t border-slate-100 p-3">
+            <button type="button" disabled={page === 1} onClick={() => goPage(page - 1)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 disabled:opacity-40">
+              ‹ Önceki
+            </button>
+            {Array.from({ length: pages }, (_, i) => i + 1)
+              .filter((n) => n === 1 || n === pages || Math.abs(n - page) <= 1)
+              .map((n, i, arr) => (
+                <span key={n} className="flex items-center gap-1.5">
+                  {i > 0 && n - arr[i - 1] > 1 && <span className="px-1 text-slate-400">…</span>}
+                  <button
+                    type="button"
+                    onClick={() => goPage(n)}
+                    aria-current={n === page ? "page" : undefined}
+                    className={cn("h-10 min-w-10 rounded-xl border px-3 text-sm font-semibold tabular-nums", n === page ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-indigo-300")}
+                  >
+                    {n}
+                  </button>
+                </span>
+              ))}
+            <button type="button" disabled={page === pages} onClick={() => goPage(page + 1)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 disabled:opacity-40">
+              Sonraki ›
+            </button>
+          </nav>
         )}
       </div>
 
