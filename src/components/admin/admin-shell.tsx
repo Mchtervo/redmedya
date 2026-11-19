@@ -89,7 +89,7 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
     {
       label: "Sesli AI",
       state: loading ? "wait" : status.arama ? "ok" : status.n8n ? "warn" : "bad",
-      text: loading ? "…" : status.arama ? "Hazır" : status.n8n ? "Oto-arama kapalı" : "Bilinmiyor",
+      text: loading ? "…" : status.arama ? "Hazır" : status.n8n ? "Arama kapalı" : "Bilinmiyor",
     },
   ];
 
@@ -332,7 +332,7 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
               </div>
             </div>
           </div>
-          <div className="mt-2.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+          <div className="mt-2.5 flex flex-wrap gap-1.5 sm:gap-2">
             {pills.map((p) => (
               <StatusPill key={p.label} label={p.label} state={p.state} text={p.text} />
             ))}

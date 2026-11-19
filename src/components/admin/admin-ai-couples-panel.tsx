@@ -70,7 +70,10 @@ function dayStateOf(date: string | undefined, d: Payload): DayState | null {
   return { tone: "ok", text: `Tarih MÜSAİT${m ? ` · ${m.monthLabel} için ${m.remaining} yer kaldı` : ""}` };
 }
 
-type Filter = AiCoupleGrade | "all";
+type Filter = AiCoupleGrade | "all" | "fresh";
+
+/** Henüz hiç konuşulmamış çift (aranmadı / açmadı, yazmadı) — "soğuk" değil, "konuşulmadı" */
+const isFresh = (c: AiCouple) => c.grade === "cold" && !c.calls.some((x) => x.outcome !== "no_answer") && !c.messages.some((m) => m.direction === "in");
 
 /** Derece rozetleri: sıcak = yumuşak kırmızı, ılık = amber, soğuk = buz mavisi, kara liste = koyu antrasit */
 const GRADE_STYLE: Record<AiCoupleGrade, string> = {
@@ -241,8 +244,8 @@ export function AdminAiCouplesPanel() {
   const couples = useMemo(() => data?.couples ?? [], [data]);
   const real = useMemo(() => couples.filter((x) => x.sourceRef !== "test"), [couples]);
   const counts = useMemo(() => {
-    const c: Record<AiCoupleGrade, number> = { hot: 0, warm: 0, cold: 0, blacklist: 0 };
-    for (const x of real) c[x.grade] += 1;
+    const c: Record<AiCoupleGrade | "fresh", number> = { hot: 0, warm: 0, cold: 0, blacklist: 0, fresh: 0 };
+    for (const x of real) c[isFresh(x) ? "fresh" : x.grade] += 1;
     return c;
   }, [real]);
 
@@ -251,7 +254,7 @@ export function AdminAiCouplesPanel() {
     const digits = q.replace(/\D/g, "");
     return couples.filter(
       (c) =>
-        (filter === "all" || c.grade === filter) &&
+        (filter === "all" || (filter === "fresh" ? isFresh(c) : c.grade === filter && !isFresh(c))) &&
         (stage === "all" || stageOf(c) === stage) &&
         (!q || c.name.toLocaleLowerCase("tr-TR").includes(q) || (digits.length >= 3 && c.phone.includes(digits)))
     );
@@ -389,7 +392,7 @@ export function AdminAiCouplesPanel() {
 
           {/* Derece sekmeleri */}
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
-            {([["all", "Tümü", real.length], ...(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => [g, GRADE_LABEL[g], counts[g]])] as [Filter, string, number][]).map(([k, l, n]) => (
+            {([["all", "Tümü", real.length], ...(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => [g, GRADE_LABEL[g], counts[g]]), ["fresh", "🆕 Konuşulmadı", counts.fresh]] as [Filter, string, number][]).map(([k, l, n]) => (
               <button
                 key={k}
                 type="button"
@@ -1140,8 +1143,10 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
     ["POST", "/api/telegram/webhook", "Telegram komutları (sesli komut: n8n → { text })"],
   ];
   return (
-    <AdminSection title="Entegrasyon (n8n · sesli asistan · Telegram)" description="n8n isteklerinde başlık: Authorization: Bearer <anahtar>. Anahtarı kimseyle paylaşmayın.">
-      <div className="flex flex-wrap items-center gap-2">
+    <AdminSection title="Bağlantılar (otomasyon · sesli asistan · Telegram)" description="Telegram bildirimleri ve otomasyon bağlantısı. Teknik bilgiler kapalı gelir.">
+      <details className="text-xs">
+      <summary className="cursor-pointer font-semibold text-indigo-600">Teknik: otomasyon anahtarı (sadece kurulumda gerekir)</summary>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         <code className="flex-1 truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700">
           {show ? integration.apiToken : "•".repeat(32)}
         </code>
@@ -1152,7 +1157,8 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
           <Copy className="h-3.5 w-3.5" />
         </button>
       </div>
-      <details className="mt-4 text-xs">
+      </details>
+      <details className="mt-3 text-xs">
         <summary className="cursor-pointer font-semibold text-indigo-600">Uç noktalar ({endpoints.length})</summary>
         <ul className="mt-2 space-y-1.5">
           {endpoints.map(([m, p, d]) => (

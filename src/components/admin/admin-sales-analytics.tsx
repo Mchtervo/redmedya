@@ -267,14 +267,14 @@ function FunnelTable({ rows, compact }: { rows: FunnelRow[]; compact?: boolean }
       <table className="w-full min-w-[760px] text-sm">
         <thead className="bg-slate-50">
           <tr className="text-left text-[11px] font-semibold tracking-[0.04em] text-slate-500 uppercase">
-            <th className="px-3 py-2.5">{compact ? "Kampanya / reklam" : "Kaynak"}</th>
+            <th className="sticky left-0 z-[1] bg-slate-50 px-3 py-2.5">{compact ? "Kampanya / reklam" : "Kaynak"}</th>
             {cols.map((c) => <th key={c.k} className="px-2 py-2.5 text-right">{c.l}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.key} className={cn("border-t border-slate-100", r.key === "total" && "bg-slate-50/70 font-semibold")}>
-              <td className="max-w-[220px] truncate px-3 py-2.5 text-slate-900" title={r.label}>
+            <tr key={r.key} className={cn("border-t border-slate-100", r.key === "total" ? "bg-slate-50 font-semibold" : "bg-white")}>
+              <td className="sticky left-0 z-[1] max-w-[150px] truncate bg-inherit px-3 py-2.5 text-slate-900 sm:max-w-[220px]" title={r.label}>
                 {r.label}
                 {r.key !== "total" && best > 0 && r.conversion === best && <span className="ml-1.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">en iyi</span>}
               </td>
@@ -407,7 +407,7 @@ function AdSpendSection({ period, metaCouples, wonRevenue }: { period: Period; m
             <table className="w-full min-w-[860px] text-sm">
               <thead className="bg-slate-50">
                 <tr className="text-left text-[11px] font-semibold tracking-[0.04em] text-slate-500 uppercase">
-                  <th className="px-3 py-2.5">Kampanya</th>
+                  <th className="sticky left-0 z-[1] bg-slate-50 px-3 py-2.5">Kampanya</th>
                   <th className="px-2 text-right">Harcama</th>
                   <th className="px-2 text-right">Gösterim</th>
                   <th className="px-2 text-right">Tıklama</th>
@@ -422,8 +422,8 @@ function AdSpendSection({ period, metaCouples, wonRevenue }: { period: Period; m
               </thead>
               <tbody>
                 {camps.map((x) => (
-                  <tr key={x.campaign} className="border-t border-slate-100">
-                    <td className="max-w-[260px] truncate px-3 py-2.5 text-slate-900" title={x.campaign}>{x.campaign}</td>
+                  <tr key={x.campaign} className="border-t border-slate-100 bg-white">
+                    <td className="sticky left-0 z-[1] max-w-[150px] truncate bg-inherit px-3 py-2.5 text-slate-900 sm:max-w-[260px]" title={x.campaign}>{x.campaign}</td>
                     <td className="px-2 text-right tabular-nums">{tl(x.spend)}</td>
                     <td className="px-2 text-right tabular-nums">{x.impressions.toLocaleString("tr-TR")}</td>
                     <td className="px-2 text-right tabular-nums">{x.clicks.toLocaleString("tr-TR")}</td>
@@ -557,8 +557,8 @@ function ProfitSection({ period, resRows, allCouples }: { period: Period; resRow
               </tr>
             ) : (
               perRes.map((x) => (
-                <tr key={x.id} className="border-t border-slate-100">
-                  <td className="px-3 py-2.5 font-medium text-slate-900">{x.name}</td>
+                <tr key={x.id} className="border-t border-slate-100 bg-white">
+                  <td className="sticky left-0 z-[1] max-w-[140px] truncate bg-inherit px-3 py-2.5 font-medium text-slate-900 sm:max-w-none">{x.name}</td>
                   <td className="max-w-[260px] truncate px-2 text-slate-600" title={x.kaynak}>{x.kaynak}</td>
                   <td className="px-2 text-right tabular-nums">{tl(x.tutar)}</td>
                   <td className="px-2 text-right tabular-nums">{x.cost === null ? <span className="text-slate-400">reklamsız</span> : tl(x.cost)}</td>

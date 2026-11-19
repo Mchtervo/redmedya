@@ -254,11 +254,11 @@ export function AiTrendChart({ couples }: { couples: AiCouple[] }) {
           {ticks.map((t) => (
             <g key={t}>
               <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="#EEF2F6" strokeWidth={1} />
-              <text x={L - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#94A3B8">{t}</text>
+              <text x={L - 8} y={y(t) + 4} textAnchor="end" className="text-[19px] sm:text-[11px]" fill="#94A3B8">{t}</text>
             </g>
           ))}
           {series.map((d, i) => (
-            <text key={d.key} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={i === series.length - 1 ? "#0F172A" : "#94A3B8"} fontWeight={i === series.length - 1 ? 600 : 400}>
+            <text key={d.key} x={x(i)} y={H - 8} textAnchor="middle" className="text-[19px] sm:text-[11px]" fill={i === series.length - 1 ? "#0F172A" : "#94A3B8"} fontWeight={i === series.length - 1 ? 600 : 400}>
               {i === series.length - 1 ? "Bugün" : d.label}
             </text>
           ))}
@@ -290,7 +290,7 @@ export function AiTrendChart({ couples }: { couples: AiCouple[] }) {
               fill="transparent"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              onTouchStart={() => setHover(i)}
+              onTouchStart={() => setHover(hover === i ? null : i)}
             />
           ))}
         </svg>
