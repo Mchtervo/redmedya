@@ -35,6 +35,8 @@ type Ev = {
   msg?: AiMessageRecord;
   test?: TestCall;
   tone: "green" | "orange" | "blue" | "rose" | "slate" | "violet";
+  /** Çiftin en son hareketinde: sıradaki adım */
+  next?: string;
 };
 
 const SRC: Record<string, string> = { dugun_com: "Düğün.com", meta_form: "Instagram/Facebook", web: "Web", manual: "Elle" };
@@ -61,6 +63,66 @@ function dayHeader(iso: string) {
 }
 const dur = (s?: number) => (s ? `${Math.floor(s / 60)} dk ${s % 60} sn` : "");
 
+/** Aramanın sonucu — sade, ne olacağını da söyler */
+const RESULT_TEXT: Record<string, string> = {
+  info_requested: "Detaylı bilgi istedi → WhatsApp'tan fiyat listesi gönderilir",
+  offer_requested: "🔥 Teklif / rezervasyon istedi → hemen dönüş yapılmalı",
+  thinking: "Düşüneceğini söyledi → 3. gün hatırlatma, 1 hafta sonra tekrar arama",
+  callback_requested: "Şu an müsait değil, sonra arayın dedi",
+  not_interested: "İlgilenmediğini söyledi → bir daha aranmaz",
+  booked_elsewhere: "Başka firmayla anlaşmış → bir daha aranmaz",
+  do_not_contact: "Aranmak istemedi → kara listeye alındı",
+};
+
+function weddingLabel(d?: string) {
+  return d && /^\d{4}-\d{2}-\d{2}/.test(d) ? new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }) : "";
+}
+
+/** Arama satırı: başlık + madde madde ne konuşuldu */
+function describeCall(call: AiCallRecord, c: AiCouple, no: number): { title: string; text: string; tone: Ev["tone"]; icon: Ev["icon"] } {
+  const voicemail = /telesekreter/i.test(call.summary ?? "");
+  if (call.outcome === "no_answer") {
+    const why = voicemail ? "telesekretere düştü" : /bağlanmadı/i.test(call.summary ?? "") ? "bağlanamadı" : "açmadı";
+    return { title: `📵 ${no}. arama — ${why}`, text: call.summary && !voicemail ? call.summary.split("\n")[0] : "", tone: "orange", icon: "noanswer" };
+  }
+  const n = call.notes ?? {};
+  const lines = [`Sonuç: ${RESULT_TEXT[call.outcome] ?? OUTCOME_LABEL[call.outcome]}`];
+  const facts = [
+    weddingLabel(c.weddingDate) && `Düğün: ${weddingLabel(c.weddingDate)}`,
+    typeof call.quotedRemaining === "number" && `kalan yer söylendi: ${call.quotedRemaining}`,
+    n.paket && `fiyatı verilen paket: ${n.paket}`,
+    n.ekstralar && `ekstra: ${n.ekstralar}`,
+    n.cekimTuru && `çekim: ${n.cekimTuru}`,
+    n.tarihTut && "tarihi 24 saat tutmamızı istedi",
+    n.itiraz && `itirazı: ${n.itiraz}`,
+  ].filter(Boolean);
+  if (facts.length) lines.push(facts.join(" · "));
+  if (call.summary) lines.push(`Özet: ${call.summary.split("\n")[0]}`);
+  return {
+    title: `📞 ${no}. arama — açtı, ${dur(call.durationSec) || "kısa"} konuşuldu · ${OUTCOME_LABEL[call.outcome]}`,
+    text: lines.join("\n"),
+    tone: call.outcome === "offer_requested" || n.tarihTut ? "green" : ["not_interested", "booked_elsewhere", "do_not_contact"].includes(call.outcome) ? "slate" : "green",
+    icon: "call",
+  };
+}
+
+/** Mesaj satırı: neyin gittiğini söyler */
+function describeMsg(m: AiMessageRecord): string {
+  const ch = CH[m.channel] ?? m.channel;
+  if (m.direction === "in") return `📩 Çift yazdı (${ch})`;
+  const t = m.text;
+  if (t.startsWith("[PDF]")) return `📎 ${ch}'tan fiyat listesi (PDF) iletildi`;
+  if (m.kind === "welcome" || m.channel === "sms" || m.channel === "dugun_com") return `👋 Karşılama mesajı gönderildi (${ch})`;
+  if (/ulaşamadık|ulaşmaya çalıştık/i.test(t)) return `💬 ${ch}: "aradık, ulaşamadık" mesajı + fiyatlar iletildi`;
+  if (/kapora/i.test(t) && /hatırlat|tuttuğumuz|ayırdığımız/i.test(t)) return `💬 ${ch}: kapora hatırlatması iletildi`;
+  if (m.kind === "follow_up") return `💬 ${ch}: takip mesajı iletildi`;
+  if (/müsait değildiniz/i.test(t)) return `💬 ${ch}: "müsait değildiniz, tekrar arayacağız" + fiyatlar iletildi`;
+  if (/görüştük|konuştuklarımızı/i.test(t)) return `💬 ${ch}: görüşmeye göre kişisel fiyat teklifi iletildi`;
+  if (/fiyat|TL/i.test(t)) return `💬 ${ch}'tan fiyat bilgisi iletildi`;
+  if (/instagram|sormak istediğiniz/i.test(t)) return `💬 ${ch}: kapanış mesajı (soru + Instagram) iletildi`;
+  return `💬 ${ch} mesajı gönderildi`;
+}
+
 /** Zaman çizelgesinin, aramalarla/mesajlarla tekrar etmeyen olayları */
 const SYSTEM_TYPES: Record<string, { title: string; tone: Ev["tone"] }> = {
   created: { title: "Yeni talep geldi", tone: "blue" },
@@ -83,12 +145,16 @@ export function AdminActivityLog() {
   const [kind, setKind] = useState<Kind | "all">("all");
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(150);
+  const [now, setNow] = useState(0);
   const [open, setOpen] = useState<Ev | null>(null);
 
   const load = useCallback(() => {
     fetch("/api/admin/ai-couples", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { couples: [] }))
-      .then((j: { couples?: AiCouple[] }) => setCouples(j.couples ?? []))
+      .then((j: { couples?: AiCouple[] }) => {
+        setCouples(j.couples ?? []);
+        setNow(Date.now());
+      })
       .catch(() => setCouples([]));
     fetch("/api/admin/ai-test-call", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { calls: [] }))
@@ -105,28 +171,28 @@ export function AdminActivityLog() {
   const events = useMemo(() => {
     const out: Ev[] = [];
     for (const c of couples ?? []) {
-      for (const call of c.calls) {
-        const answered = call.outcome !== "no_answer";
-        out.push({
-          key: `c-${call.id}`, at: call.at, kind: "call", couple: c, call,
-          icon: answered ? "call" : "noanswer", tone: answered ? "green" : "orange",
-          title: answered ? `Arandı — açtı · ${OUTCOME_LABEL[call.outcome]}` : "Arandı — açmadı",
-          text: call.summary?.split("\n")[0],
-        });
+      const mine: Ev[] = [];
+      for (const [i, call] of c.calls.entries()) {
+        const d = describeCall(call, c, i + 1);
+        mine.push({ key: `c-${call.id}`, at: call.at, kind: "call", couple: c, call, ...d });
       }
       for (const m of c.messages) {
-        out.push({
+        mine.push({
           key: `m-${m.id}`, at: m.at, kind: "message", couple: c, msg: m,
           icon: m.direction === "in" ? "msg-in" : "msg-out", tone: m.direction === "in" ? "rose" : "blue",
-          title: m.direction === "in" ? `Çift yazdı (${CH[m.channel] ?? m.channel})` : `${CH[m.channel] ?? m.channel} mesajı gönderildi`,
-          text: m.text.replace(/\s+/g, " ").slice(0, 180),
+          title: describeMsg(m),
+          text: m.text.startsWith("[PDF]") ? "" : m.text.replace(/\s+/g, " ").slice(0, 180),
         });
       }
       for (const [i, e] of c.timeline.entries()) {
         const s = SYSTEM_TYPES[e.type];
         if (!s) continue;
-        out.push({ key: `t-${c.id}-${i}`, at: e.at, kind: "system", couple: c, icon: "system", tone: s.tone, title: s.title, text: e.text.replace(/\s#\w+$/, "") });
+        mine.push({ key: `t-${c.id}-${i}`, at: e.at, kind: "system", couple: c, icon: "system", tone: s.tone, title: s.title, text: e.text.replace(/\s#\w+$/, "") });
       }
+      // Çiftin en son hareketine "sırada ne var" notu
+      const last = mine.reduce<Ev | null>((a, b) => (!a || b.at > a.at ? b : a), null);
+      if (last) last.next = nextStep(c, new Date(now)).text;
+      out.push(...mine);
     }
     for (const t of tests) {
       const spoke = (t.transcript ?? []).some((x) => x.role === "user");
@@ -147,7 +213,7 @@ export function AdminActivityLog() {
         return name.includes(term) || (digits.length >= 3 && phone.includes(digits)) || (e.text ?? "").toLocaleLowerCase("tr-TR").includes(term);
       })
       .sort((a, b) => b.at.localeCompare(a.at));
-  }, [couples, tests, kind, q]);
+  }, [couples, tests, kind, q, now]);
 
   const shown = events.slice(0, limit);
   const groups: { day: string; items: Ev[] }[] = [];
@@ -223,7 +289,8 @@ function EventRow({ e, onOpen }: { e: Ev; onOpen: () => void }) {
           {e.couple ? ` · ${SRC[e.couple.source] ?? e.couple.source}` : ""}
           {e.call?.durationSec ? ` · ${dur(e.call.durationSec)}` : e.test?.durationSec ? ` · ${dur(e.test.durationSec)}` : ""}
         </p>
-        {e.text && <p className={cn("mt-1 line-clamp-2 text-sm", e.icon === "msg-in" ? "font-medium text-rose-800" : "text-slate-700")}>{e.text}</p>}
+        {e.text && <p className={cn("mt-1 line-clamp-4 text-sm whitespace-pre-line", e.icon === "msg-in" ? "font-medium text-rose-800" : "text-slate-700")}>{e.text}</p>}
+        {e.next && <p className="mt-1.5 inline-block rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800">➡️ Sırada: {e.next}</p>}
       </div>
       {hasDetail && (
         <button type="button" onClick={onOpen} className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50">
