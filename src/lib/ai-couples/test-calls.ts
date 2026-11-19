@@ -64,6 +64,7 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
       to_number: input.phone,
       conversation_initiation_client_data: {
         dynamic_variables: {
+          selam: isim !== "bilinmiyor" ? `Merhabalar ${isim}` : "Merhabalar",
           couple_id: "TEST",
           isim,
           kaynak: "Düğün.com",
