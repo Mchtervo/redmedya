@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 🧪 Test araması: numarayı yaz → sesli asistan hemen arar; gerçek akışın aynısı (analiz → plan → WhatsApp).
+ * 🧪 Test araması: numarayı yaz → sesli asistan hemen arar; arama ve analiz gerçek akışın aynısı; WhatsApp mesajı GİTMEZ.
  * Ses kaydı, konuşma metni, özet, sistemin planı ve giden WhatsApp burada görünür. İstatistiğe sayılmaz.
  */
 import { useCallback, useEffect, useState } from "react";
@@ -93,7 +93,7 @@ export function AdminTestCallBox() {
     setBusy(false);
     if (!res) return setInfo({ ok: false, text: "⚠️ Bağlantı hatası — tekrar deneyin" });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
-    setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar; görüşmeye göre WhatsApp teklifi de 1-2 dk içinde gider." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
+    setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar. (Test aramasında WhatsApp mesajı GİTMEZ.)" } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
     if (res.ok) {
       setToggled({}); // yeni arama açık gelsin
       load();
@@ -109,7 +109,7 @@ export function AdminTestCallBox() {
           </span>
           <span>
             <span className="block text-sm font-semibold text-slate-900">🧪 Test araması</span>
-            <span className="block text-xs text-slate-500">Numarayı yaz, asistan hemen arasın; konuşmayı analiz edip WhatsApp’tan teklifi göndersin. Kayıt ve konuşma burada — istatistiğe sayılmaz.</span>
+            <span className="block text-xs text-slate-500">Numarayı yaz, asistan hemen arasın. Kayıt, konuşma ve özet burada — WhatsApp gitmez, istatistiğe sayılmaz.</span>
           </span>
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition-transform", open && "rotate-180")} />
