@@ -743,7 +743,9 @@ function DrawerBody({
                       {call.notes.tarihTut && <span className="rounded-lg bg-orange-50 px-2 py-1 font-semibold text-orange-700">🔥 Tarihi 24 saat tut: EVET</span>}
                     </div>
                   )}
-                  {call.recordingUrl && <WaveAudio src={call.recordingUrl} seed={call.id} />}
+                  {(call.recordingUrl || /^conv_/.test(call.externalId ?? "")) && (
+                    <WaveAudio src={call.recordingUrl ?? `/api/admin/ai-recording/${call.externalId}`} seed={call.id} />
+                  )}
                   {call.transcript && (
                     <details className="mt-2 text-xs text-slate-600">
                       <summary className="cursor-pointer font-medium text-indigo-600">Konuşma metni</summary>
