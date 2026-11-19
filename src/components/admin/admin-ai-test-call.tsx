@@ -47,7 +47,9 @@ export function AdminTestCallBox() {
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<{ ok: boolean; text: string } | null>(null);
   const [calls, setCalls] = useState<TestCall[] | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Kart başına aç/kapa (yoksa: en yeni arama açık)
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
+  const [fullMsg, setFullMsg] = useState<Record<string, boolean>>({});
   const [loadedAt, setLoadedAt] = useState(0);
 
   const load = useCallback(() => {
@@ -87,7 +89,7 @@ export function AdminTestCallBox() {
     setBusy(false);
     setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar; görüşmeye göre WhatsApp teklifi de 1-2 dk içinde gider." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
     if (res.ok) {
-      setExpanded(null); // yeni arama açık gelsin
+      setToggled({}); // yeni arama açık gelsin
       load();
     }
   };
@@ -143,17 +145,21 @@ export function AdminTestCallBox() {
                 const key = c.status === "done" && !userSpoke ? "noanswer" : c.status ?? "initiated";
                 const st = STATUS[key] ?? { text: c.status ?? "—", cls: "bg-slate-100 text-slate-600" };
                 // En yeni arama kendiliğinden açık; tıklayınca aç/kapa
-                const isOpen = expanded === null ? c.id === calls[0]?.id : expanded === c.id;
+                const isOpen = toggled[c.id] ?? c.id === calls[0]?.id;
+                const flip = () => setToggled((t) => ({ ...t, [c.id]: !isOpen }));
                 return (
                   <li key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                    <button type="button" aria-expanded={isOpen} onClick={() => setExpanded(isOpen ? "" : c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-left">
+                    <div role="button" tabIndex={0} aria-expanded={isOpen} onClick={flip} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); flip(); } }} className="flex w-full cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-left select-none">
                       <span className="text-sm font-semibold text-slate-900 tabular-nums">{c.phone.replace(/^90(\d{3})(\d{3})(\d{2})(\d{2})$/, "0$1 $2 $3 $4")}</span>
                       <span className="text-xs text-slate-500">{c.name} · {fmt(c.at)}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", st.cls)}>{st.text}</span>
                       {c.durationSec ? <span className="text-xs text-slate-500">{Math.floor(c.durationSec / 60)} dk {c.durationSec % 60} sn</span> : null}
                       {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {c.sonuc}</span>}
-                      <ChevronDown className={cn("ml-auto h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")} />
-                    </button>
+                      <span className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50">
+                        {isOpen ? "Kapat" : "Detay"}
+                        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
+                      </span>
+                    </div>
                     {c.summary && <p className={cn("mt-2 text-sm leading-relaxed text-slate-700", !isOpen && "line-clamp-1")}>{c.summary}</p>}
                     {isOpen && c.status === "done" && userSpoke && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
                     {isOpen && (c.plan?.length ?? 0) > 0 && (
@@ -171,9 +177,14 @@ export function AdminTestCallBox() {
                         <p className="text-[11px] font-semibold text-emerald-800 uppercase">💬 Giden WhatsApp ({c.whatsapp!.length})</p>
                         <ul className="mt-1 space-y-1.5">
                           {c.whatsapp!.map((m, i) => (
-                            <li key={i} className="text-sm whitespace-pre-line text-emerald-950">
+                            <li key={i} className="text-sm text-emerald-950">
                               <span className="mr-1 text-[10px] text-emerald-700">{fmt(m.at)}</span>
-                              {m.text}
+                              <span className={cn("whitespace-pre-line", !fullMsg[c.id + i] && "line-clamp-2")}>{m.text}</span>
+                              {m.text.length > 160 && (
+                                <button type="button" onClick={() => setFullMsg((f) => ({ ...f, [c.id + i]: !f[c.id + i] }))} className="ml-1 text-xs font-semibold text-emerald-700 underline">
+                                  {fullMsg[c.id + i] ? "Kısalt" : "Tamamını göster"}
+                                </button>
+                              )}
                             </li>
                           ))}
                         </ul>
