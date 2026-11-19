@@ -5,7 +5,9 @@
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-api";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
-import { lockCouple, markThinking } from "@/lib/ai-couples/rules";
+import { displayPhone, lockCouple, markThinking } from "@/lib/ai-couples/rules";
+import { sendTelegramMessage } from "@/lib/lead-notify";
+import { adOf } from "@/lib/ai-couples/analytics";
 import { mutateCouple } from "@/lib/ai-couples/store";
 import type { AiCoupleGrade, AiCoupleStatus } from "@/types/ai-couples";
 
@@ -29,8 +31,10 @@ export async function PATCH(request: Request, { params }: Ctx) {
   const now = new Date();
   const at = now.toISOString();
 
+  let becameWon = false;
   const updated = await mutateCouple((await params).id, (c) => {
     let next = { ...c };
+    if (status === "won" && c.status !== "won" && !c.contactLocked) becameWon = true;
     if (unlock && c.contactLocked) {
       next = {
         ...next,
@@ -62,5 +66,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
     return next;
   });
   if (!updated) return bad("Bulunamadı", 404);
+  if (becameWon) {
+    const src = { dugun_com: "Düğün.com", meta_form: "Instagram/Facebook", web: "Web sitesi", manual: "Elle eklenen" }[updated.source] ?? updated.source;
+    const camp = updated.source === "meta_form" ? adOf(updated).campaign : "";
+    await sendTelegramMessage(
+      `💍 REZERVASYON: ${updated.name} — ${displayPhone(updated.phone)}\nKaynak: ${src}${camp ? ` · Kampanya: ${camp}` : ""}${updated.weddingDate ? `\nDüğün: ${updated.weddingDate.split("-").reverse().join(".")}` : ""}\nAramalar: ${updated.calls.length} · Mesajlar: ${updated.messages.length}\nReklam maliyeti ve kâr: panel → Satış Analizi → Kazanç ve kâr`
+    ).catch(() => false);
+  }
   return NextResponse.json({ ok: true, couple: updated });
 }
