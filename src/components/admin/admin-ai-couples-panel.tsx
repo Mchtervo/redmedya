@@ -199,7 +199,10 @@ function Avatar({ c, size = "md" }: { c: AiCouple; size?: "md" | "lg" }) {
   );
 }
 
-function GradeBadge({ g }: { g: AiCoupleGrade }) {
+/** Henüz konuşulmamış çift "soğuk" değil, "yeni"dir (sistem varsayılanı yanıltmasın) */
+function GradeBadge({ g, fresh }: { g: AiCoupleGrade; fresh?: boolean }) {
+  if (fresh && g === "cold")
+    return <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-sky-700">🆕 Henüz konuşulmadı</span>;
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap", GRADE_STYLE[g])}>
       {g === "blacklist" && <Lock className="h-3 w-3" />}
@@ -498,7 +501,7 @@ function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnab
 
       <div className="flex flex-wrap items-center gap-2 pl-14 lg:pl-0">
         <span className={cn("rounded-full border px-2.5 py-1 text-[11px] whitespace-nowrap", STAGE_STYLE[st])}>{STAGE_LABEL[st]}</span>
-        <GradeBadge g={c.grade} />
+        <GradeBadge g={c.grade} fresh={!c.calls.some((x) => x.outcome !== "no_answer") && !c.messages.some((m) => m.direction === "in")} />
         {!c.contactLocked && (
           <span className="ml-auto flex gap-1.5 lg:ml-2">
             <button
@@ -644,7 +647,7 @@ function DrawerBody({
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           <span className={cn("rounded-full border px-2.5 py-1 text-[11px]", STAGE_STYLE[st])}>{STAGE_LABEL[st]}</span>
-          <GradeBadge g={c.grade} />
+          <GradeBadge g={c.grade} fresh={!c.calls.some((x) => x.outcome !== "no_answer") && !c.messages.some((m) => m.direction === "in")} />
           {lastCall?.notes?.tarihTut && <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">🔥 Tarihi 24 saat tut</span>}
         </div>
         {dayState && (
