@@ -4,7 +4,7 @@
  * Değişmez kurallar:
  *  1. Kara listedeki çifte HİÇBİR kanaldan arama/mesaj yapılmaz; kayıt silinmez.
  *  2. Düğün.com çiftine en fazla 1 sesli arama; çift "tekrar arayın" derse +1 hak.
- *  3. Aramalar yalnızca 10:00–20:00 (İstanbul) arası.
+ *  3. Aramalar yalnızca 09:30–20:30 (İstanbul, hafta sonu dahil) arası.
  *  4. Ilık ("düşüneyim" / cevapsız) çifte tam 7 gün sonra 1 kez takip mesajı.
  *  5. Kontenjan rakamı her zaman GERÇEK sayıdır; azalmadıysa "azaldı" denmez.
  */
@@ -17,7 +17,9 @@ import type {
   AiCoupleStatus,
 } from "@/types/ai-couples";
 
-export const CALL_WINDOW = { startHour: 10, endHour: 20 } as const;
+/** Sesli arama saatleri (İstanbul, hafta sonu dahil): 09:30–20:30 */
+export const CALL_WINDOW = { startHour: 9, startMinute: 30, endHour: 20, endMinute: 30 } as const;
+export const CALL_WINDOW_TEXT = "09:30–20:30";
 /** Otomatik WhatsApp/SMS de gece gitmez. */
 export const MESSAGE_WINDOW = { startHour: 9, endHour: 21 } as const;
 export const FOLLOW_UP_DAYS = 7;
@@ -77,25 +79,28 @@ export function displayPhone(p: string): string {
 }
 
 /** İstanbul saatine göre saat (0-23) ve gün anahtarı. */
-export function istanbulParts(now: Date): { hour: number; day: string } {
+export function istanbulParts(now: Date): { hour: number; minute: number; day: string } {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Istanbul",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   });
   const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
   return {
     hour: Number(parts.hour) % 24,
+    minute: Number(parts.minute) || 0,
     day: `${parts.year}-${parts.month}-${parts.day}`,
   };
 }
 
 export function isWithinCallWindow(now: Date): boolean {
-  const { hour } = istanbulParts(now);
-  return hour >= CALL_WINDOW.startHour && hour < CALL_WINDOW.endHour;
+  const { hour, minute } = istanbulParts(now);
+  const m = hour * 60 + minute;
+  return m >= CALL_WINDOW.startHour * 60 + CALL_WINDOW.startMinute && m < CALL_WINDOW.endHour * 60 + CALL_WINDOW.endMinute;
 }
 
 export type ContactChannel = "call" | "whatsapp" | "sms";
@@ -122,7 +127,7 @@ export function canContact(
   }
   if (channel === "call") {
     if (!isWithinCallWindow(now)) {
-      return { allowed: false, reason: "Arama saatleri dışında (10:00–20:00)" };
+      return { allowed: false, reason: `Arama saatleri dışında (${CALL_WINDOW_TEXT})` };
     }
     const max = MAX_CALLS[c.source] ?? 1;
     if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now) && !isSecondCallDue(c, now)) {

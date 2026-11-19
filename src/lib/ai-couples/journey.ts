@@ -5,7 +5,7 @@
  * Saf fonksiyonlar — sunucu ve tarayıcıda çalışır.
  */
 import type { AiCouple } from "@/types/ai-couples";
-import { CALL_WINDOW, OUTCOME_LABEL, SECOND_CALL_GAP_MS, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
+import { CALL_WINDOW, isWithinCallWindow, OUTCOME_LABEL, SECOND_CALL_GAP_MS, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
 
 const CAMPAIGN_REF = "kampanya-2027";
 
@@ -20,14 +20,15 @@ function dayWord(d: Date, now: Date): string {
   return d.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long" });
 }
 
-/** İlk uygun arama anı (10:00–20:00 İstanbul) — verilen andan itibaren. */
+/** İlk uygun arama anı (09:30–20:30 İstanbul) — verilen andan itibaren. */
 export function nextCallSlot(from: Date): Date {
-  const { hour } = istanbulParts(from);
-  if (hour >= CALL_WINDOW.startHour && hour < CALL_WINDOW.endHour) return from;
-  // Bir sonraki 10:00 (İstanbul = UTC+3)
-  const base = new Date(from.getTime() + (hour >= CALL_WINDOW.endHour ? 86_400_000 : 0));
+  if (isWithinCallWindow(from)) return from;
+  const { hour, minute } = istanbulParts(from);
+  const afterEnd = hour * 60 + minute >= CALL_WINDOW.endHour * 60 + CALL_WINDOW.endMinute;
+  // Bir sonraki açılış (09:30, İstanbul = UTC+3)
+  const base = new Date(from.getTime() + (afterEnd ? 86_400_000 : 0));
   const day = istanbulParts(base).day; // YYYY-MM-DD
-  return new Date(`${day}T${String(CALL_WINDOW.startHour).padStart(2, "0")}:00:00+03:00`);
+  return new Date(`${day}T${String(CALL_WINDOW.startHour).padStart(2, "0")}:${String(CALL_WINDOW.startMinute).padStart(2, "0")}:00+03:00`);
 }
 
 function when(d: Date, now: Date): string {

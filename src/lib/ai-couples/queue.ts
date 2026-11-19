@@ -17,6 +17,7 @@ import {
 import { readCouples } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import { selamFor } from "@/lib/ai-couples/hitap";
+import { buildDepositReminder, buildThinkingNudge, isDepositReminderDue, isThinkingNudgeDue } from "@/lib/ai-couples/nudges";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
 
@@ -93,6 +94,17 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       text: buildFollowUpMessage(c, cap),
       reason: "Ilık — 7 gün doldu",
     });
+  }
+
+  // 2b) Kapora hatırlatması ("tarihi tutalım" dedi, ~20 saat geçti) ve "düşüneyim" diyene 3. gün hatırlatması
+  for (const c of couples) {
+    if (!canContact(c, "whatsapp", now).allowed) continue;
+    if (isDepositReminderDue(c, now)) {
+      actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildDepositReminder(c), reason: "Tarih tuttu — kapora hatırlatması" });
+    } else if (isThinkingNudgeDue(c, now)) {
+      const cap = await getCapacityForDate(c.weddingDate, cfg);
+      actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildThinkingNudge(c, cap), reason: "Düşünüyor — 3. gün hatırlatma" });
+    }
   }
 
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler

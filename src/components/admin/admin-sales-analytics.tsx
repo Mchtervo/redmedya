@@ -92,7 +92,7 @@ export function AdminSalesAnalytics() {
       const cur = resBySource.get(k) ?? { count: 0, revenue: 0 };
       resBySource.set(k, { count: cur.count + 1, revenue: cur.revenue + (r.res.total ?? 0) });
     }
-    return { list, total, sources, ads, resRows, resBySource, totalRes: resList.length, totalRevenue: resList.reduce((s, r) => s + (r.total ?? 0), 0), advice: adviceFor(sources, ads) };
+    return { revenueByCouple, list, total, sources, ads, resRows, resBySource, totalRes: resList.length, totalRevenue: resList.reduce((s, r) => s + (r.total ?? 0), 0), advice: adviceFor(sources, ads) };
   }, [couples, reservations, p]);
 
   if (!data) {
@@ -219,10 +219,9 @@ export function AdminSalesAnalytics() {
         ) : (
           <FunnelTable rows={data.ads} compact />
         )}
-        <p className="mt-3 text-[11px] text-slate-500">
-          Not: Reklam harcaması (TL) henüz bağlı değil; bağlanınca &quot;rezervasyon başına maliyet&quot; de burada görünecek.
-        </p>
       </AdminSection>
+
+      <AdSpendSection period={p} metaCouples={data.list.filter((c) => c.source === "meta_form")} wonRevenue={data.revenueByCouple} />
 
       {/* Rezervasyonlar nereden geldi */}
       <AdminSection title="Rezervasyonlar nereden geldi?" description="Takvimdeki rezervasyonlar telefondan AI çift kayıtlarıyla eşleştirilir">
@@ -309,5 +308,151 @@ function OutcomeBar({ row }: { row: FunnelRow }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────── Reklam harcaması (Meta) ───────────────────────── */
+
+type SpendRow = { campaign: string; ad: string; spend: number; impressions: number; clicks: number; leads: number; messages: number };
+
+function sinceOf(p: Period): string {
+  const ms = p === "all" ? Date.now() - 365 * 86_400_000 : periodStart(p);
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function AdSpendSection({ period, metaCouples, wonRevenue }: { period: Period; metaCouples: AiCouple[]; wonRevenue: Map<string, number> }) {
+  const [rows, setRows] = useState<SpendRow[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const since = sinceOf(period);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/admin/meta-spend?since=${since}`)
+      .then((r) => r.json())
+      .then((j: { ok?: boolean; rows?: SpendRow[]; error?: string }) => {
+        if (!alive) return;
+        if (j.ok && j.rows) {
+          setRows(j.rows);
+          setErr(null);
+        } else {
+          setRows([]);
+          setErr(j.error ?? "Harcama okunamadı");
+        }
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRows([]);
+        setErr("Harcama okunamadı");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [since]);
+
+  const camps = useMemo(() => {
+    type Camp = { campaign: string; spend: number; impressions: number; clicks: number; leads: number; messages: number; panel: number; won: number; revenue: number };
+    const m = new Map<string, Camp>();
+    for (const r of rows ?? []) {
+      const x = m.get(r.campaign) ?? { campaign: r.campaign, spend: 0, impressions: 0, clicks: 0, leads: 0, messages: 0, panel: 0, won: 0, revenue: 0 };
+      x.spend += r.spend;
+      x.impressions += r.impressions;
+      x.clicks += r.clicks;
+      x.leads += r.leads;
+      x.messages += r.messages;
+      m.set(r.campaign, x);
+    }
+    for (const c of metaCouples) {
+      const x = m.get(adOf(c).campaign);
+      if (!x) continue;
+      x.panel++;
+      if (c.status === "won") x.won++;
+      x.revenue += wonRevenue.get(c.id) ?? 0;
+    }
+    return [...m.values()].filter((x) => x.spend > 0).sort((a, b) => b.spend - a.spend);
+  }, [rows, metaCouples, wonRevenue]);
+
+  const tot = camps.reduce(
+    (a, x) => ({ spend: a.spend + x.spend, leads: a.leads + x.leads, messages: a.messages + x.messages, won: a.won + x.won, revenue: a.revenue + x.revenue }),
+    { spend: 0, leads: 0, messages: 0, won: 0, revenue: 0 }
+  );
+  const tl = (n: number) => formatPrice(Math.round(n));
+  const per = (a: number, b: number) => (b ? tl(a / b) : "—");
+
+  return (
+    <AdminSection title="Reklam harcaması ve getirisi" description={`Meta reklam hesabı · ${since} – bugün · rezervasyon başına maliyet ve ciro/harcama`}>
+      {rows === null ? (
+        <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+      ) : err ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">⚠️ {err}</p>
+      ) : camps.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-sm text-slate-500">Bu dönemde harcama yapılan kampanya yok.</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            {[
+              { l: "Toplam harcama", v: tl(tot.spend) },
+              { l: "Form başvurusu / DM başlatan", v: `${tot.leads} / ${tot.messages}` },
+              { l: "Başvuru veya mesaj başına", v: per(tot.spend, tot.leads + tot.messages) },
+              { l: "Ciro / harcama", v: tot.spend ? `${(tot.revenue / tot.spend).toFixed(1)}x` : "—" },
+            ].map((k) => (
+              <div key={k.l} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                <p className="text-xs font-medium text-slate-500">{k.l}</p>
+                <p className="mt-1 font-editorial text-xl text-slate-900 tabular-nums">{k.v}</p>
+              </div>
+            ))}
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-slate-100">
+            <table className="w-full min-w-[860px] text-sm">
+              <thead className="bg-slate-50">
+                <tr className="text-left text-[11px] font-semibold tracking-[0.04em] text-slate-500 uppercase">
+                  <th className="px-3 py-2.5">Kampanya</th>
+                  <th className="px-2 text-right">Harcama</th>
+                  <th className="px-2 text-right">Gösterim</th>
+                  <th className="px-2 text-right">Tıklama</th>
+                  <th className="px-2 text-right">Form başvurusu</th>
+                  <th className="px-2 text-right">DM başlatan</th>
+                  <th className="px-2 text-right">Başına maliyet</th>
+                  <th className="px-2 text-right">Panele düşen</th>
+                  <th className="px-2 text-right">Rezervasyon</th>
+                  <th className="px-2 text-right">Rez. başına</th>
+                  <th className="px-2 text-right">Ciro/harcama</th>
+                </tr>
+              </thead>
+              <tbody>
+                {camps.map((x) => (
+                  <tr key={x.campaign} className="border-t border-slate-100">
+                    <td className="max-w-[260px] truncate px-3 py-2.5 text-slate-900" title={x.campaign}>{x.campaign}</td>
+                    <td className="px-2 text-right tabular-nums">{tl(x.spend)}</td>
+                    <td className="px-2 text-right tabular-nums">{x.impressions.toLocaleString("tr-TR")}</td>
+                    <td className="px-2 text-right tabular-nums">{x.clicks.toLocaleString("tr-TR")}</td>
+                    <td className="px-2 text-right tabular-nums">{x.leads}</td>
+                    <td className="px-2 text-right tabular-nums">{x.messages}</td>
+                    <td className="px-2 text-right tabular-nums">{per(x.spend, x.leads + x.messages)}</td>
+                    <td className="px-2 text-right tabular-nums">{x.panel}</td>
+                    <td className="px-2 text-right tabular-nums">{x.won}</td>
+                    <td className={cn("px-2 text-right tabular-nums", x.won === 0 && x.spend > 1000 && "text-rose-700")}>{x.won ? tl(x.spend / x.won) : "—"}</td>
+                    <td className="px-2 text-right tabular-nums">{x.spend ? `${(x.revenue / x.spend).toFixed(1)}x` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="space-y-1.5 text-sm">
+            {camps
+              .filter((x) => x.spend > 1000 && x.won === 0)
+              .map((x) => (
+                <li key={x.campaign} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                  ⚠️ &quot;{x.campaign}&quot;: {tl(x.spend)} harcandı, panelde henüz rezervasyona dönen yok
+                  {x.leads + x.messages ? ` (${x.leads + x.messages} başvuru/mesaj, tanesi ${per(x.spend, x.leads + x.messages)})` : ""}. Kreatifi değiştirin ya da bütçeyi daha iyi
+                  giden kampanyaya kaydırın.
+                </li>
+              ))}
+          </ul>
+          <p className="text-[11px] text-slate-500">
+            &quot;DM başlatan&quot; kampanyalarda çiftler Instagram mesajından yazar; panele ancak numaraları eklenirse düşer. Form reklamlarında başvurular panele otomatik
+            düşer ve rezervasyona kadar izlenir — en net ölçüm form reklamlarıyla olur.
+          </p>
+        </div>
+      )}
+    </AdminSection>
   );
 }

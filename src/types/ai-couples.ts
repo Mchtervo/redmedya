@@ -167,7 +167,7 @@ export type AiQueueAction =
     }
   | {
       type: "whatsapp";
-      kind: "catalog" | "follow_up";
+      kind: "catalog" | "follow_up" | "other";
       coupleId: string;
       name: string;
       phone: string;
