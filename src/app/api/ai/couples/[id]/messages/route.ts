@@ -71,7 +71,10 @@ export async function POST(request: Request, { params }: Ctx) {
   let duplicate = false;
   const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLocaleLowerCase("tr-TR");
 
-  const msg: AiMessageRecord = { id: randomUUID(), at: now.toISOString(), channel, direction, kind, text };
+  // Telefondan yazılan mesaj geriye dönük işlenirken asıl saati korunur (en fazla 7 gün geriye)
+  const atMs = fromPhone && typeof body.at === "string" ? Date.parse(body.at) : NaN;
+  const at = Number.isFinite(atMs) && atMs <= now.getTime() && now.getTime() - atMs < 7 * 86_400_000 ? new Date(atMs) : now;
+  const msg: AiMessageRecord = { id: randomUUID(), at: at.toISOString(), channel, direction, kind, text };
   const intentRaw = str(body.intent) as InboundIntent | undefined;
   const intent: InboundIntent =
     direction === "in" ? (intentRaw && INTENTS.includes(intentRaw) ? intentRaw : detectInboundIntent(text)) : "unknown";
@@ -79,7 +82,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const updated = await mutateCouple(id, (c) => {
     if (fromPhone) {
       // Otomasyonun kendi gönderdiği mesaj da WhatsApp'tan "fromMe" döner → aynısı son 30 dk'da kayıtlıysa tekrar yazma
-      const recent = c.messages.filter((m) => m.direction === "out" && now.getTime() - Date.parse(m.at) < 30 * 60_000);
+      const recent = c.messages.filter((m) => m.direction === "out" && Math.abs(at.getTime() - Date.parse(m.at)) < 30 * 60_000);
       const media = text.startsWith("[");
       const t = norm(text);
       if (recent.some((m) => norm(m.text) === t || (media && m.text.startsWith("[")) || (t.length >= 40 && norm(m.text).includes(t.slice(0, 80))))) {
@@ -94,7 +97,7 @@ export async function POST(request: Request, { params }: Ctx) {
         return c;
       }
     }
-    let next = { ...c, messages: [...c.messages, msg], updatedAt: msg.at };
+    let next = { ...c, messages: [...c.messages, msg].sort((x, y) => x.at.localeCompare(y.at)), updatedAt: now.toISOString() };
     if (direction === "out") {
       if (kind === "follow_up") next.followUpSentAt = msg.at;
       if (kind === "catalog" && (next.status === "new" || next.status === "contacted")) next.status = "info_sent";
