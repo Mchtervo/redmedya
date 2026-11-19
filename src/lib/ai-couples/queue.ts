@@ -183,7 +183,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     //  2) "Düşüneyim" dedi, 1 hafta doldu
     //  3) Daha eski, hiç aranmamış talepler
     // Aynı öncelikte: yeni gelenlerde en yeni talep önce (sıcakken), diğerlerinde en uzun bekleyen önce
-    .sort((a, b) => callPriority(a, now) - callPriority(b, now) || (callPriority(a, now) === -1 ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt)));
+    // Aynı öncelikte: talebi EN YENİ olan önce (kaynağındaki gerçek talep tarihi; yoksa panele giriş tarihi) — sıcak olan önce aranır
+    .sort((a, b) => callPriority(a, now) - callPriority(b, now) || (b.leadAt ?? b.createdAt).localeCompare(a.leadAt ?? a.createdAt));
   for (const c of callable) {
     actions.push({
       type: "call",

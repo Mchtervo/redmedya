@@ -97,6 +97,8 @@ export type AiCouple = {
   busyRetries?: number;
   /** Admin planlanan/otomatik aramaları iptal etti — otomatik aranmaz (WhatsApp ve elle arama devam) */
   callsPaused?: boolean;
+  /** Talebin kaynağındaki (Düğün.com vb.) GERÇEK tarihi — sonradan aktarılan eski taleplerde sıralama için */
+  leadAt?: string;
   /** Çift bizi geri aradı ve sahibi telefonda görüştü (son zaman) */
   inboundAt?: string;
   /** Admin otomatik WhatsApp mesajlarını iptal etti (kampanya, takip, hatırlatma) — elle cevap devam */

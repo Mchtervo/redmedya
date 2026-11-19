@@ -42,6 +42,8 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (grade === "blacklist") next = lockCouple(next, str(body.reason, 200) ?? "n8n tarafından kara listeye alındı", now);
     else if (grade && !next.contactLocked) next = { ...next, grade, updatedAt: now.toISOString() };
     if (note) next = { ...next, note, updatedAt: now.toISOString() };
+    const leadAt = str(body.leadAt, 40);
+    if (leadAt && !Number.isNaN(Date.parse(leadAt)) && Date.parse(leadAt) <= now.getTime()) next = { ...next, leadAt: new Date(leadAt).toISOString() };
     // Yanlış sınıflanan aramayı düzelt: { fixCall: { externalId, summary? } } → "açtı ama dinlemeden kapattı" (no_answer)
     const fx = body.fixCall as { externalId?: unknown; summary?: unknown } | undefined;
     const fxId = fx && typeof fx.externalId === "string" ? fx.externalId : "";
