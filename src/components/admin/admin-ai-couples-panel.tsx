@@ -55,6 +55,53 @@ const pill =
 const field =
   "h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-rm-off-white outline-none placeholder:text-rm-gray-600 focus:border-rm-champagne/40";
 
+const CHANNEL_LABEL: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram" };
+const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+/** "2027-01-17" → "17 Ocak 2027"; tarih yoksa nottaki "Düğün: Şubat 2027" bilgisini gösterir. */
+function weddingText(c: AiCouple): string {
+  const m = c.weddingDate?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${Number(m[3])} ${AYLAR[Number(m[2]) - 1]} ${m[1]}`;
+  const fromNote = c.note?.match(/Düğün: ([^·\n]+)/);
+  return fromNote ? fromNote[1].trim() : "tarih yok";
+}
+
+type Stage = "queued" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
+const STAGE_LABEL: Record<Stage, string> = {
+  queued: "Sırada (henüz ulaşılmadı)",
+  called: "Arandı",
+  written: "Yazıldı – cevap bekleniyor",
+  followup: "Takip gönderildi",
+  replied: "Cevap verdi",
+  won: "Rezervasyon yaptı",
+  lost: "İlgilenmiyor",
+  stopped: "İstemiyor / kara liste",
+  badnumber: "Numara hatalı",
+};
+const STAGE_STYLE: Record<Stage, string> = {
+  queued: "border-white/15 text-rm-gray-400",
+  called: "border-sky-300/40 text-sky-200",
+  written: "border-rm-champagne/40 text-rm-champagne",
+  followup: "border-amber-300/40 text-amber-200",
+  replied: "border-emerald-400/40 text-emerald-300",
+  won: "border-emerald-400/60 bg-emerald-400/10 text-emerald-200",
+  lost: "border-white/15 text-rm-gray-500",
+  stopped: "border-red-500/40 text-red-300",
+  badnumber: "border-red-500/30 text-red-300/80",
+};
+function stageOf(c: AiCouple): Stage {
+  if (c.contactLocked) return "stopped";
+  if (c.status === "won") return "won";
+  if ((c.note ?? "").includes("Numara hatalı")) return "badnumber";
+  if (c.status === "lost") return "lost";
+  if (c.messages.some((m) => m.direction === "in")) return "replied";
+  const out = c.messages.filter((m) => m.direction === "out");
+  if (out.some((m) => m.text.includes("fiyat listemize göz atabildiniz"))) return "followup";
+  if (out.length) return "written";
+  if (c.calls.length) return "called";
+  return "queued";
+}
+
 function fmt(iso?: string) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -64,6 +111,7 @@ export function AdminAiCouplesPanel() {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
+  const [stage, setStage] = useState<Stage | "all">("all");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -94,9 +142,15 @@ export function AdminAiCouplesPanel() {
     return couples.filter(
       (c) =>
         (filter === "all" || c.grade === filter) &&
+        (stage === "all" || stageOf(c) === stage) &&
         (!q || c.name.toLocaleLowerCase("tr-TR").includes(q) || (digits.length >= 3 && c.phone.includes(digits)))
     );
-  }, [couples, filter, search]);
+  }, [couples, filter, stage, search]);
+  const stageCounts = useMemo(() => {
+    const m = {} as Record<Stage, number>;
+    for (const c of couples) { const s = stageOf(c); m[s] = (m[s] ?? 0) + 1; }
+    return m;
+  }, [couples]);
 
   const patch = async (id: string, body: Record<string, unknown>) => {
     setBusy(true);
@@ -157,6 +211,18 @@ export function AdminAiCouplesPanel() {
         ))}
       </div>
 
+      {/* Aşama filtresi */}
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" onClick={() => setStage("all")} className={cn("rounded-full border px-3 py-1 text-[11px]", stage === "all" ? "border-rm-champagne/50 bg-rm-champagne/10 text-rm-champagne" : "border-white/10 text-rm-gray-400")}>
+          Tüm aşamalar
+        </button>
+        {(Object.keys(STAGE_LABEL) as Stage[]).filter((s) => stageCounts[s]).map((s) => (
+          <button key={s} type="button" onClick={() => setStage(s)} className={cn("rounded-full border px-3 py-1 text-[11px]", stage === s ? STAGE_STYLE[s] + " bg-white/[0.06]" : "border-white/10 text-rm-gray-400")}>
+            {STAGE_LABEL[s]} · {stageCounts[s]}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-col gap-2 sm:flex-row">
         <label className="relative block flex-1">
           <span className="sr-only">Çift ara</span>
@@ -207,13 +273,14 @@ function CoupleCard({
           <p className="font-editorial text-xl text-rm-off-white">{c.name}</p>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-rm-gray-400">
             <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{displayPhone(c.phone)}</span>
-            <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{c.weddingDate ?? "tarih yok"}</span>
+            <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{weddingText(c)}</span>
             <span>{SOURCE_LABEL[c.source]}</span>
             <span>📞 {c.callCount}</span>
           </p>
           {lastCall?.summary && <p className="mt-2 line-clamp-2 text-sm text-rm-gray-300">{lastCall.summary}</p>}
         </div>
         <div className="flex items-center gap-2">
+          <span className={cn("rounded-full border px-3 py-1 text-[11px]", STAGE_STYLE[stageOf(c)])}>{STAGE_LABEL[stageOf(c)]}</span>
           <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold", GRADE_STYLE[c.grade])}>{GRADE_LABEL[c.grade]}</span>
           <span className="text-[11px] text-rm-gray-500">{STATUS_LABEL[c.status]}</span>
           <ChevronDown className={cn("h-4 w-4 text-rm-gray-500 transition-transform", open && "rotate-180")} />
@@ -289,7 +356,16 @@ function CoupleCard({
                       {call.durationSec ? ` · ${Math.round(call.durationSec / 60)} dk` : ""}
                       {typeof call.quotedRemaining === "number" ? ` · söylenen kontenjan: ${call.quotedRemaining}` : ""}
                     </p>
-                    {call.summary && <p className="mt-1.5 text-sm text-rm-gray-200">{call.summary}</p>}
+                    {call.summary && <p className="mt-1.5 whitespace-pre-wrap text-sm text-rm-gray-200">{call.summary}</p>}
+                    {call.notes && (
+                      <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-rm-gray-300">
+                        {call.notes.cekimTuru && <span>🎬 Çekim: {call.notes.cekimTuru}</span>}
+                        {call.notes.paket && <span>📦 Paket: {call.notes.paket}</span>}
+                        {call.notes.ekstralar && <span>➕ Ekstra: {call.notes.ekstralar}</span>}
+                        {call.notes.itiraz && <span>⚠️ İtiraz: {call.notes.itiraz}</span>}
+                        {call.notes.tarihTut && <span className="text-orange-300">🔥 Tarihi 24 saat tut: EVET</span>}
+                      </p>
+                    )}
                     {call.recordingUrl && (
                       <audio controls preload="none" src={call.recordingUrl} className="mt-2 w-full">
                         <a href={call.recordingUrl}>Ses kaydı</a>
@@ -315,7 +391,7 @@ function CoupleCard({
                 {c.messages.slice(-10).map((m) => (
                   <li key={m.id} className={cn("max-w-[90%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap", m.direction === "out" ? "ml-auto bg-rm-champagne/10 text-rm-off-white" : "bg-white/[0.05] text-rm-gray-200")}>
                     {m.text}
-                    <span className="mt-1 block text-[10px] text-rm-gray-500">{m.channel} · {fmt(m.at)}</span>
+                    <span className="mt-1 block text-[10px] text-rm-gray-500">{m.direction === "out" ? "Giden" : "Gelen"} · {CHANNEL_LABEL[m.channel] ?? m.channel} · {fmt(m.at)}</span>
                   </li>
                 ))}
               </ul>
