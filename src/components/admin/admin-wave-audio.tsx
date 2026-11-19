@@ -49,6 +49,7 @@ export function WaveAudio({ src, seed }: { src: string; seed: string }) {
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(e) => setT(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+        onDurationChange={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
       />
       <button type="button" onClick={toggle} aria-label={playing ? "Duraklat" : "Ses kaydını oynat"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-[0_6px_14px_-6px_rgba(79,70,229,0.9)]">
         {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
