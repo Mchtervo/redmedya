@@ -124,7 +124,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
-    .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
+    .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now))
     .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için
     //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce

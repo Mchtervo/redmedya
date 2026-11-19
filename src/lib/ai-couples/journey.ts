@@ -62,9 +62,12 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
   // Toplu kampanya çiftleri: önce WhatsApp, arama sahibi açınca
   if (c.sourceRef === CAMPAIGN_REF && !calls.length) {
     const first = msgs.find((m) => m.direction === "out" && m.channel === "whatsapp");
-    if (!first) return { text: "Kampanya WhatsApp sırasında (09:00–20:40, günde 40, 3-4 dk arayla).", tone: "wait" };
+    if (!first) return { text: "Kampanya WhatsApp sırasında (09:00–21:00, panelde ayarlı günlük sınır ve aralıkla).", tone: "wait" };
     const followSent = msgs.some((m) => m.direction === "out" && m.text.includes("fiyat listemize göz atabildiniz"));
-    if (followSent) return { text: "Takip mesajı da gitti — cevap bekleniyor. Kampanya aramaları sahibi başlatınca.", tone: "wait" };
+    if (followSent) {
+      const fu = followStepText(c, now);
+      return { text: `Takip mesajı da gitti — cevap bekleniyor.${fu ? " " + fu : ""}`, tone: fu?.includes("şimdi") ? "action" : "wait" };
+    }
     return { text: `Cevap gelmezse ${when(new Date(Date.parse(first.at) + 48 * 3600e3), now)} takip mesajı.`, tone: "wait" };
   }
 

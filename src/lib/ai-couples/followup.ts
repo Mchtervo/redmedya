@@ -1,23 +1,29 @@
 /**
- * SESSİZ ÇİFT TAKİBİ — telefonda görüşülüp "bilgi / teklif istedi" denen, WhatsApp'tan fiyat giden
- * ama sonra hiç cevap vermeyen çift (kampanya listesi hariç; onu n8n K yürütür):
+ * SESSİZ ÇİFT TAKİBİ — bizim SON mesajımıza (otomatik ya da sizin elle yazdığınız) cevap vermeyen çift:
  *   1) X. gün WhatsApp: tarih + verilen fiyat + kalan yer + kampanya bitiyor / %40 zam → "rezervasyon yapalım mı?"
- *   2) Y. gün TAKİP ARAMASI: asistan "X gün önce görüşmüştük, şu tarih için şu fiyatı vermiştik" diye başlar
- *   3) Z. gün SON WhatsApp
- * Durur: çift yazdı, siz elle yazdınız, rezervasyon / kara liste / ilgilenmiyor, ya da panelden iptal.
+ *   2) Y. gün TAKİP ARAMASI: asistan "X gün önce görüşmüştük / fiyat göndermiştik" diye başlar (kampanya listesi dahil)
+ *   3) Z. gün SON WhatsApp (kibar, bir daha rahatsız etmeyiz)
+ * Çift yazarsa takip durur (siz dönersiniz); siz yazar da çift yine susarsa takip sizin mesajınızdan yeniden başlar.
+ * "Düşüneyim" diyenin kendi takibi var (3. gün mesaj, 7. gün arama). Kara liste / rezervasyon / ilgilenmiyor / panelden iptal → yok.
  * Gün sayıları panelden (follow-days). Saf fonksiyonlar (tarayıcıda da çalışır).
  */
-import type { AiCapacityInfo, AiCallRecord, AiCouple } from "@/types/ai-couples";
+import type { AiCapacityInfo, AiCallRecord, AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { followDays } from "@/lib/ai-couples/follow-days";
 import { hitapFor } from "@/lib/ai-couples/hitap";
 
 export const FU_MSG_MARK = "zamsız fiyattan yararlanmanız için";
 export const FU_LAST_MARK = "son kez kısaca hatırlatıyorum";
+/** Takip / hatırlatma türü mesajlar (yeni takip dayanağı sayılmaz; "hatırlatma gitti" sayılır) */
+const REMINDER_MARKS = [
+  FU_MSG_MARK,
+  "biraz düşünmek istediğinizi söylemiştiniz", // düşünüyor hatırlatması
+  "24 saatliğine sizin adınıza ayırmıştık", // kapora hatırlatması
+  "fiyat listemize göz atabildiniz", // kampanya 48. saat takibi
+  "iki kez ulaşmaya", // 2 arama açılmadı son mesajı
+];
 
 const DAY = 86_400_000;
 const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-const CAMPAIGN = "kampanya-2027";
-const ACTIVE = new Set(["info_requested", "offer_requested"]);
 
 const PRICE: [RegExp, string, string][] = [
   [/alb[üu]m/i, "Fotoğraf + Klip + Albüm", "14.000 TL"],
@@ -34,47 +40,59 @@ export function quotedPackage(call: AiCallRecord | undefined): { name: string; p
 
 function dateText(c: AiCouple): string {
   const m = c.weddingDate?.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${Number(m[3])} ${AYLAR[Number(m[2]) - 1]} ${m[1]}` : "";
+  if (m) return `${Number(m[3])} ${AYLAR[Number(m[2]) - 1]} ${m[1]}`;
+  const n = (c.note ?? "").match(/Düğün: ([^·\n]+)/);
+  return n && !/belli değil/i.test(n[1]) ? n[1].trim() : "";
 }
 
-/** Takibin dayanağı: son "bilgi/teklif istedi" görüşmesi ve sonrasında giden ilk WhatsApp */
-export function followAnchor(c: AiCouple): { call: AiCallRecord; at: number } | null {
-  if (c.sourceRef === CAMPAIGN || c.sourceRef === "test") return null;
-  if (c.contactLocked || c.status === "won" || c.status === "lost") return null;
-  const answered = c.calls.filter((x) => x.outcome !== "no_answer");
-  const call = answered[answered.length - 1];
-  if (!call || !ACTIVE.has(call.outcome)) return null;
-  const t = Date.parse(call.at);
-  const wa = c.messages.find((m) => m.direction === "out" && m.channel === "whatsapp" && Date.parse(m.at) >= t);
-  if (!wa) return null;
-  // Çift yazdı ya da siz elle cevap verdiniz → konuşma insanda, otomatik takip yok
-  if (c.messages.some((m) => Date.parse(m.at) >= t && (m.direction === "in" || m.kind === "reply"))) return null;
-  return { call, at: Date.parse(wa.at) };
+const isReminder = (m: AiMessageRecord) => REMINDER_MARKS.some((k) => m.text.includes(k)) || m.text.includes(FU_LAST_MARK);
+const lastAnswered = (c: AiCouple) => [...c.calls].reverse().find((x) => x.outcome !== "no_answer");
+
+/** Takibin dayanağı: çiftin son cevabından sonra bizim attığımız SON (hatırlatma olmayan) WhatsApp mesajı */
+export function followAnchor(c: AiCouple): { msg: AiMessageRecord; at: number; call?: AiCallRecord } | null {
+  if (c.sourceRef === "test") return null;
+  if (c.contactLocked || c.status === "won" || c.status === "lost" || c.status === "thinking") return null;
+  if ((c.note ?? "").includes("Numara hatalı")) return null;
+  const msgs = c.messages;
+  if (!msgs.length || msgs[msgs.length - 1].direction === "in") return null; // çift yazdı → siz dönün
+  let anchor: AiMessageRecord | null = null;
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i];
+    if (m.direction === "in") break;
+    if (m.channel !== "whatsapp" || m.text.startsWith("[") || isReminder(m)) continue;
+    anchor = m;
+    break;
+  }
+  if (!anchor) return null;
+  // Son arama mesajdan sonraysa ve "sonra arayın" planı varsa o yürür
+  if (c.callbackRequested) return null;
+  return { msg: anchor, at: Date.parse(anchor.at), call: lastAnswered(c) };
 }
 
-const sent = (c: AiCouple, mark: string, since: number) => c.messages.some((m) => m.direction === "out" && m.text.includes(mark) && Date.parse(m.at) >= since);
+const sentAfter = (c: AiCouple, since: number, test: (m: AiMessageRecord) => boolean) =>
+  c.messages.some((m) => m.direction === "out" && Date.parse(m.at) >= since && test(m));
 const ageDays = (since: number, now: Date) => (now.getTime() - since) / DAY;
+const calledAfter = (c: AiCouple, since: number) => c.calls.some((x) => Date.parse(x.at) > since);
 
 export function isFollowMsgDue(c: AiCouple, now: Date): boolean {
   const a = followAnchor(c);
   if (!a || c.messagesPaused) return false;
   const d = followDays(), age = ageDays(a.at, now);
-  return age >= d.msg && age < d.call + 2 && !sent(c, FU_MSG_MARK, a.at);
+  return age >= d.msg && age < d.call + 2 && !sentAfter(c, a.at, (m) => REMINDER_MARKS.some((k) => m.text.includes(k)));
 }
 
 export function isFollowCallDue(c: AiCouple, now: Date): boolean {
   const a = followAnchor(c);
   if (!a || c.callsPaused) return false;
   const d = followDays(), age = ageDays(a.at, now);
-  if (age < d.call || age > d.last + 3) return false;
-  return !c.calls.some((x) => Date.parse(x.at) > Date.parse(a.call.at)); // görüşmeden sonra henüz aranmadı
+  return age >= d.call && age <= d.last + 3 && !calledAfter(c, a.at);
 }
 
 export function isFollowLastDue(c: AiCouple, now: Date): boolean {
   const a = followAnchor(c);
   if (!a || c.messagesPaused) return false;
   const d = followDays(), age = ageDays(a.at, now);
-  return age >= d.last && age < d.last + 5 && !sent(c, FU_LAST_MARK, a.at);
+  return age >= d.last && age < d.last + 5 && !sentAfter(c, a.at, (m) => m.text.includes(FU_LAST_MARK));
 }
 
 function greet(c: AiCouple): string {
@@ -87,15 +105,20 @@ function agoText(since: number, now: Date): string {
   return n === 1 ? "dün" : `${n} gün önce`;
 }
 
+/** "3 gün önce telefonda görüşmüştük" ya da "3 gün önce size WhatsApp'tan yazmıştık" */
+function contactText(a: NonNullable<ReturnType<typeof followAnchor>>, now: Date): string {
+  const talked = a.call && Math.abs(Date.parse(a.call.at) - a.at) < 2 * DAY;
+  return talked ? `${agoText(Date.parse(a.call!.at), now)} telefonda görüşmüştük` : `${agoText(a.at, now)} size WhatsApp'tan yazmıştık`;
+}
+
 export function buildFollowMsg(c: AiCouple, cap: AiCapacityInfo | null, now: Date): string {
   const a = followAnchor(c);
-  const call = a?.call;
   const d = dateText(c);
-  const p = quotedPackage(call);
+  const p = quotedPackage(a?.call);
   const ne = p ? `${p.name} paketine ${p.price} erken rezervasyon fiyatı vermiştik` : "2027 erken rezervasyon fiyatlarımızı iletmiştik";
   const yer = cap && cap.remaining > 0 ? ` ${cap.monthLabel} için kampanya fiyatıyla son ${cap.remaining} yerimiz kaldı.` : "";
   return (
-    `${greet(c)} RedMedia ekibindenim. ${call ? agoText(Date.parse(call.at), now) : "Geçenlerde"} telefonda görüşmüştük; ${d ? d + " tarihindeki düğününüz için " : ""}${ne}.` +
+    `${greet(c)} RedMedia ekibindenim. ${a ? contactText(a, now) : "Geçenlerde görüşmüştük"}; ${d ? d + " tarihindeki düğününüz için " : ""}${ne}.` +
     `${yer} Tarihler hızla doluyor ve kampanyamız 31 Aralık'ta bitiyor; sonrasında fiyatlara %40 zam geliyor.` +
     ` Tarihiniz dolmadan, ${FU_MSG_MARK} rezervasyonunuzu şimdiden yapalım mı? 1.000 TL kapora ile tarihiniz sabitleniyor, kalan ödeme çekim günü.`
   );
@@ -117,10 +140,10 @@ export function followCallNote(c: AiCouple, now: Date): string {
   if (!a) return "";
   const d = dateText(c);
   const p = quotedPackage(a.call);
-  const ago = agoText(Date.parse(a.call.at), now);
+  const ct = contactText(a, now);
   return (
-    `BU BİR TAKİP ARAMASI: ${ago} görüştük${d ? `, düğün ${d}` : ""}${p ? `, ${p.name} paketine ${p.price} fiyat verdik` : ""}; WhatsApp'tan teklif gitti ama cevap gelmedi.` +
-    ` Açılışta (kimlik teyidinden sonra) "${ago} görüşmüştük${d ? `, ${d} için` : ""} size fiyat vermiştik" diye hatırlat; tarihlerin dolduğunu, kampanyanın 31 Aralık'ta bittiğini ve %40 zam gelmeden yerini ayırmak isteyip istemediğini sor. Kısa tut, baskı yapma.`
+    `BU BİR TAKİP ARAMASI: ${ct}${d ? `, düğün ${d}` : ""}${p ? `, ${p.name} paketine ${p.price} fiyat verdik` : ", 2027 fiyatlarını gönderdik"}; cevap gelmedi.` +
+    ` Açılışta (kimlik teyidinden sonra) "${ct}${d ? `, ${d} için` : ""} size fiyat bilgisi vermiştik" diye hatırlat; tarihlerin dolduğunu, kampanyanın 31 Aralık'ta bittiğini ve %40 zam gelmeden yerini ayırmak isteyip istemediğini sor. Kısa tut, baskı yapma.`
   );
 }
 
@@ -133,9 +156,10 @@ export function followStepText(c: AiCouple, now: Date): string | null {
     const t = new Date(a.at + days * DAY);
     return t.getTime() <= now.getTime() ? "şimdi" : t.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long" });
   };
-  if (!sent(c, FU_MSG_MARK, a.at) && ageDays(a.at, now) < d.call + 2) return c.messagesPaused ? null : `Cevap gelmezse ${when(d.msg)} hatırlatma WhatsApp'ı (tarih + fiyat + %40 zam).`;
-  if (!c.calls.some((x) => Date.parse(x.at) > Date.parse(a.call.at)) && ageDays(a.at, now) <= d.last + 3)
-    return c.callsPaused ? null : `Cevap gelmezse ${when(d.call)} takip araması ("${agoText(Date.parse(a.call.at), now)} fiyat vermiştik").`;
-  if (!sent(c, FU_LAST_MARK, a.at) && ageDays(a.at, now) < d.last + 5) return c.messagesPaused ? null : `Cevap gelmezse ${when(d.last)} son WhatsApp.`;
-  return "Takip tamamlandı (hatırlatma + arama + son mesaj) — cevap bekleniyor.";
+  const age = ageDays(a.at, now);
+  if (!sentAfter(c, a.at, (m) => REMINDER_MARKS.some((k) => m.text.includes(k))) && age < d.call + 2 && !c.messagesPaused)
+    return `Cevap gelmezse ${when(d.msg)} hatırlatma WhatsApp'ı (tarih + fiyat + %40 zam).`;
+  if (!calledAfter(c, a.at) && age <= d.last + 3 && !c.callsPaused) return `Cevap gelmezse ${when(d.call)} takip araması.`;
+  if (!sentAfter(c, a.at, (m) => m.text.includes(FU_LAST_MARK)) && age < d.last + 5 && !c.messagesPaused) return `Cevap gelmezse ${when(d.last)} son WhatsApp.`;
+  return null;
 }

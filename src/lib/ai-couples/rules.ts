@@ -362,8 +362,8 @@ export function detectInboundIntent(text: string): InboundIntent {
     return "not_interested";
   }
   if (
-    /(dusun|danisayim|konusup don|haber verir|donus yapar|sonra yaz|bakip don|kararsiz|netlestir|emin degil|simdilik bakiyoruz|daha erken)/.test(t) ||
-    /(nisanli|esim|esime|kocam|karim|sevgilim|ailem|annem|babam|kayinvalide)\w*\s+(bir\s+)?(sor|danis|konus)/.test(t)
+    /(dusun|danisayim|danisip|konusup don|konusalim|haber verir|haber ede|donus yapar|donerim|doneriz|donecegim|sonra yaz|bakip don|bir bakalim|bakip haber|degerlendir|kararsiz|karar ver|netlestir|emin degil|simdilik bakiyoruz|arastiriyoruz|daha erken|biraz zaman|aklimizda)/.test(t) ||
+    /(nisanli|esim|esime|esimle|kocam|karim|sevgilim|ailem|annem|babam|kayinvalide|damat|gelin)\w*\s+(ile\s+|bir\s+)?(sor|danis|konus|karar)/.test(t)
   ) {
     return "thinking";
   }
