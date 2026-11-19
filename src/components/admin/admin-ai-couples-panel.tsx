@@ -82,7 +82,7 @@ const GRADE_STYLE: Record<AiCoupleGrade, string> = {
 
 const SOURCE_LABEL: Record<AiCouple["source"], string> = {
   dugun_com: "Düğün.com",
-  meta_form: "Meta",
+  meta_form: "Instagram/Facebook",
   web: "Web sitesi",
   manual: "Elle",
 };
@@ -279,7 +279,7 @@ export function AdminAiCouplesPanel() {
         body: JSON.stringify(body),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) setMsg({ text: j.error ?? "Kaydedilemedi", ok: false });
+      setMsg(res.ok ? { text: "✅ Kaydedildi", ok: true } : { text: `⚠️ ${j.error ?? "Kaydedilemedi"}`, ok: false });
     } catch {
       setMsg({ text: "Bağlantı hatası — tekrar deneyin", ok: false });
     } finally {
@@ -309,6 +309,13 @@ export function AdminAiCouplesPanel() {
     refresh();
   };
 
+  // Başarı bildirimi 5 sn sonra kendiliğinden kapanır (hata kalır)
+  useEffect(() => {
+    if (!msg?.ok) return;
+    const t = setTimeout(() => setMsg(null), 5000);
+    return () => clearTimeout(t);
+  }, [msg]);
+
   const openStage = (what: "calls" | "whatsapp" | "hot" | "capacity") => {
     if (what === "capacity") {
       if (capacityRef.current) capacityRef.current.open = true;
@@ -316,8 +323,7 @@ export function AdminAiCouplesPanel() {
     }
     setSearch("");
     if (what === "hot") { setFilter("hot"); setStage("all"); }
-    if (what === "calls") { setFilter("all"); setStage("called"); }
-    if (what === "whatsapp") { setFilter("all"); setStage("written"); }
+    if (what === "calls" || what === "whatsapp") { setFilter("all"); setStage("all"); }
     listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -349,14 +355,12 @@ export function AdminAiCouplesPanel() {
       <AiKpiRow couples={couples} months={data.months} onOpenStage={openStage} />
 
       <AiAgentsCard status={status} onToggle={toggleCampaign} horizontal />
-      <AdminAutomationSettings />
-      <AdminTestCallBox />
 
       {msg && (
         <p
           role="status"
           className={cn(
-            "fixed top-4 left-1/2 z-[90] w-[min(92vw,34rem)] -translate-x-1/2 rounded-2xl border px-4 py-2.5 text-sm shadow-lg",
+            "fixed bottom-4 left-1/2 z-[90] w-[min(92vw,34rem)] -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm shadow-lg",
             msg.ok ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-rose-200 bg-rose-50 text-rose-800"
           )}
         >
@@ -385,7 +389,7 @@ export function AdminAiCouplesPanel() {
 
           {/* Derece sekmeleri */}
           <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
-            {([["all", "Tümü", couples.length], ...(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => [g, GRADE_LABEL[g], counts[g]])] as [Filter, string, number][]).map(([k, l, n]) => (
+            {([["all", "Tümü", real.length], ...(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => [g, GRADE_LABEL[g], counts[g]])] as [Filter, string, number][]).map(([k, l, n]) => (
               <button
                 key={k}
                 type="button"
@@ -402,18 +406,18 @@ export function AdminAiCouplesPanel() {
           </div>
 
           {/* Aşama filtresi */}
-          <div className="flex flex-wrap gap-1.5">
-            <button type="button" onClick={() => setStage("all")} className={cn("rounded-full border px-3 py-1 text-[11px] font-medium", stage === "all" ? "border-indigo-300 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-500")}>
+          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap">
+            <button type="button" onClick={() => setStage("all")} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap", stage === "all" ? "border-indigo-300 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-500")}>
               Tüm aşamalar
             </button>
-            {(Object.keys(STAGE_LABEL) as Stage[]).filter((s) => stageCounts[s]).map((s) => (
+            {(Object.keys(STAGE_LABEL) as Stage[]).filter((s) => stageCounts[s] || stage === s).map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => setStage(stage === s ? "all" : s)}
-                className={cn("rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity", STAGE_STYLE[s], stage !== "all" && stage !== s && "opacity-50")}
+                className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-opacity", STAGE_STYLE[s], stage !== "all" && stage !== s && "opacity-50")}
               >
-                {STAGE_LABEL[s]} · {stageCounts[s]}
+                {STAGE_LABEL[s]} · {stageCounts[s] ?? 0}
               </button>
             ))}
           </div>
@@ -437,6 +441,9 @@ export function AdminAiCouplesPanel() {
           </ul>
         )}
       </div>
+
+      <AdminAutomationSettings />
+      <AdminTestCallBox />
 
       <details ref={capacityRef} className="group rm-card scroll-mt-28 overflow-hidden">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 sm:px-5 [&::-webkit-details-marker]:hidden">
@@ -666,6 +673,10 @@ function DrawerBody({
           <GradeBadge g={c.grade} fresh={!c.calls.some((x) => x.outcome !== "no_answer") && !c.messages.some((m) => m.direction === "in")} />
           {lastCall?.notes?.tarihTut && <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">🔥 Tarihi 24 saat tut</span>}
         </div>
+      </div>
+
+      <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
+        <div className="-mt-3">
         {dayState && (
           <p
             className={cn(
@@ -679,10 +690,10 @@ function DrawerBody({
         {!c.contactLocked && c.status !== "won" && (
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <span className="text-slate-500">Müşteri bizi geri aradıysa:</span>
-            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "talked" })} className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40">
+            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "talked" })} className="rounded-lg border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40">
               📞 Geri aradı, konuştum
             </button>
-            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "missed" })} className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-40">
+            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "missed" })} className="rounded-lg border border-amber-300 bg-white px-3 py-2 font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-40">
               📵 Geri aradı, açamadım (asistan arasın)
             </button>
           </div>
@@ -711,7 +722,7 @@ function DrawerBody({
                 if (confirm(`${c.name} için planlanan / otomatik aramalar iptal edilsin mi?\n(WhatsApp ve elle arama devam eder; istediğinizde geri açabilirsiniz.)`)) onPatch({ callsPaused: true });
               }}
               className={cn(
-                "shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold disabled:opacity-40",
+                "shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-40",
                 c.callsPaused ? "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50" : "border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
               )}
             >
@@ -727,7 +738,7 @@ function DrawerBody({
                 if (confirm(`${c.name} için planlanan otomatik WhatsApp mesajları (kampanya, takip, hatırlatma) iptal edilsin mi?\n(Sizin elle yazdıklarınız gider.)`)) onPatch({ messagesPaused: true });
               }}
               className={cn(
-                "shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold disabled:opacity-40",
+                "shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-40",
                 c.messagesPaused ? "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50" : "border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
               )}
             >
@@ -735,9 +746,7 @@ function DrawerBody({
             </button>
           )}
         </div>
-      </div>
-
-      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        </div>
         {c.contactLocked && (
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-white">
             <p className="flex items-center gap-2 font-semibold"><Lock className="h-4 w-4" /> İletişim kapalı</p>
@@ -747,7 +756,10 @@ function DrawerBody({
               disabled={busy}
               onClick={() => {
                 const ok = prompt(`DİKKAT: ${c.name} "${c.lockReason}" sebebiyle kilitli. Çift açıkça izin verdiyse kilidi açmak için KILIDI AC yazın.`);
-                if (ok === "KILIDI AC") onPatch({ unlock: true, confirm: "KILIDI AC" });
+                if (ok === null) return;
+                const norm = ok.toLocaleUpperCase("tr-TR").replace(/İ/g, "I").replace(/Ç/g, "C").replace(/\s+/g, " ").trim();
+                if (norm === "KILIDI AC") onPatch({ unlock: true, confirm: "KILIDI AC" });
+                else alert("Kilit açılmadı: onay için KILIDI AC yazmanız gerekiyor.");
               }}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 disabled:opacity-40"
             >
@@ -769,8 +781,8 @@ function DrawerBody({
                   {GRADE_LABEL[g]}
                 </button>
               ))}
-              <button type="button" disabled={busy} onClick={() => onPatch({ status: "thinking" as AiCoupleStatus })} className={btn}>Düşünüyor (+7 gün)</button>
-              <button type="button" disabled={busy || c.status === "won"} onClick={() => onPatch({ status: "won" as AiCoupleStatus })} className={cn(btn, "border-emerald-200 text-emerald-700 hover:border-emerald-300 hover:text-emerald-800")}>
+              <button type="button" disabled={busy} onClick={() => onPatch({ status: "thinking" as AiCoupleStatus })} className={btn}>Düşünüyor (takibe al)</button>
+              <button type="button" disabled={busy || c.status === "won"} onClick={() => confirm(`${c.name} rezervasyon yaptı olarak işaretlensin mi? (Satış aramaları ve mesajları durur.)`) && onPatch({ status: "won" as AiCoupleStatus })} className={cn(btn, "border-emerald-200 text-emerald-700 hover:border-emerald-300 hover:text-emerald-800")}>
                 <CheckCircle2 className="h-3.5 w-3.5" /> Anlaşıldı (rezervasyon)
               </button>
               <button
@@ -817,7 +829,7 @@ function DrawerBody({
                     {call.durationSec ? <span>{Math.max(1, Math.round(call.durationSec / 60))} dk</span> : null}
                     {typeof call.quotedRemaining === "number" ? <span>söylenen kontenjan: {call.quotedRemaining}</span> : null}
                   </p>
-                  {call.summary && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-800">{call.summary}</p>}
+                  {call.summary && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-800">{call.summary}</p>}
                   {call.notes && (
                     <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                       {call.notes.cekimTuru && <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">🎬 {call.notes.cekimTuru}</span>}
@@ -833,7 +845,7 @@ function DrawerBody({
                   {call.transcript && (
                     <details className="mt-2 text-xs text-slate-600">
                       <summary className="cursor-pointer font-medium text-indigo-600">Konuşma metni</summary>
-                      <p className="mt-1.5 whitespace-pre-wrap">{call.transcript}</p>
+                      <p className="mt-1.5 whitespace-pre-wrap break-words">{call.transcript}</p>
                     </details>
                   )}
                 </li>
@@ -851,7 +863,7 @@ function DrawerBody({
                 <li
                   key={m.id}
                   className={cn(
-                    "max-w-[88%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm",
+                    "max-w-[88%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words shadow-sm",
                     m.direction === "out" ? "ml-auto rounded-br-md bg-[#D9FDD3] text-slate-900" : "rounded-bl-md bg-white text-slate-900"
                   )}
                 >
@@ -980,8 +992,11 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
       }}
     >
       <input required name="rm-cift-isim" autoComplete="off" data-lpignore="true" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="İsim" className={cn(field, "w-36 flex-1")} />
-      <input required name="rm-cift-tel" autoComplete="off" data-lpignore="true" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-32 flex-1")} />
-      <input type="date" value={f.weddingDate} onChange={(e) => setF({ ...f, weddingDate: e.target.value })} className={cn(field, "w-40")} />
+      <input required name="rm-cift-tel" inputMode="tel" autoComplete="off" data-lpignore="true" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-32 flex-1")} />
+      <label className="flex items-center gap-2 text-xs text-slate-500">
+        Düğün tarihi
+        <input type="date" value={f.weddingDate} onChange={(e) => setF({ ...f, weddingDate: e.target.value })} className={cn(field, "w-40")} />
+      </label>
       <button type="submit" className={btnPrimary}>Ekle</button>
       <button type="button" onClick={() => setShow(false)} className={btn}>Vazgeç</button>
       {err && <p className="w-full text-xs text-rose-700">{err}</p>}

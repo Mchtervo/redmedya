@@ -354,3 +354,12 @@ body.rm-admin [class*="backdrop-blur"]:not(.fixed) {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* iOS: yazı kutusuna dokununca ekran yakınlaşmasın (16px altı yazıda Safari otomatik yakınlaştırır) */
+@media (max-width: 1023px) {
+  body.rm-admin input,
+  body.rm-admin textarea,
+  body.rm-admin select {
+    font-size: 16px !important;
+  }
+}

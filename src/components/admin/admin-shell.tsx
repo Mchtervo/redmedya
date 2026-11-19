@@ -80,7 +80,7 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
 
   const loading = status.n8n === undefined;
   const pills: { label: string; state: PillState; text: string }[] = [
-    { label: "n8n", state: loading ? "wait" : status.n8n ? "ok" : "bad", text: loading ? "…" : status.n8n ? "Aktif" : "Ulaşılamıyor" },
+    { label: "Otomasyon", state: loading ? "wait" : status.n8n ? "ok" : "bad", text: loading ? "…" : status.n8n ? "Aktif" : "Ulaşılamıyor" },
     {
       label: "WhatsApp",
       state: status.whatsapp === undefined ? (loading ? "wait" : "bad") : status.whatsapp ? "ok" : "bad",

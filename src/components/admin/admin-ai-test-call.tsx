@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, FlaskConical, Phone, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WaveAudio } from "@/components/admin/admin-wave-audio";
+import { OUTCOME_LABEL } from "@/lib/ai-couples/rules";
 
 type TestCall = {
   id: string;
@@ -157,7 +158,7 @@ export function AdminTestCallBox() {
                       <span className="text-xs text-slate-500">{c.name} · {fmt(c.at)}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", st.cls)}>{st.text}</span>
                       {c.durationSec ? <span className="text-xs text-slate-500">{Math.floor(c.durationSec / 60)} dk {c.durationSec % 60} sn</span> : null}
-                      {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {c.sonuc}</span>}
+                      {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {OUTCOME_LABEL[c.sonuc as keyof typeof OUTCOME_LABEL] ?? c.sonuc}</span>}
                       <span className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50">
                         {isOpen ? "Kapat" : "Detay"}
                         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
@@ -182,7 +183,7 @@ export function AdminTestCallBox() {
                           {c.whatsapp!.map((m, i) => (
                             <li key={i} className="text-sm text-emerald-950">
                               <span className="mr-1 text-[10px] text-emerald-700">{fmt(m.at)}</span>
-                              <span className={cn("whitespace-pre-line", !fullMsg[c.id + i] && "line-clamp-2")}>{m.text}</span>
+                              <span className={cn("break-words whitespace-pre-line", !fullMsg[c.id + i] && "line-clamp-2")}>{m.text}</span>
                               {m.text.length > 160 && (
                                 <button type="button" onClick={() => setFullMsg((f) => ({ ...f, [c.id + i]: !f[c.id + i] }))} className="ml-1 text-xs font-semibold text-emerald-700 underline">
                                   {fullMsg[c.id + i] ? "Kısalt" : "Tamamını göster"}

@@ -151,6 +151,7 @@ export function AdminActivityLog() {
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(150);
   const [now, setNow] = useState(0);
+  const [offline, setOffline] = useState(false);
   const { status } = useAiSystemStatus();
   const callsEnabled = status.arama !== false;
   const auto = useAutomation(); // takip gün ayarlarını yükler (Sırada metinleri doğru gün göstersin)
@@ -158,16 +159,21 @@ export function AdminActivityLog() {
 
   const load = useCallback(() => {
     fetch("/api/admin/ai-couples", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { couples: [] }))
-      .then((j: { couples?: AiCouple[] }) => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { couples?: AiCouple[] } | null) => {
+        if (!j) return setOffline(true);
+        setOffline(false);
         setCouples(j.couples ?? []);
         setNow(Date.now());
       })
-      .catch(() => setCouples([]));
+      .catch(() => {
+        setOffline(true);
+        setCouples((p) => p ?? []);
+      });
     fetch("/api/admin/ai-test-call", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : { calls: [] }))
-      .then((j: { calls?: TestCall[] }) => setTests(j.calls ?? []))
-      .catch(() => setTests([]));
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { calls?: TestCall[] } | null) => j && setTests(j.calls ?? []))
+      .catch(() => null);
   }, []);
   useEffect(() => {
     load();
@@ -213,9 +219,6 @@ export function AdminActivityLog() {
         if (!s) continue;
         mine.push({ key: `t-${c.id}-${i}`, at: e.at, kind: "system", couple: c, icon: "system", tone: s.tone, title: s.title, text: e.text.replace(/\s#\w+$/, "") });
       }
-      // Çiftin en son hareketine "sırada ne var" notu
-      const last = mine.reduce<Ev | null>((a, b) => (!a || b.at > a.at ? b : a), null);
-      if (last) last.next = nextStep(c, new Date(now), callsEnabled).text;
       out.push(...mine);
     }
     for (const t of tests) {
@@ -236,7 +239,12 @@ export function AdminActivityLog() {
         const phone = e.couple?.phone ?? e.test?.phone ?? "";
         return name.includes(term) || (digits.length >= 3 && phone.includes(digits)) || (e.text ?? "").toLocaleLowerCase("tr-TR").includes(term);
       })
-      .sort((a, b) => b.at.localeCompare(a.at));
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .map((e, _i, arr) => {
+        // Çiftin (süzülmüş listedeki) en yeni satırına "sırada ne var" notu
+        if (!e.couple || arr.find((x) => x.couple?.id === e.couple!.id) !== e) return e;
+        return { ...e, next: nextStep(e.couple, new Date(now), callsEnabled).text };
+      });
   }, [couples, tests, kind, q, now, callsEnabled, auto]);
 
   const shown = events.slice(0, limit);
@@ -267,6 +275,7 @@ export function AdminActivityLog() {
         </div>
       </div>
 
+      {offline && <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Bağlantı yok — son yüklenen veriler gösteriliyor, bağlantı gelince yenilenir.</p>}
       {couples === null ? (
         <div className="rm-card h-72 animate-pulse" />
       ) : shown.length === 0 ? (
@@ -301,9 +310,9 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
   const who = e.couple ? `${e.couple.name} · ${displayPhone(e.couple.phone)}` : e.test ? `${e.test.name} · ${displayPhone(e.test.phone)}` : "";
   const hasDetail = Boolean(e.call || e.test || e.msg);
   return (
-    <li className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50/70 sm:px-5">
+    <li className="flex items-start gap-2.5 px-3 py-3 transition-colors hover:bg-slate-50/70 sm:gap-3 sm:px-5">
       <span className="w-11 shrink-0 pt-1 text-xs font-semibold text-slate-500 tabular-nums">{hhmm(e.at)}</span>
-      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", TONE[e.tone])}>
+      <span className={cn("hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:flex", TONE[e.tone])}>
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1">
@@ -313,7 +322,7 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
           {e.couple ? ` · ${SRC[e.couple.source] ?? e.couple.source}` : ""}
           {e.call?.durationSec ? ` · ${dur(e.call.durationSec)}` : e.test?.durationSec ? ` · ${dur(e.test.durationSec)}` : ""}
         </p>
-        {e.text && <p className={cn("mt-1 line-clamp-4 text-sm whitespace-pre-line", e.icon === "msg-in" ? "font-medium text-rose-800" : "text-slate-700")}>{e.text}</p>}
+        {e.text && <p className={cn("mt-1 line-clamp-4 text-sm break-words whitespace-pre-line", e.icon === "msg-in" ? "font-medium text-rose-800" : "text-slate-700")}>{e.text}</p>}
         {e.next && (
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <p className="inline-block rounded-lg bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-800">➡️ Sırada: {e.next}</p>
@@ -321,7 +330,7 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
               <button
                 type="button"
                 onClick={() => onTogglePause(e.couple!)}
-                className={cn("rounded-lg border px-2 py-1 text-xs font-semibold", e.couple.callsPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
+                className={cn("rounded-lg border px-3 py-2 text-xs font-semibold", e.couple.callsPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
               >
                 {e.couple.callsPaused ? "✅ Aramayı geri aç" : "🚫 Aramayı iptal et"}
               </button>
@@ -330,7 +339,7 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
               <button
                 type="button"
                 onClick={() => onTogglePause(e.couple!, "messagesPaused")}
-                className={cn("rounded-lg border px-2 py-1 text-xs font-semibold", e.couple.messagesPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
+                className={cn("rounded-lg border px-3 py-2 text-xs font-semibold", e.couple.messagesPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
               >
                 {e.couple.messagesPaused ? "✅ Mesajı geri aç" : "🚫 Mesajı iptal et"}
               </button>
@@ -339,7 +348,7 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
         )}
       </div>
       {hasDetail && (
-        <button type="button" onClick={onOpen} className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50">
+        <button type="button" onClick={onOpen} className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50">
           Detay
         </button>
       )}
@@ -352,7 +361,12 @@ function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () =
     if (!e) return;
     const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", k);
+      document.body.style.overflow = prev;
+    };
   }, [e, onClose]);
   if (typeof document === "undefined") return null;
 
@@ -382,7 +396,7 @@ function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () =
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            className="fixed inset-x-3 top-[6vh] z-[71] mx-auto flex max-h-[88vh] max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl"
+            className="fixed inset-x-3 top-[4dvh] z-[71] mx-auto flex max-h-[90dvh] max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
               <div className="min-w-0">
@@ -406,7 +420,7 @@ function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () =
               )}
 
               {e.msg && (
-                <div className={cn("rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap", e.msg.direction === "out" ? "bg-[#D9FDD3] text-slate-900" : "bg-slate-100 text-slate-900")}>
+                <div className={cn("rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap break-words", e.msg.direction === "out" ? "bg-[#D9FDD3] text-slate-900" : "bg-slate-100 text-slate-900")}>
                   {e.msg.text}
                 </div>
               )}
@@ -417,12 +431,12 @@ function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () =
                     <span className={cn("rounded-full px-2.5 py-1 font-semibold", spoke ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-700")}>{spoke ? "Açtı — görüşüldü" : "Açmadı / konuşma olmadı"}</span>
                     {(call?.durationSec || test?.durationSec) && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{dur(call?.durationSec ?? test?.durationSec)}</span>}
                     {call && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {OUTCOME_LABEL[call.outcome]}</span>}
-                    {test?.sonuc && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {test.sonuc}</span>}
+                    {test?.sonuc && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {OUTCOME_LABEL[test.sonuc as keyof typeof OUTCOME_LABEL] ?? test.sonuc}</span>}
                   </div>
                   {(call?.summary || test?.summary) && (
                     <div className="rounded-2xl border border-slate-200 p-3.5">
                       <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Özet</p>
-                      <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap text-slate-800">{call?.summary ?? test?.summary}</p>
+                      <p className="mt-1 text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-800">{call?.summary ?? test?.summary}</p>
                     </div>
                   )}
                   {call?.notes && (
