@@ -11,6 +11,7 @@ import {
   buildFollowUpMessage,
   canContact,
   isFollowUpCallDue,
+  isSecondCallDue,
   isFollowUpDue,
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
@@ -85,7 +86,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const months = await upcomingCapacity(14, cfg);
   const callable = couples
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
-    .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now)) && canContact(c, "call", now).allowed)
+    .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   for (const c of callable) {
     actions.push({
@@ -98,7 +99,9 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       capacity: await getCapacityForDate(c.weddingDate, cfg),
       capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
       followUp: isFollowUpCallDue(c, now),
-      reason: isFollowUpCallDue(c, now)
+      reason: isSecondCallDue(c, now)
+        ? "1. arama açılmadı, WhatsApp’a da dönmedi — 2. (son) arama"
+        : isFollowUpCallDue(c, now)
         ? "Düşüneyim dedi — 1 hafta sonra tekrar arama"
         : c.callbackRequested
           ? "Tekrar aranmak istedi"

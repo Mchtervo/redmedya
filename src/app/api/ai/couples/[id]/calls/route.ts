@@ -93,6 +93,12 @@ export async function POST(request: Request, { params }: Ctx) {
       !updated.contactLocked && updated.weddingDate ? `\n❓ ${date} müsait mi? Çifte WhatsApp'tan dönüş yapılacağı söylendi.` : "",
     ].filter(Boolean);
     await sendTelegramMessage(lines.join("\n")).catch(() => false);
+  } else if (!duplicate && outcome === "no_answer") {
+    const n = updated.calls.length;
+    const next = n <= 1
+      ? "Şimdi WhatsApp'tan \"aradık, ulaşamadık\" mesajı gidiyor. WhatsApp'a da dönmezse yaklaşık 2 saat sonra 2. (son) arama yapılacak."
+      : "Son WhatsApp mesajı (kampanya bitiyor, yerler doluyor) gönderilecek. Bir daha aranmayacak.";
+    await sendTelegramMessage(`📵 Ulaşılamadı (${n}. arama): ${updated.name} — ${displayPhone(updated.phone)}\n${next}`).catch(() => false);
   }
 
   return NextResponse.json({

@@ -125,7 +125,7 @@ export function canContact(
       return { allowed: false, reason: "Arama saatleri dışında (10:00–20:00)" };
     }
     const max = MAX_CALLS[c.source] ?? 1;
-    if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now)) {
+    if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now) && !isSecondCallDue(c, now)) {
       return {
         allowed: false,
         reason: `Arama hakkı doldu (${c.callCount}/${max}); takip WhatsApp'tan`,
@@ -334,6 +334,24 @@ export function isFollowUpCallDue(c: AiCouple, now: Date): boolean {
   if (!followUpTime(c, now)) return false;
   const since = new Date(c.followUpAt as string).getTime();
   return !c.calls.some((x) => new Date(x.at).getTime() >= since);
+}
+
+/** 1. arama ile 2. arama arasında en az bu kadar beklenir (o arada WhatsApp gider). */
+export const SECOND_CALL_GAP_MS = 2 * 3600_000;
+
+/**
+ * 2. arama zamanı mı? 1. arama açılmadı → WhatsApp gönderildi → çift WhatsApp'a da dönmedi
+ * → en az 2 saat sonra 1 kez daha aranır. Çift WhatsApp'tan herhangi bir cevap verdiyse aranmaz.
+ * İkinci aramadan sonra bir daha ARANMAZ.
+ */
+export function isSecondCallDue(c: AiCouple, now: Date): boolean {
+  if (c.contactLocked || c.status === "won" || c.status === "lost") return false;
+  if (c.calls.length !== 1 || c.calls[0].outcome !== "no_answer") return false;
+  const first = new Date(c.calls[0].at).getTime();
+  if (now.getTime() - first < SECOND_CALL_GAP_MS) return false;
+  const after = c.messages.filter((m) => new Date(m.at).getTime() >= first);
+  if (after.some((m) => m.direction === "in")) return false;                 // WhatsApp'tan döndü → arama yok
+  return after.some((m) => m.direction === "out" && m.channel === "whatsapp"); // önce WhatsApp gitmiş olmalı
 }
 
 /** Takip WhatsApp mesajı: tekrar araması denendi ama açılmadı → MESAJ. */

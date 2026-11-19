@@ -66,9 +66,11 @@ function weddingText(c: AiCouple): string {
   return fromNote ? fromNote[1].trim() : "tarih yok";
 }
 
-type Stage = "needsReply" | "queued" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
+type Stage = "needsReply" | "queued" | "smsSent" | "noAnswer" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
 const STAGE_LABEL: Record<Stage, string> = {
   needsReply: "Cevap yazdı – SİZ DÖNÜN",
+  smsSent: "Düğün.com SMS gitti – aranacak",
+  noAnswer: "Arandı – ulaşılamadı",
   queued: "Sırada (henüz ulaşılmadı)",
   called: "Arandı",
   written: "Yazıldı – cevap bekleniyor",
@@ -81,6 +83,8 @@ const STAGE_LABEL: Record<Stage, string> = {
 };
 const STAGE_STYLE: Record<Stage, string> = {
   needsReply: "border-red-400/60 bg-red-500/15 text-red-200 font-semibold",
+  smsSent: "border-violet-300/40 text-violet-200",
+  noAnswer: "border-orange-300/40 text-orange-200",
   queued: "border-white/15 text-rm-gray-400",
   called: "border-sky-300/40 text-sky-200",
   written: "border-rm-champagne/40 text-rm-champagne",
@@ -101,6 +105,9 @@ function stageOf(c: AiCouple): Stage {
   if (c.messages.some((m) => m.direction === "in")) return "replied";
   const out = c.messages.filter((m) => m.direction === "out");
   if (out.some((m) => m.text.includes("fiyat listemize göz atabildiniz"))) return "followup";
+  const lastCall = c.calls[c.calls.length - 1];
+  if (lastCall?.outcome === "no_answer") return "noAnswer";
+  if (!c.calls.length && out.length && out.every((m) => m.channel !== "whatsapp")) return "smsSent";
   if (out.length) return "written";
   if (c.calls.length) return "called";
   return "queued";
