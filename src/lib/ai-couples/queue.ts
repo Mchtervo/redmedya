@@ -27,6 +27,8 @@ const CATALOG_OUTCOMES = new Set(["info_requested", "offer_requested", "thinking
 
 /** Toplu kampanya çiftlerine katalog, kampanya akışından (aramaya göre kişiselleştirilmiş) gider. */
 export const CAMPAIGN_REFS = new Set(["kampanya-2027"]);
+/** Kampanya çiftleri sahibi "aramaları başlat" diyene kadar ARANMAZ (yeni gelen talepler aranır). */
+export const CAMPAIGN_CALLS_ENABLED = false;
 
 /**
  * Arama sonrası WhatsApp artık n8n "RM K" akışından, aramanın notlarına göre kişisel gidiyor.
@@ -82,6 +84,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler
   const months = await upcomingCapacity(14, cfg);
   const callable = couples
+    .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
     .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now)) && canContact(c, "call", now).allowed)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   for (const c of callable) {
