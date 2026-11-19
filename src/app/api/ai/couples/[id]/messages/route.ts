@@ -51,7 +51,8 @@ export async function POST(request: Request, { params }: Ctx) {
   if (direction === "out") {
     // Düğün.com panel mesajı çiftin kendi talebine cevaptır; saat kuralı yine geçerli.
     // Panelden personelin elle yazdığı cevap (kind "reply"): saat kuralı yok, kara liste kuralı var.
-    const decision = kind === "reply"
+    // Düğün.com platform içi karşılama e-postası da gece gidebilir (rahatsız etmez, 1 saat içinde dönüş kuralı).
+    const decision = kind === "reply" || (kind === "welcome" && channel === "dugun_com")
       ? (existing.contactLocked ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" } : { allowed: true as const })
       : canContact(existing, channel === "sms" ? "sms" : "whatsapp", now);
     if (!decision.allowed) {
