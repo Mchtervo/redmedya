@@ -125,7 +125,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now) || isSecondCallDue(c, now))
-    .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
+    .filter((c) => (c.status === "new" || (CAMPAIGN_CALLS_ENABLED && c.sourceRef !== undefined && CAMPAIGN_REFS.has(c.sourceRef) && !c.calls.length) || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için
     //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce
     //  1) 2. arama zamanı gelenler / "tekrar arayın" diyenler
