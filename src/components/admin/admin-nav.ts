@@ -18,6 +18,7 @@ import {
   Bot,
   TrendingUp,
   ListChecks,
+  Drama,
 } from "lucide-react";
 
 export type AdminTabId =
@@ -28,6 +29,7 @@ export type AdminTabId =
   | "ai_couples"
   | "sales"
   | "activity"
+  | "fun"
   | "funnel"
   | "sessions"
   | "ads"
@@ -83,6 +85,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "Hareketler",
     description: "Kim arandı, ne konuşuldu, hangi mesaj gitti",
     icon: ListChecks,
+  },
+  {
+    id: "fun",
+    label: "Şaka Araması",
+    description: "Yakınlara eğlence amaçlı arama (müşteri sistemi değil)",
+    icon: Drama,
   },
   {
     id: "sales",
@@ -170,6 +178,8 @@ export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
   },
   { title: "Müşteri", ids: ["packages", "rehber"] },
   { title: "Ayarlar", ids: ["cms", "operations", "data"] },
+  // Müşteri sisteminden tamamen ayrı: ayrı asistan, ayrı otomasyon akışı, ayrı kayıt dosyası
+  { title: "Eğlence", ids: ["fun"] },
 ];
 
 export function isAdminTab(id: string | null): id is AdminTabId {

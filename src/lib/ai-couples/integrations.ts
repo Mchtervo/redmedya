@@ -41,7 +41,7 @@ export async function callPanelHook(name: string, body: unknown): Promise<{ ok: 
     headers: { "Content-Type": "application/json", "X-RM-Key": cfg.panelHookKey },
     body: JSON.stringify(body),
     // ElevenLabs arama isteği 30-60 sn sürebiliyor (arama yine de gider) → "call" için uzun bekle
-    signal: AbortSignal.timeout(name === "call" ? 130_000 : 45_000),
+    signal: AbortSignal.timeout(name === "call" || name === "prank" ? 130_000 : 45_000),
   }).catch(() => null);
   if (!res) return { ok: false, status: 504, data: { error: "Otomasyona ulaşılamadı" } };
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
