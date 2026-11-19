@@ -72,7 +72,8 @@ export async function POST(request: Request, { params }: Ctx) {
     if (direction === "out") {
       if (kind === "follow_up") next.followUpSentAt = msg.at;
       if (kind === "catalog" && (next.status === "new" || next.status === "contacted")) next.status = "info_sent";
-      if (next.status === "new") next.status = "contacted";
+      // Düğün.com karşılama SMS'i çifti "aranacak" listesinden çıkarmasın (önce arama kuralı).
+      if (next.status === "new" && kind !== "welcome") next.status = "contacted";
       return next;
     }
     // gelen mesaj
