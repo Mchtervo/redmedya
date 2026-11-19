@@ -26,6 +26,15 @@ import type {
   AiCoupleStatus,
 } from "@/types/ai-couples";
 import { displayPhone, GRADE_LABEL, OUTCOME_LABEL, STATUS_LABEL } from "@/lib/ai-couples/rules";
+import { historyForAgent, nextStep, type NextStep } from "@/lib/ai-couples/journey";
+
+const STEP_STYLE: Record<NextStep["tone"], string> = {
+  action: "text-sky-200",
+  wait: "text-rm-gray-300",
+  done: "text-emerald-300",
+  stop: "text-red-300",
+  you: "text-red-200 font-semibold",
+};
 
 type Payload = {
   couples: AiCouple[];
@@ -123,6 +132,7 @@ export function AdminAiCouplesPanel() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
   const [stage, setStage] = useState<Stage | "all">("all");
+  const [aramaOn, setAramaOn] = useState<boolean | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -201,7 +211,7 @@ export function AdminAiCouplesPanel() {
         meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık`}
       />
 
-      <CampaignControl />
+      <CampaignControl onState={(st) => setAramaOn(st.arama)} />
 
       {msg && <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">{msg}</p>}
 
@@ -255,7 +265,7 @@ export function AdminAiCouplesPanel() {
         <ul className="space-y-3">
           {sorted.map((c) => (
             <li key={c.id}>
-              <CoupleCard couple={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onPatch={(b) => patch(c.id, b)} busy={busy} />
+              <CoupleCard callsEnabled={aramaOn !== false} couple={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onPatch={(b) => patch(c.id, b)} busy={busy} />
             </li>
           ))}
         </ul>
@@ -268,12 +278,14 @@ export function AdminAiCouplesPanel() {
 }
 
 function CoupleCard({
+  callsEnabled,
   couple: c,
   open,
   onToggle,
   onPatch,
   busy,
 }: {
+  callsEnabled: boolean;
   couple: AiCouple;
   open: boolean;
   onToggle: () => void;
@@ -282,6 +294,7 @@ function CoupleCard({
 }) {
   const [note, setNote] = useState(c.note ?? "");
   const lastCall = c.calls[c.calls.length - 1];
+  const step = nextStep(c, new Date(), callsEnabled);
 
   return (
     <article className={cn("rounded-2xl border bg-rm-black-elevated/60 p-4 sm:p-5", c.contactLocked ? "border-red-500/30" : "border-white/8")}>
@@ -294,6 +307,7 @@ function CoupleCard({
             <span>{SOURCE_LABEL[c.source]}</span>
             <span>📞 {c.callCount}</span>
           </p>
+          <p className={cn("mt-1.5 text-xs", STEP_STYLE[step.tone])}>➡️ Sonraki adım: {step.text}</p>
           {(lastCall?.notes?.paket || lastCall?.notes?.ekstralar || lastCall?.notes?.tarihTut) && (
             <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-rm-gray-300">
               {lastCall?.notes?.paket && <span>📦 {lastCall.notes.paket}</span>}
@@ -367,6 +381,7 @@ function CoupleCard({
             )}
           </div>
 
+          <p className="rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-rm-gray-300">🧭 Şu ana kadar: {historyForAgent(c)}</p>
           {!c.contactLocked && <ActionBox couple={c} onDone={() => onPatch({})} />}
 
           <div className="flex gap-2">
@@ -516,12 +531,15 @@ function CampaignRow({ label, on, today, busy, onToggle }: { label: string; on?:
   );
 }
 
-function CampaignControl() {
+function CampaignControl({ onState }: { onState?: (st: CampaignState) => void }) {
   const [st, setSt] = useState<CampaignState | null>(null);
   const [busy, setBusy] = useState(false);
   const load = useCallback(() => {
-    fetch("/api/admin/ai-campaign").then((r) => r.json()).then(setSt).catch(() => setSt({ error: "Otomasyona ulaşılamadı" }));
-  }, []);
+    fetch("/api/admin/ai-campaign")
+      .then((r) => r.json())
+      .then((d: CampaignState) => { setSt(d); onState?.(d); })
+      .catch(() => setSt({ error: "Otomasyona ulaşılamadı" }));
+  }, [onState]);
   useEffect(() => { load(); }, [load]);
   const toggle = async (target: "kampanya" | "arama", on: boolean) => {
     const ad = target === "kampanya" ? "WhatsApp kampanyası" : "Otomatik arama";

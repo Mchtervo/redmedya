@@ -15,6 +15,7 @@ import {
   isFollowUpDue,
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
+import { historyForAgent } from "@/lib/ai-couples/journey";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
 
@@ -98,6 +99,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       source: c.source,
       capacity: await getCapacityForDate(c.weddingDate, cfg),
       capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
+      history: historyForAgent(c),
       followUp: isFollowUpCallDue(c, now),
       reason: isSecondCallDue(c, now)
         ? "1. arama açılmadı, WhatsApp’a da dönmedi — 2. (son) arama"

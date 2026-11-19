@@ -6,6 +6,7 @@ import { upcomingCapacity, getCapacityForDate } from "@/lib/ai-couples/capacity"
 import { buildQueue } from "@/lib/ai-couples/queue";
 import { displayPhone, GRADE_LABEL, istanbulParts, OUTCOME_LABEL, STATUS_LABEL } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
+import { historyForAgent, nextStep } from "@/lib/ai-couples/journey";
 
 const REJECT = new Set(["not_interested", "booked_elsewhere", "do_not_contact"]);
 const OFFER = new Set(["offer_requested", "info_requested"]);
@@ -93,6 +94,8 @@ export async function coupleDetailText(c: AiCouple): Promise<string> {
     c.contactLocked ? `🚫 ${c.lockReason ?? "İletişim kapalı"}` : "",
     lastCall ? `Son arama: ${OUTCOME_LABEL[lastCall.outcome]}${lastCall.summary ? ` — ${lastCall.summary.slice(0, 300)}` : ""}` : "",
     c.followUpAt && !c.followUpSentAt ? `⏰ Takip: ${c.followUpAt.slice(0, 10)}` : "",
+    `🧭 Geçmiş: ${historyForAgent(c)}`,
+    `➡️ Sonraki adım: ${nextStep(c).text}`,
   ]
     .filter(Boolean)
     .join("\n");
