@@ -223,6 +223,8 @@ export function AdminSalesAnalytics() {
 
       <AdSpendSection period={p} metaCouples={data.list.filter((c) => c.source === "meta_form")} wonRevenue={data.revenueByCouple} />
 
+      <ProfitSection period={p} resRows={data.resRows} allCouples={couples ?? []} />
+
       {/* Rezervasyonlar nereden geldi */}
       <AdminSection title="Rezervasyonlar nereden geldi?" description="Takvimdeki rezervasyonlar telefondan AI çift kayıtlarıyla eşleştirilir">
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -453,6 +455,122 @@ function AdSpendSection({ period, metaCouples, wonRevenue }: { period: Period; m
           </p>
         </div>
       )}
+    </AdminSection>
+  );
+}
+
+/* ───────────────────────── Kazanç ve kâr ───────────────────────── */
+
+type ResRow = { res: { id: string; total?: number; depositAmount?: number; remainingAmount?: number; approvedAt?: string; createdAt?: string; customer?: { firstName?: string; lastName?: string } }; couple?: AiCouple };
+
+/**
+ * Ciro / kapora / bekleyen ödeme / reklam harcaması / reklam sonrası kalan
+ * + her rezervasyonun reklam maliyeti = kampanyanın BAŞINDAN BERİ harcaması ÷ o kampanyadan gelen toplam rezervasyon
+ */
+function ProfitSection({ period, resRows, allCouples }: { period: Period; resRows: ResRow[]; allCouples: AiCouple[] }) {
+  const [periodSpend, setPeriodSpend] = useState<number | null>(null);
+  const [lifetime, setLifetime] = useState<Map<string, number> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const since = sinceOf(period);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      fetch(`/api/admin/meta-spend?since=${since}`).then((r) => r.json()),
+      fetch(`/api/admin/meta-spend?lifetime=1`).then((r) => r.json()),
+    ])
+      .then(([p, l]: { ok?: boolean; rows?: { campaign: string; spend: number }[]; error?: string }[]) => {
+        if (!alive) return;
+        if (!p.ok || !l.ok) setErr(p.error ?? l.error ?? "Reklam harcaması okunamadı");
+        setPeriodSpend((p.rows ?? []).reduce((s, r) => s + r.spend, 0));
+        const m = new Map<string, number>();
+        for (const r of l.rows ?? []) m.set(r.campaign, (m.get(r.campaign) ?? 0) + r.spend);
+        setLifetime(m);
+      })
+      .catch(() => alive && setErr("Reklam harcaması okunamadı"));
+    return () => {
+      alive = false;
+    };
+  }, [since]);
+
+  // Kampanya başına TÜM zamanlardaki rezervasyon sayısı (maliyeti bölmek için)
+  const wonByCampaign = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of allCouples) if (c.source === "meta_form" && c.status === "won") m.set(adOf(c).campaign, (m.get(adOf(c).campaign) ?? 0) + 1);
+    return m;
+  }, [allCouples]);
+
+  const ciro = resRows.reduce((s, r) => s + (r.res.total ?? 0), 0);
+  const kapora = resRows.reduce((s, r) => s + (r.res.depositAmount ?? 0), 0);
+  const kalanOdeme = resRows.reduce((s, r) => s + (r.res.remainingAmount ?? 0), 0);
+  const spend = periodSpend ?? 0;
+  const net = ciro - spend;
+  const tl = (n: number) => formatPrice(Math.round(n));
+
+  const perRes = resRows.map((r) => {
+    const c = r.couple;
+    const camp = c?.source === "meta_form" ? adOf(c).campaign : null;
+    const life = camp && lifetime ? lifetime.get(camp) : undefined;
+    const n = camp ? wonByCampaign.get(camp) ?? 0 : 0;
+    const cost = camp && life !== undefined && n > 0 ? life / n : null;
+    const name = c?.name ?? [r.res.customer?.firstName, r.res.customer?.lastName].filter(Boolean).join(" ") ?? "—";
+    const kaynak = c ? (c.source === "meta_form" ? `Instagram/Facebook · ${camp}` : SOURCE_TEXT[c.source]) : "Doğrudan / diğer";
+    return { id: r.res.id, name, kaynak, tutar: r.res.total ?? 0, cost, kalan: (r.res.total ?? 0) - (cost ?? 0) };
+  });
+
+  return (
+    <AdminSection title="Kazanç ve kâr" description="Seçili dönemde alınan işler, tahsilat ve reklam harcaması — personel/ekipman gibi diğer giderler dahil değildir">
+      {err && <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">⚠️ {err}</p>}
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-6">
+        {[
+          { l: "Alınan işler (ciro)", v: tl(ciro), s: `${resRows.length} rezervasyon` },
+          { l: "Alınan kapora", v: tl(kapora), s: "tahsil edilen" },
+          { l: "Bekleyen ödeme", v: tl(kalanOdeme), s: "çekim sonrası alınacak" },
+          { l: "Reklam harcaması", v: periodSpend === null ? "…" : tl(spend), s: "Meta, seçili dönem" },
+          { l: "Reklam sonrası kalan", v: periodSpend === null ? "…" : tl(net), s: ciro ? `kâr oranı %${Math.round((net / ciro) * 100)}` : "—", strong: true },
+          { l: "Ciro / reklam", v: spend ? `${(ciro / spend).toFixed(1)}x` : "—", s: spend ? `1 TL reklam → ${(ciro / spend).toFixed(1)} TL iş` : "harcama yok" },
+        ].map((k) => (
+          <div key={k.l} className={cn("rounded-2xl border p-3.5", k.strong ? (net >= 0 ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50") : "border-slate-100 bg-slate-50/70")}>
+            <p className="text-xs font-medium text-slate-500">{k.l}</p>
+            <p className="mt-1 font-editorial text-xl text-slate-900 tabular-nums">{k.v}</p>
+            <p className="mt-1 text-[11px] text-slate-500">{k.s}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="bg-slate-50">
+            <tr className="text-left text-[11px] font-semibold tracking-[0.04em] text-slate-500 uppercase">
+              <th className="px-3 py-2.5">Çift</th>
+              <th className="px-2">Nereden geldi</th>
+              <th className="px-2 text-right">İş tutarı</th>
+              <th className="px-2 text-right">Reklam maliyeti</th>
+              <th className="px-2 text-right">Reklam sonrası</th>
+            </tr>
+          </thead>
+          <tbody>
+            {perRes.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-3 py-5 text-center text-slate-500">Seçili dönemde rezervasyon yok.</td>
+              </tr>
+            ) : (
+              perRes.map((x) => (
+                <tr key={x.id} className="border-t border-slate-100">
+                  <td className="px-3 py-2.5 font-medium text-slate-900">{x.name}</td>
+                  <td className="max-w-[260px] truncate px-2 text-slate-600" title={x.kaynak}>{x.kaynak}</td>
+                  <td className="px-2 text-right tabular-nums">{tl(x.tutar)}</td>
+                  <td className="px-2 text-right tabular-nums">{x.cost === null ? <span className="text-slate-400">reklamsız</span> : tl(x.cost)}</td>
+                  <td className="px-2 text-right font-semibold tabular-nums text-slate-900">{tl(x.kalan)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">
+        Reklam maliyeti: çiftin geldiği kampanyanın başından beri toplam harcaması ÷ o kampanyadan gelen rezervasyon sayısı. Düğün.com ve doğrudan gelen işler &quot;reklamsız&quot; sayılır.
+      </p>
     </AdminSection>
   );
 }

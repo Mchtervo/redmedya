@@ -28,14 +28,16 @@ export async function GET(request: Request) {
   const today = new Date().toISOString().slice(0, 10);
   const since = DAY.test(url.searchParams.get("since") ?? "") ? url.searchParams.get("since")! : new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
   const until = DAY.test(url.searchParams.get("until") ?? "") ? url.searchParams.get("until")! : today;
-  const key = `${since}_${until}`;
+  // lifetime=1 → kampanyaların BAŞINDAN BERİ toplam harcaması (rezervasyon başına maliyet için)
+  const lifetime = url.searchParams.get("lifetime") === "1";
+  const key = lifetime ? "lifetime" : `${since}_${until}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < 10 * 60_000) return NextResponse.json(hit.data);
 
   const params = new URLSearchParams({
-    level: "ad",
-    fields: "campaign_name,ad_name,spend,impressions,clicks,actions",
-    time_range: JSON.stringify({ since, until }),
+    level: lifetime ? "campaign" : "ad",
+    fields: lifetime ? "campaign_name,spend,impressions,clicks,actions" : "campaign_name,ad_name,spend,impressions,clicks,actions",
+    ...(lifetime ? { date_preset: "maximum" } : { time_range: JSON.stringify({ since, until }) }),
     limit: "500",
     access_token: metaAdsToken,
   });
@@ -50,14 +52,14 @@ export async function GET(request: Request) {
   }
   const rows: Row[] = j.data.map((d) => ({
     campaign: d.campaign_name,
-    ad: d.ad_name,
+    ad: d.ad_name ?? "",
     spend: Number(d.spend || 0),
     impressions: Number(d.impressions || 0),
     clicks: Number(d.clicks || 0),
     leads: actionValue(d.actions, ["lead", "onsite_conversion.lead_grouped", "leadgen_grouped"]),
     messages: actionValue(d.actions, ["onsite_conversion.messaging_conversation_started_7d"]),
   }));
-  const data = { ok: true, since, until, currency: "TRY", rows };
+  const data = { ok: true, since: lifetime ? "başlangıç" : since, until, currency: "TRY", rows };
   cache.set(key, { at: Date.now(), data });
   return NextResponse.json(data);
 }
