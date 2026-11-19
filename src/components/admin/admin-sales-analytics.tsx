@@ -55,7 +55,8 @@ export function AdminSalesAnalytics() {
       fetch("/api/admin/reservations").then((r) => (r.ok ? r.json() : [])),
     ])
       .then(([a, res]) => {
-        setCouples((a as { couples?: AiCouple[] }).couples ?? []);
+        // Test çiftleri (panelden test araması) istatistiğe girmez
+        setCouples(((a as { couples?: AiCouple[] }).couples ?? []).filter((c) => c.sourceRef !== "test" && !/^TEST\s/.test(c.name)));
         setReservations(Array.isArray(res) ? res : []);
       })
       .catch(() => setCouples([]));

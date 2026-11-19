@@ -1,6 +1,6 @@
 /**
  * Admin: sesli asistan TEST araması.
- * POST { phone, name?, weddingDate? } → numarayı hemen arar (çift kaydına yazılmaz, WhatsApp gitmez)
+ * POST { phone, name? } → numarayı hemen arar; gerçek akış gibi analiz + kişisel WhatsApp teklifi (test çifti istatistiğe sayılmaz)
  * GET → son test aramaları (durum, süre, özet, konuşma metni). Ses kaydı: /api/admin/ai-recording/{id}
  */
 import { NextResponse } from "next/server";
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const body = await readJson(request);
   const phone = normalizePhone(str(body?.phone, 40));
   if (!phone) return bad("Geçerli bir cep telefonu girin (05xx xxx xx xx)");
-  const r = await startTestCall({ phone, name: str(body?.name, 60), weddingDate: str(body?.weddingDate, 10) });
+  const r = await startTestCall({ phone, name: str(body?.name, 60) });
   if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 502 });
   return NextResponse.json({ ok: true, call: r.record });
 }

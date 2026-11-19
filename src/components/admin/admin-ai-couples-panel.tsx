@@ -465,6 +465,7 @@ function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnab
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-[15px] font-semibold text-slate-900">{c.name}</p>
             <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold", SOURCE_STYLE[c.source])}>{SOURCE_LABEL[c.source]}</span>
+            {c.sourceRef === "test" && <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">🧪 Test</span>}
             {lastCall?.notes?.tarihTut && !c.contactLocked && <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">🔥 Tarih tutalım dedi</span>}
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

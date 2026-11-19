@@ -64,7 +64,9 @@ export function callPriority(c: AiCouple, now: Date): number {
 }
 
 export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueAction[]> {
-  const [couples, cfg] = await Promise.all([readCouples(), readCapacityConfig()]);
+  const [all, cfg] = await Promise.all([readCouples(), readCapacityConfig()]);
+  // Panelden açılan test çiftleri (sourceRef "test") otomatik aranmaz, hatırlatma almaz
+  const couples = all.filter((c) => c.sourceRef !== "test");
   const actions: AiQueueAction[] = [];
 
   // 1) Bilgi isteyen çifte katalog (en acil)

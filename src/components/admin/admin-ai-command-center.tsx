@@ -27,8 +27,9 @@ function lastDays(n: number, now = new Date()) {
   });
 }
 
-export function useAiStats(couples: AiCouple[]) {
+export function useAiStats(allCouples: AiCouple[]) {
   return useMemo(() => {
+    const couples = allCouples.filter((c) => c.sourceRef !== "test" && !/^TEST\s/.test(c.name));
     const days = lastDays(7);
     const calls: Record<string, number> = {};
     const wa: Record<string, number> = {};
@@ -65,7 +66,7 @@ export function useAiStats(couples: AiCouple[]) {
       hot: couples.filter((c) => c.grade === "hot" && !c.contactLocked).length,
       needsReply,
     };
-  }, [couples]);
+  }, [allCouples]);
 }
 
 /* ───────────────────────── KPI kartları ───────────────────────── */

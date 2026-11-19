@@ -77,7 +77,7 @@ export function AdminTestCallBox() {
     });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
-    setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonunuzu açın. Görüşme bitince kayıt ve metin aşağıda çıkar." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
+    setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar; görüşmeye göre WhatsApp teklifi de 1-2 dk içinde gider." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
     if (res.ok) load();
   };
 
@@ -90,7 +90,7 @@ export function AdminTestCallBox() {
           </span>
           <span>
             <span className="block text-sm font-semibold text-slate-900">🧪 Test araması</span>
-            <span className="block text-xs text-slate-500">Bir numara yaz, asistan hemen arasın. Kaydı ve konuşmayı burada dinle — çiftlere yazılmaz.</span>
+            <span className="block text-xs text-slate-500">Numarayı yaz, asistan hemen arasın; konuşmayı analiz edip WhatsApp’tan teklifi göndersin. Kayıt ve konuşma burada — istatistiğe sayılmaz.</span>
           </span>
         </span>
         <ChevronDown className={cn("h-4 w-4 shrink-0 text-slate-400 transition-transform", open && "rotate-180")} />
