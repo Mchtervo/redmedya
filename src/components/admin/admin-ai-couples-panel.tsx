@@ -115,11 +115,12 @@ function weddingText(c: AiCouple): string {
   return fromNote ? fromNote[1].trim() : "tarih yok";
 }
 
-type Stage = "needsReply" | "queued" | "smsSent" | "noAnswer" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
+type Stage = "needsReply" | "queued" | "smsSent" | "noAnswer" | "hungUp" | "called" | "written" | "followup" | "replied" | "won" | "lost" | "stopped" | "badnumber";
 const STAGE_LABEL: Record<Stage, string> = {
   needsReply: "Cevap yazdı – SİZ DÖNÜN",
   smsSent: "Düğün.com SMS gitti – aranacak",
-  noAnswer: "Arandı – ulaşılamadı",
+  noAnswer: "Arandı – açmadı / telefon kapalı",
+  hungUp: "Açtı – dinlemeden kapattı",
   queued: "Sırada (henüz ulaşılmadı)",
   called: "Arandı",
   written: "Yazıldı – cevap bekleniyor",
@@ -134,6 +135,7 @@ const STAGE_STYLE: Record<Stage, string> = {
   needsReply: "border-rose-300 bg-rose-600 text-white font-semibold",
   smsSent: "border-violet-200 bg-violet-50 text-violet-700",
   noAnswer: "border-orange-200 bg-orange-50 text-orange-700",
+  hungUp: "border-amber-300 bg-amber-50 text-amber-800",
   queued: "border-slate-200 bg-white text-slate-600",
   called: "border-sky-200 bg-sky-50 text-sky-700",
   written: "border-indigo-200 bg-indigo-50 text-indigo-700",
@@ -155,7 +157,7 @@ function stageOf(c: AiCouple): Stage {
   const out = c.messages.filter((m) => m.direction === "out");
   if (out.some((m) => m.text.includes("fiyat listemize göz atabildiniz"))) return "followup";
   const lastCall = c.calls[c.calls.length - 1];
-  if (lastCall?.outcome === "no_answer") return "noAnswer";
+  if (lastCall?.outcome === "no_answer") return (lastCall.durationSec ?? 0) > 0 && /Çift:\s*\S/.test(lastCall.transcript ?? "") ? "hungUp" : "noAnswer";
   if (!c.calls.length && out.length && out.every((m) => m.channel !== "whatsapp")) return "smsSent";
   if (out.length) return "written";
   if (c.calls.length) return "called";
