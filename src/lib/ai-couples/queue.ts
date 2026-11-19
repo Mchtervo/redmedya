@@ -12,12 +12,14 @@ import {
   canContact,
   isFollowUpCallDue,
   isCallbackDue,
+  isWithinCallWindow,
+  INSTAGRAM_URL,
   isSecondCallDue,
   isFollowUpDue,
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
-import { selamFor } from "@/lib/ai-couples/hitap";
+import { hitapFor, selamFor } from "@/lib/ai-couples/hitap";
 import { buildDepositReminder, buildThinkingNudge, isDepositReminderDue, isThinkingNudgeDue } from "@/lib/ai-couples/nudges";
 import { buildFollowLast, buildFollowMsg, isFollowCallDue, isFollowLastDue, isFollowMsgDue } from "@/lib/ai-couples/followup";
 import { readAutomation } from "@/lib/ai-couples/automation";
@@ -79,6 +81,29 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   // Panelden açılan test çiftleri (sourceRef "test") otomatik aranmaz, hatırlatma almaz
   const couples = all.filter((c) => c.sourceRef !== "test");
   const actions: AiQueueAction[] = [];
+
+  // 0) Arama saati DIŞINDA gelen form / web talebi: hemen "talebiniz ulaştı" WhatsApp'ı (Düğün.com'a zaten SMS gidiyor)
+  if (!isWithinCallWindow(now)) {
+    for (const c of couples) {
+      if (c.source !== "meta_form" && c.source !== "web") continue;
+      if (c.status !== "new" || c.calls.length || c.contactLocked || c.messagesPaused) continue;
+      if (c.messages.some((m) => m.direction === "out")) continue;
+      if (now.getTime() - Date.parse(c.createdAt) > 12 * 3600_000) continue;
+      const h = hitapFor(c.name).hitap;
+      actions.push({
+        type: "whatsapp",
+        kind: "welcome",
+        night: true,
+        coupleId: c.id,
+        name: c.name,
+        phone: c.phone,
+        text: `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍 Sabah 09:30'dan itibaren sizi arayıp tarihinizin müsaitliğini ve 2027 erken rezervasyon fiyatlarımızı ileteceğiz.
+
+Bu arada çalışmalarımıza Instagram hesabımızdan göz atabilirsiniz: ${INSTAGRAM_URL}`,
+        reason: "Gece gelen form talebi — anında karşılama",
+      });
+    }
+  }
 
   // 1) Bilgi isteyen çifte katalog (en acil)
   for (const c of couples) {

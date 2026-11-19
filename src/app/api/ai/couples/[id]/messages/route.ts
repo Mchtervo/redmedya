@@ -54,7 +54,9 @@ export async function POST(request: Request, { params }: Ctx) {
   // Düğün.com karşılaması (SMS / platform mesajı) gece de gidebilir — numara ancak SMS'le açılıyor, 1 saat içinde dönüş kuralı.
   const decide = (c: AiCouple): { allowed: true } | { allowed: false; reason: string } => {
     const d =
-      kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms"))
+      kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms")) ||
+      // Yeni talebe ilk karşılama WhatsApp'ı (gece gelen form): henüz aranmamış ve hiç yazılmamışsa saat kuralı yok
+      (kind === "welcome" && channel === "whatsapp" && !c.calls.length && !c.messagesPaused && !c.messages.some((m) => m.direction === "out"))
         ? c.contactLocked
           ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" }
           : { allowed: true as const }

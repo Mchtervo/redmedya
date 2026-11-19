@@ -179,7 +179,9 @@ export type AiQueueAction =
     }
   | {
       type: "whatsapp";
-      kind: "catalog" | "follow_up" | "other";
+      /** Gece de gönderilebilen anlık karşılama (yeni form talebi) */
+      night?: boolean;
+      kind: "catalog" | "follow_up" | "other" | "welcome";
       coupleId: string;
       name: string;
       phone: string;
