@@ -146,6 +146,8 @@ export function historyForAgent(c: AiCouple): string {
   if (busy) parts.push(`Daha önce ${busy} kez aradığımızda hat meşguldü.`);
   const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
   if (cb && c.callbackRequested) parts.push(`Çift bu saatte aranmak istemişti — ${cb.text.replace(/^Tekrar arama zamanı: /, "")}; "istediğiniz saatte arıyorum" diye başla.`);
+  const dg = (c.note ?? "").match(/Düğün.com yazışma: [^·]+/);
+  if (dg) parts.push(dg[0].trim() + " — bunu bildiğini belli et, sorusu varsa cevapla.");
   if (isFollowCallDue(c, new Date())) parts.push(followCallNote(c, new Date()));
   const dedup = parts.filter((p, i) => p !== parts[i - 1]);
   return dedup.length ? dedup.join(" ") : "İlk temas — daha önce görüşülmedi.";
