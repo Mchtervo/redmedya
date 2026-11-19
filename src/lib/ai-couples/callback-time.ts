@@ -74,7 +74,7 @@ export function parseCallbackTime(raw: string | undefined | null, from: Date = n
   else if (h1) { hour = Number(h1[1]); if (/buçuk/.test(t)) minute = 30; }
   if (hour !== null) {
     if (/akşam|öğleden sonra|ikindi/.test(t) && hour < 12) hour += 12;
-    else if (hour >= 1 && hour <= 8) hour += 12; // "3'te" → 15:00 (gece arama yok)
+    else if (hour >= 1 && hour <= 8 && !/sabah/.test(t)) hour += 12; // "3'te" → 15:00; "sabah 8" sabah kalır (arama 09:30'da başlar)
     if (hour > 23 || minute > 59) hour = null;
   }
   if (hour === null) {

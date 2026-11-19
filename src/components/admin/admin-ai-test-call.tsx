@@ -46,11 +46,15 @@ export function AdminTestCallBox() {
   const [info, setInfo] = useState<{ ok: boolean; text: string } | null>(null);
   const [calls, setCalls] = useState<TestCall[] | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState(0);
 
   const load = useCallback(() => {
     fetch("/api/admin/ai-test-call", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { calls: [] }))
-      .then((j: { calls?: TestCall[] }) => setCalls(j.calls ?? []))
+      .then((j: { calls?: TestCall[] }) => {
+        setCalls(j.calls ?? []);
+        setLoadedAt(Date.now());
+      })
       .catch(() => setCalls([]));
   }, []);
 
@@ -60,7 +64,9 @@ export function AdminTestCallBox() {
   }, [open, load]);
 
   // Devam eden görüşme varsa 4 sn'de bir yenile (durum + konuşma canlı akar)
-  const live = (calls ?? []).some((c) => !c.status || ["initiated", "in-progress", "processing"].includes(c.status));
+  const live = (calls ?? []).some(
+    (c) => loadedAt - Date.parse(c.at) < 15 * 60_000 && (!c.status || ["initiated", "in-progress", "processing"].includes(c.status))
+  );
   useEffect(() => {
     if (!open || !live) return;
     const t = setInterval(load, 4_000);

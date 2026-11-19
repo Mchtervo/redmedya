@@ -21,7 +21,7 @@ import {
 } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
-import type { AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
+import type { AiCouple, AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -48,20 +48,24 @@ export async function POST(request: Request, { params }: Ctx) {
   const existing = await getCouple(id);
   if (!existing) return bad("Bulunamadı", 404);
 
+  // Giden mesaj izni. Panelden personelin elle yazdığı cevap (kind "reply"): saat kuralı yok, kara liste kuralı var.
+  // Düğün.com karşılaması (SMS / platform mesajı) gece de gidebilir — numara ancak SMS'le açılıyor, 1 saat içinde dönüş kuralı.
+  const decide = (c: AiCouple): { allowed: true } | { allowed: false; reason: string } => {
+    const d =
+      kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms"))
+        ? c.contactLocked
+          ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" }
+          : { allowed: true as const }
+        : canContact(c, channel === "sms" ? "sms" : "whatsapp", now);
+    if (!d.allowed) return d;
+    if (kind === "follow_up" && c.followUpSentAt) return { allowed: false, reason: "Takip mesajı zaten gönderildi" };
+    return { allowed: true };
+  };
   if (direction === "out") {
-    // Düğün.com panel mesajı çiftin kendi talebine cevaptır; saat kuralı yine geçerli.
-    // Panelden personelin elle yazdığı cevap (kind "reply"): saat kuralı yok, kara liste kuralı var.
-    // Düğün.com platform içi karşılama e-postası da gece gidebilir (rahatsız etmez, 1 saat içinde dönüş kuralı).
-    const decision = kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms"))
-      ? (existing.contactLocked ? { allowed: false as const, reason: "Kara liste — iletişim kapalı" } : { allowed: true as const })
-      : canContact(existing, channel === "sms" ? "sms" : "whatsapp", now);
-    if (!decision.allowed) {
-      return NextResponse.json({ ok: false, allowed: false, reason: decision.reason }, { status: 423 });
-    }
-    if (kind === "follow_up" && existing.followUpSentAt) {
-      return NextResponse.json({ ok: false, allowed: false, reason: "Takip mesajı zaten gönderildi" }, { status: 423 });
-    }
+    const pre = decide(existing);
+    if (!pre.allowed) return NextResponse.json({ ok: false, allowed: false, reason: pre.reason }, { status: 423 });
   }
+  let blockedReason: string | null = null;
 
   const msg: AiMessageRecord = { id: randomUUID(), at: now.toISOString(), channel, direction, kind, text };
   const intentRaw = str(body.intent) as InboundIntent | undefined;
@@ -69,15 +73,24 @@ export async function POST(request: Request, { params }: Ctx) {
     direction === "in" ? (intentRaw && INTENTS.includes(intentRaw) ? intentRaw : detectInboundIntent(text)) : "unknown";
 
   const updated = await mutateCouple(id, (c) => {
+    if (direction === "out") {
+      // Son karar kilit altında, en güncel kayıtla (o arada "aramayın" gelmiş olabilir)
+      const d = decide(c);
+      if (!d.allowed) {
+        blockedReason = d.reason;
+        return c;
+      }
+    }
     let next = { ...c, messages: [...c.messages, msg], updatedAt: msg.at };
     if (direction === "out") {
       if (kind === "follow_up") next.followUpSentAt = msg.at;
       if (kind === "catalog" && (next.status === "new" || next.status === "contacted")) next.status = "info_sent";
-      // Düğün.com karşılama SMS'i çifti "aranacak" listesinden çıkarmasın (önce arama kuralı).
-      if (next.status === "new" && kind !== "welcome") next.status = "contacted";
+      // "Önce arama" kuralı: henüz aranmamış çift, mesaj gitti diye aranacaklar listesinden çıkmaz
+      if (next.status === "new" && kind !== "welcome" && next.calls.length) next.status = "contacted";
       return next;
     }
-    // gelen mesaj
+    // gelen mesaj — kara listedeki çiftin kaydı bozulmaz (mesaj sadece kayda düşer)
+    if (next.contactLocked) return next;
     if (intent === "stop") return lockCouple(next, "Mesajla iletişim istemediğini söyledi", now);
     if (intent === "booked_elsewhere") return lockCouple(next, "Başka fotoğrafçıyla anlaştı (mesaj)", now);
     if (intent === "not_interested") {
@@ -90,6 +103,8 @@ export async function POST(request: Request, { params }: Ctx) {
     }
     return next;
   });
+
+  if (blockedReason) return NextResponse.json({ ok: false, allowed: false, reason: blockedReason }, { status: 423 });
 
   // Gelen her cevap Telegram'a (otomatik cevap YOK; sahibi/ekip cevaplar)
   if (direction === "in" && updated) {

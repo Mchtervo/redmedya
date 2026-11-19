@@ -320,7 +320,7 @@ type SpendRow = { campaign: string; ad: string; spend: number; impressions: numb
 
 function sinceOf(p: Period): string {
   const ms = p === "all" ? Date.now() - 365 * 86_400_000 : periodStart(p);
-  return new Date(ms).toISOString().slice(0, 10);
+  return new Date(ms).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
 }
 
 function AdSpendSection({ period, metaCouples, wonRevenue }: { period: Period; metaCouples: AiCouple[]; wonRevenue: Map<string, number> }) {

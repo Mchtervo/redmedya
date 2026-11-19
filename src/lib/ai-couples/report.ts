@@ -24,7 +24,7 @@ function listGrade(couples: AiCouple[], grade: AiCoupleGrade, max = 10): string 
 }
 
 export async function buildDailyReport(now = new Date()) {
-  const couples = await readCouples();
+  const couples = (await readCouples()).filter((c) => c.sourceRef !== "test" && !/^TEST\s/.test(c.name));
   const today = istanbulParts(now).day;
   const isToday = (iso?: string) => Boolean(iso) && istanbulParts(new Date(iso!)).day === today;
 

@@ -28,6 +28,8 @@ export const CALLBACK_DELAY_MS = 2 * 3600_000;
 /** Hat meşgulse bu kadar sonra tekrar denenir (en fazla BUSY_MAX_RETRIES kez) */
 export const BUSY_RETRY_MS = 5 * 60_000;
 export const BUSY_MAX_RETRIES = 2;
+/** "Sonra arayın" en fazla bu kadar kez otomatik tekrar aranır */
+export const MAX_CALLBACKS = 2;
 
 /** "Tekrar arayın" / meşgul tekrar araması zamanı geldi mi? */
 export function isCallbackDue(c: AiCouple, now: Date): boolean {
@@ -129,6 +131,9 @@ export function canContact(
   if (c.status === "won") {
     return { allowed: false, reason: "Rezervasyon yapmış çift — satış iletişimi yok" };
   }
+  if (c.status === "lost") {
+    return { allowed: false, reason: "İlgilenmediğini söyledi — otomatik iletişim yok" };
+  }
   if (channel !== "call") {
     const { hour } = istanbulParts(now);
     if (hour < MESSAGE_WINDOW.startHour || hour >= MESSAGE_WINDOW.endHour) {
@@ -210,6 +215,8 @@ export function applyCallOutcome(
     timeline: [...c.timeline, { at, type: "call", text: `Arama: ${OUTCOME_LABEL[outcome]}` }],
   };
   if (next.status === "new") next.status = "contacted";
+  // Rezervasyon yapmış çift: arama kaydedilir ama durum/derece değişmez (takip, hatırlatma yeniden başlamaz)
+  if (c.status === "won") return { ...next, status: "won", grade: c.grade, followUpAt: c.followUpAt };
 
   // "Düşüneyim" takibi için yapılan 2. arama açıldıysa takip tamamlanmış sayılır
   // (ayrıca WhatsApp takip mesajı gitmez, yeni takip planlanmaz → döngü yok).
@@ -235,7 +242,16 @@ export function applyCallOutcome(
     case "thinking":
       next = markThinking(next, now, "Telefonda düşüneceğini söyledi");
       break;
-    case "callback_requested":
+    case "callback_requested": {
+      const prevCallbacks = c.calls.filter((x) => x.outcome === "callback_requested").length;
+      if (prevCallbacks >= MAX_CALLBACKS) {
+        next = {
+          ...next,
+          grade: next.grade === "hot" ? "hot" : "warm",
+          timeline: [...next.timeline, { at, type: "callback", text: `${MAX_CALLBACKS + 1}. kez "sonra arayın" dedi — artık otomatik aranmayacak, WhatsApp'tan devam` }],
+        };
+        break;
+      }
       next = {
         ...next,
         callbackRequested: true,
@@ -243,6 +259,7 @@ export function applyCallOutcome(
         grade: next.grade === "hot" ? "hot" : "warm",
       };
       break;
+    }
     case "not_interested":
       next = { ...next, grade: "cold", status: "lost", followUpAt: undefined };
       break;

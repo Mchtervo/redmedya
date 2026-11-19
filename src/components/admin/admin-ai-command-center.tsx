@@ -484,7 +484,8 @@ function wonAt(c: AiCouple): string | null {
   return t?.at ?? c.updatedAt;
 }
 
-export function computeStats(couples: AiCouple[], reservations: { approvedAt?: string; createdAt?: string }[], p: Period) {
+export function computeStats(allCouples: AiCouple[], reservations: { approvedAt?: string; createdAt?: string }[], p: Period) {
+  const couples = allCouples.filter((c) => c.sourceRef !== "test" && !/^TEST\s/.test(c.name));
   const start = periodStart(p);
   const inP = (iso?: string) => Boolean(iso) && dayKey(iso!) >= start;
   let calls = 0, answeredCalls = 0, seconds = 0;

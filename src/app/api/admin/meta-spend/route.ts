@@ -25,8 +25,9 @@ export async function GET(request: Request) {
   if (!metaAdsToken || !metaAdAccountId) return NextResponse.json({ ok: false, error: "Reklam hesabı bağlı değil" }, { status: 503 });
 
   const url = new URL(request.url);
-  const today = new Date().toISOString().slice(0, 10);
-  const since = DAY.test(url.searchParams.get("since") ?? "") ? url.searchParams.get("since")! : new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
+  const ist = (ms: number) => new Date(ms).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+  const today = ist(Date.now());
+  const since = DAY.test(url.searchParams.get("since") ?? "") ? url.searchParams.get("since")! : ist(Date.now() - 90 * 86_400_000);
   const until = DAY.test(url.searchParams.get("until") ?? "") ? url.searchParams.get("until")! : today;
   // lifetime=1 → kampanyaların BAŞINDAN BERİ toplam harcaması (rezervasyon başına maliyet için)
   const lifetime = url.searchParams.get("lifetime") === "1";
@@ -56,7 +57,8 @@ export async function GET(request: Request) {
     spend: Number(d.spend || 0),
     impressions: Number(d.impressions || 0),
     clicks: Number(d.clicks || 0),
-    leads: actionValue(d.actions, ["lead", "onsite_conversion.lead_grouped", "leadgen_grouped"]),
+    // Aynı form başvurusu birden fazla türde dönebilir → tek tür say (önce "lead")
+    leads: actionValue(d.actions, ["lead"]) || actionValue(d.actions, ["onsite_conversion.lead_grouped"]) || actionValue(d.actions, ["leadgen_grouped"]),
     messages: actionValue(d.actions, ["onsite_conversion.messaging_conversation_started_7d"]),
   }));
   const data = { ok: true, since: lifetime ? "başlangıç" : since, until, currency: "TRY", rows };

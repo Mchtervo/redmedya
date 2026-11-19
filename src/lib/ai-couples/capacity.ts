@@ -3,7 +3,7 @@
  *   kalan = aylık kapasite − (o aydaki rezervasyonlar + elle girilen dolu yer)
  * Sesli asistan ve takip mesajları bu rakamı kullanır; uydurma sayı yok.
  */
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { dataPath } from "@/lib/data-dir";
 import { readReservations } from "@/lib/reservations-store";
@@ -71,7 +71,9 @@ export async function readCapacityConfig(): Promise<AiCapacityConfig> {
 
 export async function writeCapacityConfig(cfg: AiCapacityConfig): Promise<void> {
   await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify({ ...cfg, updatedAt: new Date().toISOString() }, null, 2), "utf-8");
+  const tmp = `${FILE}.${process.pid}.tmp`;
+  await writeFile(tmp, JSON.stringify({ ...cfg, updatedAt: new Date().toISOString() }, null, 2), "utf-8");
+  await rename(tmp, FILE); // yarım yazılmış dosya okunmasın (okuma hatası → varsayılan 10 kontenjan)
 }
 
 export { monthMap as cleanMonthMap };

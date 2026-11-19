@@ -163,6 +163,8 @@ export type AiQueueAction =
       capacitySpeech: string;
       /** Asistanın açılışı: "Merhabalar Ayşe Hanım" */
       selam?: string;
+      /** Son arama sonucu ya da meşgul kaydının zamanı */
+      lastResultAt?: string;
       /** Asistanın aramadan önce bilmesi gereken geçmiş (SMS, önceki aramalar, WhatsApp, cevaplar) */
       history: string;
       /** "Düşüneyim" diyen çiftin 1 hafta sonraki 2. araması */

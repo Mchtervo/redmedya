@@ -57,6 +57,7 @@ export async function startTestCall(input: { phone: string; name?: string }): Pr
     couple = (await mutateCouple(couple.id, (c) => ({ ...c, name }))) ?? couple;
   }
   if (couple.contactLocked) return { ok: false, error: `Bu numara kara listede (${couple.lockReason ?? "iletişim kapalı"}) — aranamaz` };
+  if (couple.status === "won" && couple.sourceRef !== TEST_REF) return { ok: false, error: "Bu numara rezervasyon yapmış gerçek bir çift — test için başka numara kullanın" };
 
   // Gerçek aramalarla AYNI yol: n8n → ElevenLabs (site sunucusundan doğrudan bağlantıya gerek yok)
   const r = await callPanelHook("call", { coupleId: couple.id });

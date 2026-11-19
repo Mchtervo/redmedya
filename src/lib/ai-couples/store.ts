@@ -106,9 +106,12 @@ export function ingestCouple(input: IngestInput, now = new Date()): Promise<Inge
     const idx = list.findIndex((c) => c.phone === phone);
     if (idx >= 0) {
       const cur = list[idx];
+      // Panelden test edilmiş numaradan GERÇEK talep geldi → test etiketi kalkar, gerçek çift gibi aranır/sayılır
+      const fromTest = cur.sourceRef === "test" && input.sourceRef !== "test";
       list[idx] = {
         ...cur,
-        name: cur.name === "İsimsiz çift" ? name : cur.name,
+        ...(fromTest ? { source: input.source, sourceRef: input.sourceRef, note: input.note ?? cur.note, name, status: cur.calls.length ? cur.status : "new" } : {}),
+        name: fromTest ? name : cur.name === "İsimsiz çift" ? name : cur.name,
         weddingDate: cur.weddingDate ?? weddingDate,
         city: cur.city ?? input.city,
         timeline: [

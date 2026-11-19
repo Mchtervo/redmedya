@@ -133,6 +133,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       capacity: await getCapacityForDate(c.weddingDate, cfg),
       capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
       selam: selamFor(c.name),
+      // Son arama sonucu / meşgul kaydı zamanı: n8n "arama sürüyor" kilidini buna göre açar
+      lastResultAt: [c.calls.at(-1)?.at, [...c.timeline].reverse().find((e) => e.type === "busy")?.at].filter(Boolean).sort().at(-1),
       history: historyForAgent(c),
       followUp: isFollowUpCallDue(c, now),
       reason: isSecondCallDue(c, now)

@@ -266,15 +266,20 @@ export function AdminAiCouplesPanel() {
   const patch = async (id: string, body: Record<string, unknown>) => {
     setBusy(true);
     setMsg(null);
-    const res = await fetch(`/api/admin/ai-couples/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const j = (await res.json().catch(() => ({}))) as { error?: string };
-    setBusy(false);
-    if (!res.ok) setMsg({ text: j.error ?? "Kaydedilemedi", ok: false });
-    load();
+    try {
+      const res = await fetch(`/api/admin/ai-couples/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) setMsg({ text: j.error ?? "Kaydedilemedi", ok: false });
+    } catch {
+      setMsg({ text: "Bağlantı hatası — tekrar deneyin", ok: false });
+    } finally {
+      setBusy(false);
+      load();
+    }
   };
 
   const quickCall = async (c: AiCouple) => {

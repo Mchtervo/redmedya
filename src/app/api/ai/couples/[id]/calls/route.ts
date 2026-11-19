@@ -70,12 +70,17 @@ export async function POST(request: Request, { params }: Ctx) {
     let handled = false;
     const busyUpdated = await mutateCouple(coupleId, (c) => {
       const tries = c.busyRetries ?? 0;
-      if (c.contactLocked || tries >= BUSY_MAX_RETRIES) return c;
-      if (record.externalId && c.timeline.some((e) => e.type === "busy" && e.text.endsWith(`#${record.externalId!.slice(-6)}`))) {
+      // Aynı webhook ikinci kez geldiyse (meşgul kaydı ya da arama olarak zaten işlendi) HİÇBİR ŞEY değiştirme
+      if (
+        record.externalId &&
+        (c.timeline.some((e) => e.type === "busy" && e.text.endsWith(`#${record.externalId!.slice(-6)}`)) ||
+          c.calls.some((x) => x.externalId === record.externalId))
+      ) {
         handled = true;
         retried = tries;
         return c;
       }
+      if (c.contactLocked || tries >= BUSY_MAX_RETRIES) return c;
       handled = true;
       retried = tries + 1;
       return {

@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const couple = await getCouple(id);
   if (!couple) return bad("Bulunamadı", 404);
   if (couple.contactLocked) return bad(`Kara listede: ${couple.lockReason ?? "iletişim kapalı"}`, 423);
+  if (action === "call" && couple.status === "won") return bad("Rezervasyon yapmış çift — satış araması yapılmaz (WhatsApp'tan yazabilirsiniz)", 423);
 
   if (action === "whatsapp") {
     const text = str(body?.text, 3000);
