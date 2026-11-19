@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { COOKIE_NAME, verifyAdminSessionToken } from "@/lib/admin-session";
@@ -10,20 +9,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin", "latin-ext"],
-  weight: ["500", "600", "700", "800"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
+// Not: Panel yazı tipleri (Plus Jakarta Sans + Inter) tarayıcıda yüklenir (AdminShell).
+// next/font/google derleme sırasında Google'a erişemeyince Hostinger derlemesi bozuluyordu.
 export default async function AdminPanelLayout({
   children,
 }: {
@@ -35,5 +22,5 @@ export default async function AdminPanelLayout({
     redirect("/admin/login");
   }
 
-  return <AdminShell fontClass={`${jakarta.variable} ${inter.variable}`}>{children}</AdminShell>;
+  return <AdminShell>{children}</AdminShell>;
 }

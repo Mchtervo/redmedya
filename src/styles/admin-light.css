@@ -4,6 +4,9 @@
  * Paneldeki eski koyu tema sınıfları (rm-*, white/…, *-300 tonları) burada açık zemine uyarlanır.
  */
 body.rm-admin {
+  /* Yazı tipleri tarayıcıda yüklenir (AdminShell); yüklenmezse sistem yazı tipi */
+  --font-jakarta: "Plus Jakarta Sans";
+  --font-inter: "Inter";
   --rm-black: #f5f7fb;
   --rm-black-soft: #ffffff;
   --rm-black-elevated: #ffffff;

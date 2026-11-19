@@ -64,10 +64,17 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
   const counts = useAdminCounts();
   const { status } = useAiSystemStatus();
 
-  /** Açık tema + yazı tipleri body'ye: Radix dialog/portal'lar da aynı temayı alsın. */
+  /** Açık tema body'ye (Radix dialog/portal'lar da aynı temayı alsın) + panel yazı tipleri tarayıcıda yüklenir */
   useEffect(() => {
     const cls = ["rm-admin", ...(fontClass ?? "").split(" ").filter(Boolean)];
     document.body.classList.add(...cls);
+    if (!document.getElementById("rm-admin-fonts")) {
+      const link = document.createElement("link");
+      link.id = "rm-admin-fonts";
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap";
+      document.head.appendChild(link);
+    }
     return () => document.body.classList.remove(...cls);
   }, [fontClass]);
 
