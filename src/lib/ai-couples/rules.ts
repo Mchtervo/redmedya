@@ -398,15 +398,32 @@ export const SECOND_CALL_GAP_MS = 2 * 3600_000;
  * → en az 2 saat sonra 1 kez daha aranır. Çift WhatsApp'tan herhangi bir cevap verdiyse aranmaz.
  * İkinci aramadan sonra bir daha ARANMAZ.
  */
+/** Açmayan çifte en fazla kaç arama denenir (farklı gün ve saatlerde) */
+export const MAX_NO_ANSWER_CALLS = 4;
+const istDay = (ms: number) => new Date(ms).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+
+/**
+ * AÇMAYAN çifte tekrar deneme zamanı mı? (adı tarihsel: 2., 3. ve 4. denemeyi kapsar)
+ *  2. deneme: ilkinden en az 2 saat sonra
+ *  3. deneme: ERTESİ gün (ya da sonrası) akşam 18:00'den sonra — işten çıkış saati
+ *  4. deneme: bir sonraki gün öğlen 12:30'dan sonra — öğle arası
+ * Çift WhatsApp'tan yazdıysa, geri arayıp görüşüldüyse ya da bir aramayı açtıysa DURUR.
+ */
 export function isSecondCallDue(c: AiCouple, now: Date): boolean {
-  if (c.contactLocked || c.status === "won" || c.status === "lost") return false;
-  if (c.calls.length !== 1 || c.calls[0].outcome !== "no_answer") return false;
+  if (c.contactLocked || c.callsPaused || c.status === "won" || c.status === "lost") return false;
+  const n = c.calls.length;
+  if (n < 1 || n >= MAX_NO_ANSWER_CALLS) return false;
+  if (c.calls.some((x) => x.outcome !== "no_answer")) return false;
   const first = new Date(c.calls[0].at).getTime();
+  const last = new Date(c.calls[n - 1].at).getTime();
   if (c.inboundAt && Date.parse(c.inboundAt) > first) return false; // geri aradı, sahibi konuştu → tekrar arama yok
-  if (now.getTime() - first < SECOND_CALL_GAP_MS) return false;
   const after = c.messages.filter((m) => new Date(m.at).getTime() >= first);
   if (after.some((m) => m.direction === "in")) return false;                 // WhatsApp'tan döndü → arama yok
-  return after.some((m) => m.direction === "out" && m.channel === "whatsapp"); // önce WhatsApp gitmiş olmalı
+  if (!after.some((m) => m.direction === "out" && m.channel === "whatsapp")) return false; // önce WhatsApp gitmiş olmalı
+  if (n === 1) return now.getTime() - last >= SECOND_CALL_GAP_MS;
+  if (istDay(now.getTime()) <= istDay(last)) return false; // 3. ve 4. deneme başka bir gün
+  const { hour, minute } = istanbulParts(now);
+  return n === 2 ? hour >= 18 : hour * 60 + minute >= 12 * 60 + 30;
 }
 
 /** Takip WhatsApp mesajı: tekrar araması denendi ama açılmadı → MESAJ. */

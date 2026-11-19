@@ -93,18 +93,23 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
   }
   const lastAt = Date.parse(lastCall.at);
   if (!waOut(lastAt)) {
-    if (lastCall.outcome === "no_answer") {
+    if (lastCall.outcome === "no_answer" && calls.length <= 2 && !msgs.some((m) => m.direction === "out" && m.text.includes("iki kez ulaşmaya"))) {
       return calls.length >= 2
-        ? { text: "2. arama da açılmadı — SON WhatsApp mesajı birkaç dakika içinde (09:00–21:00).", tone: "action" }
+        ? { text: "2. arama da açılmadı — hatırlatma WhatsApp'ı birkaç dakika içinde (09:00–21:00).", tone: "action" }
         : { text: "1. arama açılmadı — \"aradık, ulaşamadık\" WhatsApp'ı birkaç dakika içinde (09:00–21:00).", tone: "action" };
     }
-    return { text: `Görüşüldü (${OUTCOME_LABEL[lastCall.outcome]}) — notlara göre WhatsApp birkaç dakika içinde.`, tone: "action" };
+    if (lastCall.outcome !== "no_answer")
+      return { text: `Görüşüldü (${OUTCOME_LABEL[lastCall.outcome]}) — notlara göre WhatsApp birkaç dakika içinde.`, tone: "action" };
   }
   if (lastCall.outcome === "no_answer" && calls.length === 1) {
     const due = nextCallSlot(new Date(Math.max(now.getTime(), lastAt + SECOND_CALL_GAP_MS)));
     return { text: `WhatsApp'a dönmezse 2. (son) arama ${when(due, now)}${offNote}. Dönerse aranmayacak.`, tone: "wait" };
   }
-  if (lastCall.outcome === "no_answer") return { text: "2 arama + son mesaj tamam — bir daha aranmayacak. Cevap bekleniyor.", tone: "done" };
+  if (lastCall.outcome === "no_answer" && calls.every((x) => x.outcome === "no_answer") && !c.callsPaused) {
+    if (calls.length === 2) return { text: `2 arama açılmadı — WhatsApp'a dönmezse 3. deneme ertesi gün akşam 18:00'den sonra${offNote}.`, tone: "wait" };
+    if (calls.length === 3) return { text: `3 arama açılmadı — son (4.) deneme ertesi gün öğlen 12:30'dan sonra${offNote}.`, tone: "wait" };
+  }
+  if (lastCall.outcome === "no_answer") return { text: `${calls.length} arama açılmadı — bir daha aranmayacak. Takip WhatsApp'tan, cevap bekleniyor.`, tone: "done" };
   const inb = [...c.timeline].reverse().find((e) => e.type === "inbound" || e.type === "inbound_missed");
   if (inb?.type === "inbound_missed" && c.callbackRequested && inb.at > lastCall.at) {
     const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));

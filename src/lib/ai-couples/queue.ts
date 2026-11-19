@@ -97,7 +97,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
         coupleId: c.id,
         name: c.name,
         phone: c.phone,
-        text: `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍 Sabah 09:30'dan itibaren sizi arayıp tarihinizin müsaitliğini ve 2027 erken rezervasyon fiyatlarımızı ileteceğiz.
+        text: `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍 Sabah 09:30'dan itibaren sizi 0312 963 23 47 numaramızdan arayıp tarihinizin müsaitliğini ve 2027 erken rezervasyon fiyatlarımızı ileteceğiz.
 
 Bu arada çalışmalarımıza Instagram hesabımızdan göz atabilirsiniz: ${INSTAGRAM_URL}`,
         reason: "Gece gelen form talebi — anında karşılama",
@@ -184,7 +184,7 @@ Bu arada çalışmalarımıza Instagram hesabımızdan göz atabilirsiniz: ${INS
       urgent: isUrgentLead(c, now) || undefined,
       followUp: isFollowUpCallDue(c, now),
       reason: isSecondCallDue(c, now)
-        ? "1. arama açılmadı, WhatsApp’a da dönmedi — 2. (son) arama"
+        ? `${c.calls.length} arama açılmadı, WhatsApp’a da dönmedi — ${c.calls.length + 1}. deneme (farklı saat)`
         : isFollowUpCallDue(c, now)
         ? "Düşüneyim dedi — 1 hafta sonra tekrar arama"
         : (c.busyRetries ?? 0) > 0
