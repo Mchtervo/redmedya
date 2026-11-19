@@ -16,6 +16,7 @@ import {
   Bug,
   MessageCircle,
   Bot,
+  TrendingUp,
 } from "lucide-react";
 
 export type AdminTabId =
@@ -24,6 +25,7 @@ export type AdminTabId =
   | "leads"
   | "whatsapp_couples"
   | "ai_couples"
+  | "sales"
   | "funnel"
   | "sessions"
   | "ads"
@@ -73,6 +75,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     label: "AI Çift Yönetimi",
     description: "Arama, takip & kontenjan",
     icon: Bot,
+  },
+  {
+    id: "sales",
+    label: "Satış Analizi",
+    description: "Kaynak, reklam ve dönüşüm",
+    icon: TrendingUp,
   },
   {
     id: "funnel",
@@ -145,7 +153,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
   {
     title: "Operasyon",
-    ids: ["overview", "calendar", "leads", "whatsapp_couples", "ai_couples"],
+    ids: ["overview", "calendar", "leads", "whatsapp_couples", "ai_couples", "sales"],
   },
   {
     title: "Analitik",

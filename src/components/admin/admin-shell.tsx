@@ -19,6 +19,7 @@ import { AdminOperationsPanel } from "@/components/admin/admin-operations-panel"
 import { AdminLeadsPanel } from "@/components/admin/admin-leads-panel";
 import { AdminWhatsAppCouplesPanel } from "@/components/admin/admin-whatsapp-couples-panel";
 import { AdminAiCouplesPanel } from "@/components/admin/admin-ai-couples-panel";
+import { AdminSalesAnalytics } from "@/components/admin/admin-sales-analytics";
 import { AdminJourneyPanel } from "@/components/admin/admin-journey-panel";
 import { AdminFunnelPanel } from "@/components/admin/admin-funnel-panel";
 import { AdminCalendarPanel } from "@/components/admin/admin-calendar-panel";
@@ -138,6 +139,8 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
         return <AdminWhatsAppCouplesPanel />;
       case "ai_couples":
         return <AdminAiCouplesPanel />;
+      case "sales":
+        return <AdminSalesAnalytics />;
       case "funnel":
         return <AdminFunnelPanel initialTab="funnel" />;
       case "sessions":
