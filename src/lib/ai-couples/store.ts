@@ -107,7 +107,7 @@ export function ingestCouple(input: IngestInput, now = new Date()): Promise<Inge
     if (idx >= 0) {
       const cur = list[idx];
       // Panelden test edilmiş numaradan GERÇEK talep geldi → test etiketi kalkar, gerçek çift gibi aranır/sayılır
-      const fromTest = (cur.sourceRef === "test" || /^TESTs/.test(cur.name)) && input.sourceRef !== "test";
+      const fromTest = (cur.sourceRef === "test" || /^TEST\s/.test(cur.name)) && input.sourceRef !== "test";
       list[idx] = {
         ...cur,
         // Test kaydı gerçek talebe dönüşür: deneme aramaları/mesajları sayılmaz, yeni gelen talep gibi en baştan işlenir
