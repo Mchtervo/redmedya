@@ -112,7 +112,17 @@ export async function POST(request: Request, { params }: Ctx) {
       duplicate = true;
       return c;
     }
-    const withCall = { ...c, calls: [...c.calls, record], weddingDate: c.weddingDate ?? weddingDate };
+    // Görüşmede tarih öğrenildi / müşteri düzeltti → kayıt güncellenir (açılmayan aramada eski tarih korunur)
+    const fixedDate = outcome !== "no_answer" && weddingDate && weddingDate !== c.weddingDate ? weddingDate : undefined;
+    const trDate = (d: string) => d.split("-").reverse().join(".");
+    const withCall = {
+      ...c,
+      calls: [...c.calls, record],
+      weddingDate: fixedDate ?? c.weddingDate ?? weddingDate,
+      timeline: fixedDate && c.weddingDate
+        ? [...c.timeline, { at: record.at, type: "edit", text: `Düğün tarihi müşterinin söylediğine göre düzeltildi: ${trDate(c.weddingDate)} → ${trDate(fixedDate)}` }]
+        : c.timeline,
+    };
     // Kilitli çift aranmışsa (olmamalı) kayıt tutulur ama kilit bozulmaz.
     if (c.contactLocked) {
       return {
