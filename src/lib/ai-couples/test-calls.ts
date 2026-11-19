@@ -106,6 +106,9 @@ export async function startTestCall(input: { phone: string; name?: string }): Pr
   const conv = typeof r.data.conversationId === "string" ? r.data.conversationId : "";
   if (!r.ok || !conv) {
     const why = typeof r.data.error === "string" ? r.data.error : `otomasyon cevabı ${r.status}`;
+    // SIP 480 / 408 / 487 = arama gitti, telefon çaldı ama açılmadı (ya da kapalı / kapsama dışı); 486 = meşgul
+    if (/\b(480|408|487)\b|no.?answer|temporarily/i.test(why)) return { ok: false, error: "Telefon çaldı ama açılmadı (ya da telefon kapalı / kapsama dışı). Hat çalışıyor — tekrar deneyebilirsiniz." };
+    if (/\b(486|600|603)\b|busy|declin/i.test(why)) return { ok: false, error: "Hat meşgul ya da arama reddedildi. Biraz sonra tekrar deneyin." };
     return { ok: false, error: `Arama başlatılamadı: ${why}` };
   }
   const record: TestCallRecord = {

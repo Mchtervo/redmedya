@@ -84,8 +84,11 @@ function weddingLabel(d?: string) {
 function describeCall(call: AiCallRecord, c: AiCouple, no: number): { title: string; text: string; tone: Ev["tone"]; icon: Ev["icon"] } {
   const voicemail = /telesekreter/i.test(call.summary ?? "");
   if (call.outcome === "no_answer") {
-    const why = voicemail ? "telesekretere düştü" : /bağlanmadı/i.test(call.summary ?? "") ? "bağlanamadı" : "açmadı";
-    return { title: `📵 ${no}. arama — ${why}`, text: call.summary && !voicemail ? call.summary.split("\n")[0] : "", tone: "orange", icon: "noanswer" };
+    const sum = call.summary ?? "";
+    // SIP 480/408/487 = arama gitti, çaldı ama açılmadı (ya da telefon kapalı)
+    const rang = /\b(480|408|487)\b|temporarily/i.test(sum);
+    const why = voicemail ? "telesekretere düştü" : /dinlemeden kapattı/i.test(sum) ? "açtı, dinlemeden kapattı" : /meşgul/i.test(sum) ? "hat meşgul" : rang ? "çaldı, açmadı (ya da telefon kapalı)" : /bağlanmadı/i.test(sum) ? "bağlanamadı" : "açmadı";
+    return { title: `📵 ${no}. arama — ${why}`, text: sum && !voicemail && !rang ? sum.split("\n")[0] : "", tone: "orange", icon: "noanswer" };
   }
   const n = call.notes ?? {};
   const lines = [`Sonuç: ${RESULT_TEXT[call.outcome] ?? OUTCOME_LABEL[call.outcome]}`];
