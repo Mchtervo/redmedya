@@ -81,7 +81,7 @@ export function AdminDataPanel() {
     return (
       <div className="space-y-4">
         <AdminPanelHeader eyebrow="Veriler" title="Dışa aktar" icon={Database} />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }
@@ -228,7 +228,7 @@ export function AdminDataPanel() {
           return (
             <div
               key={c.label}
-              className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-3.5 backdrop-blur-sm transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:p-5"
+              className="rm-card p-3.5 backdrop-blur-sm transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:p-5"
             >
               <div className="flex items-start justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne sm:h-9 sm:w-9">

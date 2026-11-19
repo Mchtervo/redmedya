@@ -53,7 +53,7 @@ export function AdminOperationsPanel() {
           title="Operasyon"
           icon={Settings2}
         />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }

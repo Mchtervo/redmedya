@@ -109,7 +109,7 @@ export function AdminCmsEditor({ embedded }: { embedded?: boolean } = {}) {
     return (
       <div className="space-y-4">
         <AdminPanelHeader eyebrow="Hizmetler" title="İçerik yönetimi" icon={Layers} />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }

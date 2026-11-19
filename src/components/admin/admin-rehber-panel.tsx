@@ -101,7 +101,7 @@ export function AdminRehberPanel() {
     return (
       <div className="space-y-4">
         <AdminPanelHeader eyebrow="Rehber" title="Çift iletişimleri" icon={Contact} />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }
@@ -226,7 +226,7 @@ export function AdminRehberPanel() {
           {filtered.map((c) => (
             <li
               key={c.id}
-              className="group overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 px-4 py-3.5 transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:px-5 sm:py-4 sm:hover:-translate-y-0.5"
+              className="group overflow-hidden rm-card px-4 py-3.5 transition-all hover:border-rm-champagne/25 hover:bg-rm-black-elevated sm:px-5 sm:py-4 sm:hover:-translate-y-0.5"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">

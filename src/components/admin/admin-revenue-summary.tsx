@@ -93,7 +93,7 @@ export function AdminRevenueSummary({
   ];
 
   return (
-    <section className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+    <section className="rm-card p-4 backdrop-blur-sm sm:p-5 md:p-6">
       <div className="flex items-center justify-between border-b border-white/8 pb-3 sm:pb-4">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">

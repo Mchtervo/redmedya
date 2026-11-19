@@ -119,8 +119,8 @@ export function AdminWhatsAppCouplesPanel() {
           title="Paket gönderen çiftler"
           icon={MessageCircle}
         />
-        <div className="h-28 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-28 animate-pulse rm-card" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }
@@ -222,7 +222,7 @@ export function AdminWhatsAppCouplesPanel() {
               lead.cart.lineSummary.map((label) => ({ label, price: 0 }));
             return (
               <li key={lead.id}>
-                <article className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 sm:p-5">
+                <article className="rm-card p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-editorial text-xl text-rm-off-white sm:text-2xl">

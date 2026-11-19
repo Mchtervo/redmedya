@@ -1,0 +1,348 @@
+/*
+ * RED MEDYA — Yönetim paneli açık tema (Modern SaaS / Frost / Soft Glass).
+ * Sadece admin açıkken <body class="rm-admin"> altında çalışır; site temasına dokunmaz.
+ * Paneldeki eski koyu tema sınıfları (rm-*, white/…, *-300 tonları) burada açık zemine uyarlanır.
+ */
+body.rm-admin {
+  --rm-black: #f5f7fb;
+  --rm-black-soft: #ffffff;
+  --rm-black-elevated: #ffffff;
+  --rm-off-white: #0f172a;
+  --rm-cream: #1e293b;
+  --rm-champagne: #4f46e5;
+  --rm-champagne-light: #6366f1;
+  --rm-champagne-dark: #3730a3;
+  --rm-gray-100: #1e293b;
+  --rm-gray-200: #334155;
+  --rm-gray-300: #475569;
+  --rm-gray-400: #475569;
+  --rm-gray-500: #64748b;
+  --background: #f5f7fb;
+  --foreground: #0f172a;
+  --rm-accent-2: #e11d48;
+  --rm-card-border: rgba(226, 232, 240, 0.8);
+  --rm-card-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --rm-card-shadow-hover: 0 18px 40px -8px rgba(15, 23, 42, 0.1), 0 2px 4px rgba(15, 23, 42, 0.04);
+
+  color-scheme: light;
+  color: #0f172a;
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(99, 102, 241, 0.1), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(225, 29, 72, 0.05), transparent 60%),
+    linear-gradient(180deg, #f5f7fb 0%, #eef2ff 100%);
+  background-attachment: fixed;
+}
+
+body.rm-admin ::selection {
+  background: rgba(79, 70, 229, 0.18);
+  color: #0f172a;
+}
+body.rm-admin ::-webkit-scrollbar { width: 8px; height: 8px; }
+body.rm-admin ::-webkit-scrollbar-track { background: transparent; }
+body.rm-admin ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+
+/* Başlıklar ve büyük rakamlar: Plus Jakarta Sans */
+body.rm-admin .font-editorial,
+body.rm-admin .font-display,
+body.rm-admin h1,
+body.rm-admin h2,
+body.rm-admin h3 {
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-style: normal;
+}
+body.rm-admin .font-editorial.tabular-nums { font-weight: 800; }
+body.rm-admin input,
+body.rm-admin textarea,
+body.rm-admin select { color-scheme: light; }
+body.rm-admin input:focus,
+body.rm-admin textarea:focus,
+body.rm-admin select:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
+
+/* Basma hissi */
+body.rm-admin button:not(:disabled):active,
+body.rm-admin a.rm-press:active { transform: scale(0.97); }
+
+/* Ana renkli butonlara indigo gölge (eski altın gölge yerine) */
+body.rm-admin .bg-rm-champagne.rounded-full.uppercase {
+  box-shadow: 0 8px 22px -8px rgba(79, 70, 229, 0.55);
+}
+
+/* Kart: hover'da 2px yukarı + derin gölge */
+.rm-card {
+  background: #fff;
+  border: 1px solid var(--rm-card-border);
+  border-radius: 1.25rem;
+  box-shadow: var(--rm-card-shadow);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.rm-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rm-card-shadow-hover);
+}
+.rm-glass {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+/* Açılışta kartların sırayla yukarı süzülmesi */
+@keyframes rm-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.rm-stagger > div > * { animation: rm-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.rm-stagger > div > *:nth-child(2) { animation-delay: 0.05s; }
+.rm-stagger > div > *:nth-child(3) { animation-delay: 0.1s; }
+.rm-stagger > div > *:nth-child(4) { animation-delay: 0.15s; }
+.rm-stagger > div > *:nth-child(5) { animation-delay: 0.2s; }
+.rm-stagger > div > *:nth-child(6) { animation-delay: 0.25s; }
+.rm-stagger > div > *:nth-child(n + 7) { animation-delay: 0.3s; }
+.rm-rise { animation: rm-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+
+/* Canlı durum noktası: yumuşak nabız */
+@keyframes rm-ping {
+  0% { transform: scale(1); opacity: 0.6; }
+  80%, 100% { transform: scale(2.4); opacity: 0; }
+}
+.rm-live-dot { position: relative; display: inline-block; width: 8px; height: 8px; border-radius: 999px; }
+.rm-live-dot.rm-ping::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; background: inherit;
+  animation: rm-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-stagger > div > *, .rm-rise, .rm-live-dot::after { animation: none; }
+  .rm-card-hover:hover { transform: none; }
+}
+/* AUTO-GENERATED (gen-css): admin paneli açık tema eşlemeleri — Tailwind sınıflarını sadece body.rm-admin altında yeniden boyar. */
+@layer utilities {
+  :where(body.rm-admin) .text-rm-gray-500 { color:#64748B; }
+  :where(body.rm-admin) .hover\:text-rm-gray-500:hover { color:#64748B; }
+  :where(body.rm-admin) .text-rm-gray-600 { color:#94A3B8; }
+  :where(body.rm-admin) .hover\:text-rm-gray-600:hover { color:#94A3B8; }
+  :where(body.rm-admin) .text-rm-gray-700 { color:#CBD5E1; }
+  :where(body.rm-admin) .hover\:text-rm-gray-700:hover { color:#CBD5E1; }
+  :where(body.rm-admin) .bg-rm-gray-600 { background-color:#CBD5E1; }
+  :where(body.rm-admin) .hover\:bg-rm-gray-600:hover { background-color:#CBD5E1; }
+  :where(body.rm-admin) .text-rm-black { color:#fff; }
+  :where(body.rm-admin) .hover\:text-rm-black:hover { color:#fff; }
+  :where(body.rm-admin) .text-white { color:#fff; }
+  :where(body.rm-admin) .hover\:text-white:hover { color:#fff; }
+  :where(body.rm-admin) .bg-rm-black-elevated { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-elevated:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black-elevated\/40 { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-elevated\/40:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black-elevated\/50 { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-elevated\/50:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black-elevated\/60 { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-elevated\/60:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black-elevated\/70 { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-elevated\/70:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black-soft { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .hover\:bg-rm-black-soft:hover { background-color:#fff;border-color:rgba(226,232,240,.9);box-shadow:0 10px 30px -5px rgba(15,23,42,.05),0 1px 2px rgba(15,23,42,.03); }
+  :where(body.rm-admin) .bg-rm-black\/40 { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .hover\:bg-rm-black\/40:hover { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .bg-rm-black\/60 { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .hover\:bg-rm-black\/60:hover { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .bg-rm-black\/85 { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .hover\:bg-rm-black\/85:hover { background-color:rgba(255,255,255,.85); }
+  :where(body.rm-admin) .bg-rm-black { background-color:#F5F7FB; }
+  :where(body.rm-admin) .hover\:bg-rm-black:hover { background-color:#F5F7FB; }
+  :where(body.rm-admin) .bg-white\/\[0\.02\] { background-color:#fff; }
+  :where(body.rm-admin) .hover\:bg-white\/\[0\.02\]:hover { background-color:#fff; }
+  :where(body.rm-admin) .bg-white\/\[0\.03\] { background-color:#fff; }
+  :where(body.rm-admin) .hover\:bg-white\/\[0\.03\]:hover { background-color:#fff; }
+  :where(body.rm-admin) .bg-white\/\[0\.04\] { background-color:#F8FAFC; }
+  :where(body.rm-admin) .hover\:bg-white\/\[0\.04\]:hover { background-color:#F8FAFC; }
+  :where(body.rm-admin) .bg-white\/5 { background-color:#F8FAFC; }
+  :where(body.rm-admin) .hover\:bg-white\/5:hover { background-color:#F8FAFC; }
+  :where(body.rm-admin) .bg-white\/\[0\.05\] { background-color:#F8FAFC; }
+  :where(body.rm-admin) .hover\:bg-white\/\[0\.05\]:hover { background-color:#F8FAFC; }
+  :where(body.rm-admin) .bg-white\/\[0\.06\] { background-color:#F8FAFC; }
+  :where(body.rm-admin) .hover\:bg-white\/\[0\.06\]:hover { background-color:#F8FAFC; }
+  :where(body.rm-admin) .bg-white\/10 { background-color:#F1F5F9; }
+  :where(body.rm-admin) .hover\:bg-white\/10:hover { background-color:#F1F5F9; }
+  :where(body.rm-admin) .bg-white\/15 { background-color:#F1F5F9; }
+  :where(body.rm-admin) .hover\:bg-white\/15:hover { background-color:#F1F5F9; }
+  :where(body.rm-admin) .bg-black\/30 { background-color:#F1F5F9; }
+  :where(body.rm-admin) .hover\:bg-black\/30:hover { background-color:#F1F5F9; }
+  :where(body.rm-admin) .bg-black\/20 { background-color:#F1F5F9; }
+  :where(body.rm-admin) .hover\:bg-black\/20:hover { background-color:#F1F5F9; }
+  :where(body.rm-admin) .bg-black\/15 { background-color:#F1F5F9; }
+  :where(body.rm-admin) .hover\:bg-black\/15:hover { background-color:#F1F5F9; }
+  :where(body.rm-admin) .bg-black\/70 { background-color:rgba(15,23,42,.32); }
+  :where(body.rm-admin) .hover\:bg-black\/70:hover { background-color:rgba(15,23,42,.32); }
+  :where(body.rm-admin) .border-white\/5 { border-color:#EEF2F6; }
+  :where(body.rm-admin) .hover\:border-white\/5:hover { border-color:#EEF2F6; }
+  :where(body.rm-admin) .border-white\/\[0\.06\] { border-color:#EEF2F6; }
+  :where(body.rm-admin) .hover\:border-white\/\[0\.06\]:hover { border-color:#EEF2F6; }
+  :where(body.rm-admin) .border-white\/8 { border-color:#EEF2F6; }
+  :where(body.rm-admin) .hover\:border-white\/8:hover { border-color:#EEF2F6; }
+  :where(body.rm-admin) .border-white\/10 { border-color:#E2E8F0; }
+  :where(body.rm-admin) .hover\:border-white\/10:hover { border-color:#E2E8F0; }
+  :where(body.rm-admin) .border-white\/12 { border-color:#E2E8F0; }
+  :where(body.rm-admin) .hover\:border-white\/12:hover { border-color:#E2E8F0; }
+  :where(body.rm-admin) .border-white\/15 { border-color:#CBD5E1; }
+  :where(body.rm-admin) .hover\:border-white\/15:hover { border-color:#CBD5E1; }
+  :where(body.rm-admin) .border-white\/20 { border-color:#CBD5E1; }
+  :where(body.rm-admin) .hover\:border-white\/20:hover { border-color:#CBD5E1; }
+  :where(body.rm-admin) .border-white\/30 { border-color:#94A3B8; }
+  :where(body.rm-admin) .hover\:border-white\/30:hover { border-color:#94A3B8; }
+  :where(body.rm-admin) .text-red-100 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-100:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-100\/70 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-100\/70:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-100\/80 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-100\/80:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-100\/90 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-100\/90:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-200 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-200:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-200\/70 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-200\/70:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-200\/80 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-200\/80:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-200\/90 { color:#991B1B; }
+  :where(body.rm-admin) .hover\:text-red-200\/90:hover { color:#991B1B; }
+  :where(body.rm-admin) .text-red-300 { color:#B91C1C; }
+  :where(body.rm-admin) .hover\:text-red-300:hover { color:#B91C1C; }
+  :where(body.rm-admin) .text-red-300\/70 { color:#B91C1C; }
+  :where(body.rm-admin) .hover\:text-red-300\/70:hover { color:#B91C1C; }
+  :where(body.rm-admin) .text-red-300\/80 { color:#B91C1C; }
+  :where(body.rm-admin) .hover\:text-red-300\/80:hover { color:#B91C1C; }
+  :where(body.rm-admin) .text-red-300\/90 { color:#B91C1C; }
+  :where(body.rm-admin) .hover\:text-red-300\/90:hover { color:#B91C1C; }
+  :where(body.rm-admin) .text-red-400 { color:#DC2626; }
+  :where(body.rm-admin) .hover\:text-red-400:hover { color:#DC2626; }
+  :where(body.rm-admin) .text-red-400\/70 { color:#DC2626; }
+  :where(body.rm-admin) .hover\:text-red-400\/70:hover { color:#DC2626; }
+  :where(body.rm-admin) .text-red-400\/80 { color:#DC2626; }
+  :where(body.rm-admin) .hover\:text-red-400\/80:hover { color:#DC2626; }
+  :where(body.rm-admin) .text-red-400\/90 { color:#DC2626; }
+  :where(body.rm-admin) .hover\:text-red-400\/90:hover { color:#DC2626; }
+  :where(body.rm-admin) .text-emerald-200 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-200:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-200\/70 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-200\/70:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-200\/80 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-200\/80:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-200\/90 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-200\/90:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-300 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-300:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-300\/70 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-300\/70:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-300\/80 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-300\/80:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-300\/90 { color:#047857; }
+  :where(body.rm-admin) .hover\:text-emerald-300\/90:hover { color:#047857; }
+  :where(body.rm-admin) .text-emerald-400 { color:#059669; }
+  :where(body.rm-admin) .hover\:text-emerald-400:hover { color:#059669; }
+  :where(body.rm-admin) .text-emerald-400\/70 { color:#059669; }
+  :where(body.rm-admin) .hover\:text-emerald-400\/70:hover { color:#059669; }
+  :where(body.rm-admin) .text-emerald-400\/80 { color:#059669; }
+  :where(body.rm-admin) .hover\:text-emerald-400\/80:hover { color:#059669; }
+  :where(body.rm-admin) .text-emerald-400\/90 { color:#059669; }
+  :where(body.rm-admin) .hover\:text-emerald-400\/90:hover { color:#059669; }
+  :where(body.rm-admin) .text-amber-100 { color:#92400E; }
+  :where(body.rm-admin) .hover\:text-amber-100:hover { color:#92400E; }
+  :where(body.rm-admin) .text-amber-100\/70 { color:#92400E; }
+  :where(body.rm-admin) .hover\:text-amber-100\/70:hover { color:#92400E; }
+  :where(body.rm-admin) .text-amber-100\/80 { color:#92400E; }
+  :where(body.rm-admin) .hover\:text-amber-100\/80:hover { color:#92400E; }
+  :where(body.rm-admin) .text-amber-100\/90 { color:#92400E; }
+  :where(body.rm-admin) .hover\:text-amber-100\/90:hover { color:#92400E; }
+  :where(body.rm-admin) .text-amber-200 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-200:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-200\/70 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-200\/70:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-200\/80 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-200\/80:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-200\/90 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-200\/90:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-300 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-300:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-300\/70 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-300\/70:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-300\/80 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-300\/80:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-300\/90 { color:#B45309; }
+  :where(body.rm-admin) .hover\:text-amber-300\/90:hover { color:#B45309; }
+  :where(body.rm-admin) .text-amber-400 { color:#D97706; }
+  :where(body.rm-admin) .hover\:text-amber-400:hover { color:#D97706; }
+  :where(body.rm-admin) .text-amber-400\/70 { color:#D97706; }
+  :where(body.rm-admin) .hover\:text-amber-400\/70:hover { color:#D97706; }
+  :where(body.rm-admin) .text-amber-400\/80 { color:#D97706; }
+  :where(body.rm-admin) .hover\:text-amber-400\/80:hover { color:#D97706; }
+  :where(body.rm-admin) .text-amber-400\/90 { color:#D97706; }
+  :where(body.rm-admin) .hover\:text-amber-400\/90:hover { color:#D97706; }
+  :where(body.rm-admin) .text-orange-200 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-200:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-200\/70 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-200\/70:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-200\/80 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-200\/80:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-200\/90 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-200\/90:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-300 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-300:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-300\/70 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-300\/70:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-300\/80 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-300\/80:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-orange-300\/90 { color:#C2410C; }
+  :where(body.rm-admin) .hover\:text-orange-300\/90:hover { color:#C2410C; }
+  :where(body.rm-admin) .text-sky-200 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-200:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-200\/70 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-200\/70:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-200\/80 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-200\/80:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-200\/90 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-200\/90:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-300 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-300:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-300\/70 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-300\/70:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-300\/80 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-300\/80:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-sky-300\/90 { color:#0369A1; }
+  :where(body.rm-admin) .hover\:text-sky-300\/90:hover { color:#0369A1; }
+  :where(body.rm-admin) .text-rose-300 { color:#BE123C; }
+  :where(body.rm-admin) .hover\:text-rose-300:hover { color:#BE123C; }
+  :where(body.rm-admin) .text-rose-300\/70 { color:#BE123C; }
+  :where(body.rm-admin) .hover\:text-rose-300\/70:hover { color:#BE123C; }
+  :where(body.rm-admin) .text-rose-300\/80 { color:#BE123C; }
+  :where(body.rm-admin) .hover\:text-rose-300\/80:hover { color:#BE123C; }
+  :where(body.rm-admin) .text-rose-300\/90 { color:#BE123C; }
+  :where(body.rm-admin) .hover\:text-rose-300\/90:hover { color:#BE123C; }
+  :where(body.rm-admin) .text-cyan-300 { color:#0E7490; }
+  :where(body.rm-admin) .hover\:text-cyan-300:hover { color:#0E7490; }
+  :where(body.rm-admin) .text-cyan-300\/70 { color:#0E7490; }
+  :where(body.rm-admin) .hover\:text-cyan-300\/70:hover { color:#0E7490; }
+  :where(body.rm-admin) .text-cyan-300\/80 { color:#0E7490; }
+  :where(body.rm-admin) .hover\:text-cyan-300\/80:hover { color:#0E7490; }
+  :where(body.rm-admin) .text-cyan-300\/90 { color:#0E7490; }
+  :where(body.rm-admin) .hover\:text-cyan-300\/90:hover { color:#0E7490; }
+  :where(body.rm-admin) .text-violet-200 { color:#6D28D9; }
+  :where(body.rm-admin) .hover\:text-violet-200:hover { color:#6D28D9; }
+  :where(body.rm-admin) .text-violet-200\/70 { color:#6D28D9; }
+  :where(body.rm-admin) .hover\:text-violet-200\/70:hover { color:#6D28D9; }
+  :where(body.rm-admin) .text-violet-200\/80 { color:#6D28D9; }
+  :where(body.rm-admin) .hover\:text-violet-200\/80:hover { color:#6D28D9; }
+  :where(body.rm-admin) .text-violet-200\/90 { color:#6D28D9; }
+  :where(body.rm-admin) .hover\:text-violet-200\/90:hover { color:#6D28D9; }
+  :where(body.rm-admin) .text-\[\#25D366\] { color:#15803D; }
+  :where(body.rm-admin) .hover\:text-\[\#25D366\]:hover { color:#15803D; }
+  :where(body.rm-admin) .text-\[\#25D366\]\/70 { color:#15803D; }
+  :where(body.rm-admin) .hover\:text-\[\#25D366\]\/70:hover { color:#15803D; }
+  :where(body.rm-admin) .text-\[\#25D366\]\/80 { color:#15803D; }
+  :where(body.rm-admin) .hover\:text-\[\#25D366\]\/80:hover { color:#15803D; }
+  :where(body.rm-admin) .text-\[\#25D366\]\/90 { color:#15803D; }
+  :where(body.rm-admin) .hover\:text-\[\#25D366\]\/90:hover { color:#15803D; }
+  :where(body.rm-admin) .divide-white\/5 > :not(:last-child) { border-color:#EEF2F6; }
+  :where(body.rm-admin) .placeholder\:text-rm-gray-600::placeholder, :where(body.rm-admin) .placeholder\:text-rm-gray-500::placeholder { color:#94A3B8; }
+}

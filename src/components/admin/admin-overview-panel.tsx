@@ -21,6 +21,7 @@ import { AdminPanelHeader, AdminEmptyState } from "@/components/admin/admin-pane
 import { AdminRevenueSummary } from "@/components/admin/admin-revenue-summary";
 import { AdminThisWeekWeddings } from "@/components/admin/admin-this-week-weddings";
 import { AdminActivityFeed } from "@/components/admin/admin-activity-feed";
+import { AiCommandCenter } from "@/components/admin/admin-ai-command-center";
 import { formatPrice } from "@/lib/utils";
 import { formatWeddingDateDisplay } from "@/lib/date-format";
 import { EASE_LUXURY } from "@/lib/animations";
@@ -104,8 +105,8 @@ export function AdminOverviewPanel({
     <div className="space-y-6">
       <AdminPanelHeader
         eyebrow="Genel bakış"
-        title="Hoş geldiniz"
-        description="Bugüne kadar gelen tüm teklifleri, onaylı rezervasyonları ve takvim doluluğunuzu tek ekrandan takip edin."
+        title="Komuta Merkezi"
+        description="AI aramaları, WhatsApp takibi, teklifler, rezervasyonlar ve takvim doluluğu tek ekranda."
         icon={LayoutDashboard}
         meta={
           loading
@@ -116,7 +117,7 @@ export function AdminOverviewPanel({
           <Link
             href="/paket-olustur"
             target="_blank"
-            className="inline-flex items-center gap-2 rounded-full border border-rm-champagne/30 bg-rm-champagne/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] text-rm-champagne uppercase transition-colors hover:border-rm-champagne hover:bg-rm-champagne hover:text-rm-black"
+            className="rm-press inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(79,70,229,0.7)] transition-colors hover:bg-indigo-700"
           >
             Siteyi aç
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -124,12 +125,14 @@ export function AdminOverviewPanel({
         }
       />
 
+      <AiCommandCenter onOpenAi={() => onNavigate("ai_couples")} />
+
       {loading ? (
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40 sm:h-32"
+              className="rm-card h-28 animate-pulse sm:h-32"
             />
           ))}
         </div>
@@ -146,18 +149,18 @@ export function AdminOverviewPanel({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, ease: EASE_LUXURY }}
                   onClick={() => onNavigate(s.tab)}
-                  className="group relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-3.5 text-left backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-rm-champagne/35 hover:bg-rm-black-elevated sm:p-5"
+                  className="rm-card rm-card-hover group relative overflow-hidden p-3.5 text-left sm:p-5"
                 >
                   <div className="flex items-start justify-between">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-rm-champagne sm:h-10 sm:w-10">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 sm:h-11 sm:w-11">
                       <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={1.6} />
                     </span>
                     <ArrowRight className="h-3.5 w-3.5 text-rm-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-rm-champagne" />
                   </div>
-                  <p className={`mt-3 font-editorial text-3xl leading-none tabular-nums sm:mt-4 sm:text-4xl ${s.accent}`}>
+                  <p className={`mt-3 font-editorial text-3xl leading-none tabular-nums sm:mt-4 ${s.accent}`}>
                     {s.value}
                   </p>
-                  <p className="mt-1 text-[9px] font-semibold tracking-[0.22em] text-rm-gray-500 uppercase sm:text-[10px] sm:tracking-[0.25em]">
+                  <p className="mt-1.5 text-[13px] font-medium text-slate-500">
                     {s.label}
                   </p>
                 </motion.button>
@@ -186,7 +189,7 @@ export function AdminOverviewPanel({
             <AdminActivityFeed reservations={reservations} leads={leads} />
           </div>
 
-          <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+          <div className="rm-card p-4 sm:p-5 md:p-6">
             <div className="flex items-center justify-between border-b border-white/8 pb-3 sm:pb-4">
               <div className="flex items-center gap-2.5 sm:gap-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">

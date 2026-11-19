@@ -36,33 +36,33 @@ export function AdminPanelHeader({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: EASE_LUXURY }}
-      className="relative overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-7"
+      className="rm-card relative overflow-hidden p-4 sm:p-5 md:p-6"
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-20 -right-16 h-44 w-44 rounded-full bg-rm-champagne/[0.05] blur-3xl"
+        className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-gradient-to-br from-indigo-200/50 via-blue-100/40 to-rose-100/40 blur-3xl"
       />
       <div className="relative flex flex-wrap items-start justify-between gap-3 md:gap-5">
         <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
           {Icon && (
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne sm:mt-1 sm:h-11 sm:w-11">
+            <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-[0_10px_20px_-10px_rgba(79,70,229,0.8)] sm:h-12 sm:w-12">
               <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.6} />
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-semibold tracking-[0.28em] text-rm-champagne uppercase sm:text-[10px] sm:tracking-[0.3em]">
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-indigo-600 uppercase">
               {eyebrow}
             </p>
-            <h1 className="mt-1.5 font-editorial text-2xl leading-tight text-rm-off-white sm:mt-2 sm:text-3xl md:text-[2.25rem]">
+            <h1 className="mt-1 font-editorial text-2xl leading-tight text-slate-900 sm:text-[1.75rem]">
               {title}
             </h1>
             {description && (
-              <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-rm-gray-400 sm:mt-2 sm:text-sm">
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
                 {description}
               </p>
             )}
             {meta && (
-              <p className="mt-2 text-[11px] text-rm-gray-500 sm:mt-3 sm:text-xs">
+              <p className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                 {meta}
               </p>
             )}
@@ -106,22 +106,22 @@ export function AdminSection({
       className={
         flat
           ? className
-          : `rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4 backdrop-blur-sm sm:p-5 md:p-6 ${className ?? ""}`
+          : `rm-card p-4 sm:p-5 md:p-6 ${className ?? ""}`
       }
     >
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/8 pb-3 sm:pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-4">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           {Icon && (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <Icon className="h-4 w-4" strokeWidth={1.6} />
             </span>
           )}
           <div className="min-w-0">
-            <h3 className="truncate font-editorial text-lg text-rm-off-white sm:text-xl">
+            <h3 className="truncate font-editorial text-base text-slate-900 sm:text-lg">
               {title}
             </h3>
             {description && (
-              <p className="mt-0.5 text-[11px] text-rm-gray-500 sm:text-xs">
+              <p className="mt-0.5 text-xs text-slate-500">
                 {description}
               </p>
             )}
@@ -153,15 +153,15 @@ export function AdminEmptyState({
   action,
 }: AdminEmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/12 bg-white/[0.02] px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/70 px-6 py-14 text-center">
       {Icon && (
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-rm-champagne/25 bg-rm-champagne/10 text-rm-champagne">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
           <Icon className="h-5 w-5" strokeWidth={1.5} />
         </span>
       )}
-      <p className="font-editorial text-lg text-rm-off-white">{title}</p>
+      <p className="font-editorial text-lg text-slate-900">{title}</p>
       {description && (
-        <p className="max-w-md text-sm text-rm-gray-500">{description}</p>
+        <p className="max-w-md text-sm text-slate-500">{description}</p>
       )}
       {action && <div className="mt-2">{action}</div>}
     </div>

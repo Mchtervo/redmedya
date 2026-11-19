@@ -156,7 +156,7 @@ export function AdminCalendarPanel() {
           title="Rezervasyon takvimi"
           icon={CalendarDays}
         />
-        <div className="h-72 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-72 animate-pulse rm-card" />
       </div>
     );
   }
@@ -250,7 +250,7 @@ export function AdminCalendarPanel() {
             byMonth.map(([monthKey, items]) => (
               <section
                 key={monthKey}
-                className="overflow-hidden rounded-2xl border border-white/8 bg-rm-black-elevated/60"
+                className="overflow-hidden rm-card"
               >
                 <div className="flex items-center justify-between border-b border-white/8 bg-white/[0.02] px-5 py-3">
                   <h3 className="font-editorial text-lg text-rm-champagne">

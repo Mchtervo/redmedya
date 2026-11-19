@@ -127,8 +127,8 @@ export function AdminLeadsPanel() {
           title="WhatsApp talepleri"
           icon={Inbox}
         />
-        <div className="h-32 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-32 animate-pulse rm-card" />
+        <div className="h-48 animate-pulse rm-card" />
       </div>
     );
   }

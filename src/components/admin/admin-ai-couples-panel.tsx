@@ -1,23 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
   Calendar,
-  ChevronDown,
+  CheckCircle2,
   Copy,
   Eye,
   EyeOff,
   Lock,
+  MessageCircle,
+  Pause,
   Phone,
+  Play,
   Plus,
   Search,
   Send,
   Unlock,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminEmptyState, AdminPanelHeader, AdminSection } from "@/components/admin/admin-panel-header";
+import { AiAgentsCard, AiCapacityDonut, AiKpiRow, AiTrendChart } from "@/components/admin/admin-ai-command-center";
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
+import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 import type {
   AiCapacityConfig,
   AiCapacityInfo,
@@ -29,11 +37,11 @@ import { displayPhone, GRADE_LABEL, OUTCOME_LABEL, STATUS_LABEL } from "@/lib/ai
 import { historyForAgent, nextStep, type NextStep } from "@/lib/ai-couples/journey";
 
 const STEP_STYLE: Record<NextStep["tone"], string> = {
-  action: "text-sky-200",
-  wait: "text-rm-gray-300",
-  done: "text-emerald-300",
-  stop: "text-red-300",
-  you: "text-red-200 font-semibold",
+  action: "border-indigo-100 bg-indigo-50/70 text-indigo-800",
+  wait: "border-slate-200 bg-slate-50 text-slate-600",
+  done: "border-emerald-100 bg-emerald-50/70 text-emerald-800",
+  stop: "border-rose-100 bg-rose-50/70 text-rose-800",
+  you: "border-rose-200 bg-rose-50 text-rose-800 font-semibold",
 };
 
 type Payload = {
@@ -45,24 +53,34 @@ type Payload = {
 
 type Filter = AiCoupleGrade | "all";
 
+/** Derece rozetleri: sıcak = yumuşak kırmızı, ılık = amber, soğuk = buz mavisi, kara liste = koyu antrasit */
 const GRADE_STYLE: Record<AiCoupleGrade, string> = {
-  hot: "border-orange-400/40 bg-orange-400/10 text-orange-300",
-  warm: "border-amber-300/40 bg-amber-300/10 text-amber-200",
-  cold: "border-sky-300/40 bg-sky-300/10 text-sky-200",
-  blacklist: "border-red-500/40 bg-red-500/10 text-red-300",
+  hot: "border-rose-200 bg-rose-50 text-rose-700",
+  warm: "border-amber-200 bg-amber-50 text-amber-800",
+  cold: "border-sky-200 bg-sky-50 text-sky-800",
+  blacklist: "border-slate-800 bg-slate-800 text-white",
 };
 
 const SOURCE_LABEL: Record<AiCouple["source"], string> = {
   dugun_com: "Düğün.com",
-  meta_form: "Meta form",
+  meta_form: "Meta",
   web: "Web sitesi",
   manual: "Elle",
 };
+const SOURCE_STYLE: Record<AiCouple["source"], string> = {
+  dugun_com: "bg-fuchsia-50 text-fuchsia-700",
+  meta_form: "bg-blue-50 text-blue-700",
+  web: "bg-slate-100 text-slate-700",
+  manual: "bg-slate-100 text-slate-700",
+};
 
-const pill =
-  "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-rm-off-white uppercase transition-colors hover:border-rm-champagne/40 hover:text-rm-champagne disabled:opacity-40";
+const btn =
+  "inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-200 hover:text-indigo-700 disabled:opacity-40";
+const btnPrimary =
+  "inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_-8px_rgba(79,70,229,0.8)] transition-colors hover:bg-indigo-700 disabled:opacity-40";
 const field =
-  "h-10 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm text-rm-off-white outline-none placeholder:text-rm-gray-600 focus:border-rm-champagne/40";
+  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300";
+const label = "text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase";
 
 const CHANNEL_LABEL: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram" };
 const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
@@ -91,18 +109,18 @@ const STAGE_LABEL: Record<Stage, string> = {
   badnumber: "Numara hatalı",
 };
 const STAGE_STYLE: Record<Stage, string> = {
-  needsReply: "border-red-400/60 bg-red-500/15 text-red-200 font-semibold",
-  smsSent: "border-violet-300/40 text-violet-200",
-  noAnswer: "border-orange-300/40 text-orange-200",
-  queued: "border-white/15 text-rm-gray-400",
-  called: "border-sky-300/40 text-sky-200",
-  written: "border-rm-champagne/40 text-rm-champagne",
-  followup: "border-amber-300/40 text-amber-200",
-  replied: "border-emerald-400/40 text-emerald-300",
-  won: "border-emerald-400/60 bg-emerald-400/10 text-emerald-200",
-  lost: "border-white/15 text-rm-gray-500",
-  stopped: "border-red-500/40 text-red-300",
-  badnumber: "border-red-500/30 text-red-300/80",
+  needsReply: "border-rose-300 bg-rose-600 text-white font-semibold",
+  smsSent: "border-violet-200 bg-violet-50 text-violet-700",
+  noAnswer: "border-orange-200 bg-orange-50 text-orange-700",
+  queued: "border-slate-200 bg-white text-slate-600",
+  called: "border-sky-200 bg-sky-50 text-sky-700",
+  written: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  followup: "border-amber-200 bg-amber-50 text-amber-800",
+  replied: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  won: "border-emerald-300 bg-emerald-600 text-white",
+  lost: "border-slate-200 bg-slate-50 text-slate-500",
+  stopped: "border-slate-700 bg-slate-800 text-white",
+  badnumber: "border-rose-200 bg-white text-rose-700",
 };
 function stageOf(c: AiCouple): Stage {
   if (c.contactLocked) return "stopped";
@@ -127,16 +145,63 @@ function fmt(iso?: string) {
   return new Date(iso).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+const AVATAR_TONES = [
+  "from-indigo-500 to-blue-500",
+  "from-rose-500 to-pink-500",
+  "from-emerald-500 to-teal-500",
+  "from-amber-500 to-orange-500",
+  "from-violet-500 to-purple-500",
+  "from-sky-500 to-cyan-500",
+];
+function initials(name: string) {
+  const p = name.trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] ?? "?") + (p.length > 1 ? p[p.length - 1][0] : "")).toLocaleUpperCase("tr-TR");
+}
+function hash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function Avatar({ c, size = "md" }: { c: AiCouple; size?: "md" | "lg" }) {
+  return (
+    <span
+      className={cn(
+        "relative flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br font-semibold text-white",
+        size === "lg" ? "h-14 w-14 text-lg" : "h-11 w-11 text-sm",
+        c.contactLocked ? "from-slate-600 to-slate-800" : AVATAR_TONES[hash(c.id) % AVATAR_TONES.length]
+      )}
+    >
+      {initials(c.name)}
+      {c.contactLocked && (
+        <span className="absolute -right-1 -bottom-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-slate-900">
+          <Lock className="h-2.5 w-2.5" />
+        </span>
+      )}
+    </span>
+  );
+}
+
+function GradeBadge({ g }: { g: AiCoupleGrade }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap", GRADE_STYLE[g])}>
+      {g === "blacklist" && <Lock className="h-3 w-3" />}
+      {GRADE_LABEL[g]}
+    </span>
+  );
+}
+
 export function AdminAiCouplesPanel() {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
   const [stage, setStage] = useState<Stage | "all">("all");
-  const [aramaOn, setAramaOn] = useState<boolean | undefined>(undefined);
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ id: string; focusWa?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const { status, refresh } = useAiSystemStatus();
+  const capacityRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(() => {
     fetch("/api/admin/ai-couples")
@@ -173,7 +238,10 @@ export function AdminAiCouplesPanel() {
   }, [visible]);
   const stageCounts = useMemo(() => {
     const m = {} as Record<Stage, number>;
-    for (const c of couples) { const s = stageOf(c); m[s] = (m[s] ?? 0) + 1; }
+    for (const c of couples) {
+      const s = stageOf(c);
+      m[s] = (m[s] ?? 0) + 1;
+    }
     return m;
   }, [couples]);
 
@@ -187,19 +255,50 @@ export function AdminAiCouplesPanel() {
     });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
-    if (!res.ok) setMsg(j.error ?? "Kaydedilemedi");
+    if (!res.ok) setMsg({ text: j.error ?? "Kaydedilemedi", ok: false });
     load();
+  };
+
+  const quickCall = async (c: AiCouple) => {
+    if (!confirm(`${c.name} şimdi sesli asistanla aransın mı?`)) return;
+    setMsg({ text: `📞 ${c.name} aranıyor…`, ok: true });
+    const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "call" }) });
+    const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    setMsg(res.ok ? { text: `📞 ${c.name} için arama başlatıldı — sonuç birkaç dakika içinde burada`, ok: true } : { text: `⚠️ ${j.error ?? j.message ?? "Arama başlatılamadı"}`, ok: false });
+    if (res.ok) load();
+  };
+
+  const toggleCampaign = async (target: "kampanya" | "arama", on: boolean) => {
+    const ad = target === "kampanya" ? "WhatsApp kampanyası" : "Otomatik arama";
+    if (!confirm(`${ad} ${on ? "BAŞLATILSIN" : "DURDURULSUN"} mu?`)) return;
+    await fetch("/api/admin/ai-campaign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, op: on ? "resume" : "pause" }) }).catch(() => null);
+    refresh();
+  };
+
+  const openStage = (what: "calls" | "whatsapp" | "hot" | "capacity") => {
+    if (what === "capacity") return capacityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setSearch("");
+    if (what === "hot") { setFilter("hot"); setStage("all"); }
+    if (what === "calls") { setFilter("all"); setStage("called"); }
+    if (what === "whatsapp") { setFilter("all"); setStage("written"); }
+    listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-28 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
-        <div className="h-48 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="rm-card h-28 animate-pulse" />
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="rm-card h-36 animate-pulse" />)}
+        </div>
+        <div className="rm-card h-64 animate-pulse" />
       </div>
     );
   }
   if (!data) return <AdminEmptyState title="Veri alınamadı" description="Sayfayı yenileyip tekrar deneyin." />;
+
+  const openCouple = open ? couples.find((c) => c.id === open.id) ?? null : null;
+  const callsEnabled = status.arama !== false;
 
   return (
     <div className="space-y-5">
@@ -208,259 +307,530 @@ export function AdminAiCouplesPanel() {
         title="AI Çift Yönetimi"
         description="Düğün.com ve Meta formdan gelen çiftler, sesli arama sonuçları, WhatsApp takibi ve kontenjan. Kara listedeki çifte hiçbir kanaldan ulaşılmaz; kayıtlar silinmez."
         icon={Bot}
-        meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık`}
+        meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık · ${stageCounts.needsReply ?? 0} cevap bekliyor`}
       />
 
-      <CampaignControl onState={(st) => setAramaOn(st.arama)} />
+      <AiKpiRow couples={couples} months={data.months} onOpenStage={openStage} />
 
-      {msg && <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">{msg}</p>}
-
-      {/* Derece kutuları */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
-        <button
-          type="button"
-          onClick={() => setFilter("all")}
-          className={cn("rounded-2xl border p-3 text-left transition-colors", filter === "all" ? "border-rm-champagne/50 bg-rm-champagne/10" : "border-white/8 bg-rm-black-elevated/60")}
-        >
-          <p className="text-[10px] font-semibold tracking-[0.18em] text-rm-gray-500 uppercase">Tümü</p>
-          <p className="mt-1 font-editorial text-2xl tabular-nums text-rm-off-white">{couples.length}</p>
-        </button>
-        {(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => (
-          <button
-            key={g}
-            type="button"
-            onClick={() => setFilter(g)}
-            className={cn("rounded-2xl border p-3 text-left transition-colors", filter === g ? GRADE_STYLE[g] : "border-white/8 bg-rm-black-elevated/60")}
-          >
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-rm-gray-400 uppercase">{GRADE_LABEL[g]}</p>
-            <p className="mt-1 font-editorial text-2xl tabular-nums text-rm-off-white">{counts[g]}</p>
-          </button>
-        ))}
+      <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+        <AiTrendChart couples={couples} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <AiAgentsCard status={status} onToggle={toggleCampaign} />
+          <AiCapacityDonut months={data.months} />
+        </div>
       </div>
 
-      {/* Aşama filtresi */}
-      <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => setStage("all")} className={cn("rounded-full border px-3 py-1 text-[11px]", stage === "all" ? "border-rm-champagne/50 bg-rm-champagne/10 text-rm-champagne" : "border-white/10 text-rm-gray-400")}>
-          Tüm aşamalar
-        </button>
-        {(Object.keys(STAGE_LABEL) as Stage[]).filter((s) => stageCounts[s]).map((s) => (
-          <button key={s} type="button" onClick={() => setStage(s)} className={cn("rounded-full border px-3 py-1 text-[11px]", stage === s ? STAGE_STYLE[s] + " bg-white/[0.06]" : "border-white/10 text-rm-gray-400")}>
-            {STAGE_LABEL[s]} · {stageCounts[s]}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <label className="relative block flex-1">
-          <span className="sr-only">Çift ara</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-rm-gray-500" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="İsim veya telefon ara" className={cn(field, "h-11 pl-10")} />
-        </label>
-        <AddCoupleForm onDone={load} />
-      </div>
-
-      {visible.length === 0 ? (
-        <AdminEmptyState title="Çift yok" description="Düğün.com / Meta form bağlandığında yeni talepler burada görünür." />
-      ) : (
-        <ul className="space-y-3">
-          {sorted.map((c) => (
-            <li key={c.id}>
-              <CoupleCard callsEnabled={aramaOn !== false} couple={c} open={open === c.id} onToggle={() => setOpen(open === c.id ? null : c.id)} onPatch={(b) => patch(c.id, b)} busy={busy} />
-            </li>
-          ))}
-        </ul>
+      {msg && (
+        <p className={cn("rounded-2xl border px-4 py-2.5 text-sm", msg.ok ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-rose-200 bg-rose-50 text-rose-800")}>
+          {msg.text}
+        </p>
       )}
 
-      <CapacityEditor config={data.capacityConfig} months={data.months} onSaved={load} />
+      {/* Çift listesi */}
+      <div ref={listRef} className="rm-card scroll-mt-28 overflow-hidden">
+        <div className="space-y-3 border-b border-slate-100 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-editorial text-lg text-slate-900">Çiftler</h3>
+              <p className="text-xs text-slate-500">{sorted.length} çift gösteriliyor · cevap bekleyenler en üstte</p>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <label className="relative block sm:w-72">
+                <span className="sr-only">Çift ara</span>
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="İsim veya telefon ara" className={cn(field, "pl-10")} />
+              </label>
+              <AddCoupleForm onDone={load} />
+            </div>
+          </div>
+
+          {/* Derece sekmeleri */}
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+            {([["all", "Tümü", couples.length], ...(Object.keys(GRADE_LABEL) as AiCoupleGrade[]).map((g) => [g, GRADE_LABEL[g], counts[g]])] as [Filter, string, number][]).map(([k, l, n]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setFilter(k)}
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                  filter === k ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                {l}
+                <span className={cn("rounded-full px-1.5 text-[11px] font-bold tabular-nums", filter === k ? "bg-white/20" : "bg-white text-slate-700")}>{n}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Aşama filtresi */}
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => setStage("all")} className={cn("rounded-full border px-3 py-1 text-[11px] font-medium", stage === "all" ? "border-indigo-300 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-500")}>
+              Tüm aşamalar
+            </button>
+            {(Object.keys(STAGE_LABEL) as Stage[]).filter((s) => stageCounts[s]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStage(stage === s ? "all" : s)}
+                className={cn("rounded-full border px-3 py-1 text-[11px] font-medium transition-opacity", STAGE_STYLE[s], stage !== "all" && stage !== s && "opacity-50")}
+              >
+                {STAGE_LABEL[s]} · {stageCounts[s]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="p-4">
+            <AdminEmptyState title="Çift yok" description="Bu filtrede çift bulunamadı. Düğün.com / Meta form bağlandığında yeni talepler burada görünür." />
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {sorted.map((c) => (
+              <CoupleRow
+                key={c.id}
+                c={c}
+                callsEnabled={callsEnabled}
+                onOpen={(focusWa) => setOpen({ id: c.id, focusWa })}
+                onCall={() => quickCall(c)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div ref={capacityRef} className="scroll-mt-28">
+        <CapacityEditor config={data.capacityConfig} months={data.months} onSaved={load} />
+      </div>
       <IntegrationBox integration={data.integration} />
+
+      <CoupleDrawer
+        couple={openCouple}
+        focusWa={open?.focusWa}
+        callsEnabled={callsEnabled}
+        busy={busy}
+        onClose={() => setOpen(null)}
+        onPatch={(b) => openCouple && patch(openCouple.id, b)}
+        onReload={load}
+      />
     </div>
   );
 }
 
-function CoupleCard({
-  callsEnabled,
+/* ───────────────────────── Liste satırı ───────────────────────── */
+
+function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnabled: boolean; onOpen: (focusWa?: boolean) => void; onCall: () => void }) {
+  const st = stageOf(c);
+  const step = nextStep(c, new Date(), callsEnabled);
+  const lastCall = c.calls[c.calls.length - 1];
+  const lastMsg = c.messages[c.messages.length - 1];
+  return (
+    <li
+      className={cn(
+        "group relative flex cursor-pointer flex-col gap-3 px-4 py-4 transition-colors hover:bg-indigo-50/40 sm:px-5 lg:flex-row lg:items-center",
+        st === "needsReply" && "bg-rose-50/50"
+      )}
+      onClick={() => onOpen()}
+    >
+      {st === "needsReply" && <span className="absolute inset-y-0 left-0 w-1 bg-rose-500" />}
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <Avatar c={c} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-[15px] font-semibold text-slate-900">{c.name}</p>
+            <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold", SOURCE_STYLE[c.source])}>{SOURCE_LABEL[c.source]}</span>
+            {lastCall?.notes?.tarihTut && !c.contactLocked && <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">🔥 Tarih tutalım dedi</span>}
+          </div>
+          <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-slate-900 tabular-nums">
+              <Phone className="h-3.5 w-3.5 text-slate-400" />
+              {displayPhone(c.phone)}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-slate-600">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              {weddingText(c)}
+            </span>
+            <span className="text-xs text-slate-500">📞 {c.callCount} arama</span>
+          </p>
+          <p className="mt-1.5 line-clamp-1 text-xs text-slate-600">
+            <span className="font-semibold text-slate-700">Sonraki adım:</span> {step.text}
+          </p>
+          {lastMsg && (
+            <p className={cn("mt-1 line-clamp-1 text-xs", lastMsg.direction === "in" ? "font-medium text-rose-700" : "text-slate-500")}>
+              {lastMsg.direction === "in" ? "💬 Çift: " : "↗ Biz: "}
+              {lastMsg.text.replace(/\s+/g, " ").slice(0, 140)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 pl-14 lg:pl-0">
+        <span className={cn("rounded-full border px-2.5 py-1 text-[11px] whitespace-nowrap", STAGE_STYLE[st])}>{STAGE_LABEL[st]}</span>
+        <GradeBadge g={c.grade} />
+        {!c.contactLocked && (
+          <span className="ml-auto flex gap-1.5 lg:ml-2">
+            <button
+              type="button"
+              title="Hemen ara (sesli asistan)"
+              aria-label="Hemen ara"
+              onClick={(e) => { e.stopPropagation(); onCall(); }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 transition-colors hover:bg-indigo-600 hover:text-white"
+            >
+              <Phone className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              title="WhatsApp yaz"
+              aria-label="WhatsApp yaz"
+              onClick={(e) => { e.stopPropagation(); onOpen(true); }}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-600 hover:text-white"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </button>
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/* ───────────────────────── Sağdan açılan detay çekmecesi ───────────────────────── */
+
+function CoupleDrawer({
   couple: c,
-  open,
-  onToggle,
-  onPatch,
+  focusWa,
+  callsEnabled,
   busy,
+  onClose,
+  onPatch,
+  onReload,
 }: {
+  couple: AiCouple | null;
+  focusWa?: boolean;
   callsEnabled: boolean;
-  couple: AiCouple;
-  open: boolean;
-  onToggle: () => void;
-  onPatch: (b: Record<string, unknown>) => void;
   busy: boolean;
+  onClose: () => void;
+  onPatch: (b: Record<string, unknown>) => void;
+  onReload: () => void;
+}) {
+  const isOpen = Boolean(c);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, onClose]);
+
+  if (typeof document === "undefined") return null;
+  // body'ye taşınır: sayfa animasyonları / üst katmanlar çekmeceyi etkilemesin
+  return createPortal(
+    <AnimatePresence>
+      {c && (
+        <>
+          <motion.div
+            key="overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-slate-900/25 backdrop-blur-[2px]"
+            onClick={onClose}
+          />
+          <motion.aside
+            key="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${c.name} detay`}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 380, damping: 38 }}
+            className="rm-glass fixed inset-y-0 right-0 z-[61] flex w-full max-w-xl flex-col border-l border-white/60 shadow-[-30px_0_60px_-20px_rgba(15,23,42,0.25)]"
+          >
+            <DrawerBody key={c.id} c={c} focusWa={focusWa} callsEnabled={callsEnabled} busy={busy} onClose={onClose} onPatch={onPatch} onReload={onReload} />
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+
+function DrawerBody({
+  c,
+  focusWa,
+  callsEnabled,
+  busy,
+  onClose,
+  onPatch,
+  onReload,
+}: {
+  c: AiCouple;
+  focusWa?: boolean;
+  callsEnabled: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onPatch: (b: Record<string, unknown>) => void;
+  onReload: () => void;
 }) {
   const [note, setNote] = useState(c.note ?? "");
-  const lastCall = c.calls[c.calls.length - 1];
+  const st = stageOf(c);
   const step = nextStep(c, new Date(), callsEnabled);
+  const lastCall = c.calls[c.calls.length - 1];
 
   return (
-    <article className={cn("rounded-2xl border bg-rm-black-elevated/60 p-4 sm:p-5", c.contactLocked ? "border-red-500/30" : "border-white/8")}>
-      <button type="button" onClick={onToggle} className="flex w-full flex-wrap items-start justify-between gap-3 text-left">
-        <div className="min-w-0">
-          <p className="font-editorial text-xl text-rm-off-white">{c.name}</p>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-rm-gray-400">
-            <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{displayPhone(c.phone)}</span>
-            <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{weddingText(c)}</span>
-            <span>{SOURCE_LABEL[c.source]}</span>
-            <span>📞 {c.callCount}</span>
-          </p>
-          <p className={cn("mt-1.5 text-xs", STEP_STYLE[step.tone])}>➡️ Sonraki adım: {step.text}</p>
-          {(lastCall?.notes?.paket || lastCall?.notes?.ekstralar || lastCall?.notes?.tarihTut) && (
-            <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-rm-gray-300">
-              {lastCall?.notes?.paket && <span>📦 {lastCall.notes.paket}</span>}
-              {lastCall?.notes?.ekstralar && <span>➕ {lastCall.notes.ekstralar}</span>}
-              {lastCall?.notes?.tarihTut && <span className="text-orange-300">🔥 Tarihi tutalım dedi</span>}
+    <>
+      {/* Başlık */}
+      <div className="border-b border-slate-200/70 px-5 pt-5 pb-4">
+        <div className="flex items-start gap-3">
+          <Avatar c={c} size="lg" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-editorial text-xl text-slate-900">{c.name}</p>
+            <a href={`tel:${c.phone}`} className="mt-0.5 inline-flex items-center gap-1.5 text-base font-semibold text-slate-900 tabular-nums hover:text-indigo-700">
+              <Phone className="h-4 w-4 text-slate-400" />
+              {displayPhone(c.phone)}
+            </a>
+            <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500">
+              <span>💍 {weddingText(c)}</span>
+              <span>{SOURCE_LABEL[c.source]}</span>
+              <span>{STATUS_LABEL[c.status]}</span>
             </p>
-          )}
-          {lastCall?.summary && <p className="mt-2 line-clamp-2 text-sm text-rm-gray-300">{lastCall.summary}</p>}
-          {c.messages.length > 0 && (
-            <p className={cn("mt-1.5 line-clamp-1 text-xs", c.messages[c.messages.length - 1].direction === "in" ? "text-red-200" : "text-rm-gray-500")}>
-              {c.messages[c.messages.length - 1].direction === "in" ? "💬 Çift: " : "↗ Biz: "}
-              {c.messages[c.messages.length - 1].text.replace(/s+/g, " ").slice(0, 140)}
-            </p>
-          )}
+          </div>
+          <button type="button" onClick={onClose} aria-label="Kapat" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-900">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("rounded-full border px-3 py-1 text-[11px]", STAGE_STYLE[stageOf(c)])}>{STAGE_LABEL[stageOf(c)]}</span>
-          <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold", GRADE_STYLE[c.grade])}>{GRADE_LABEL[c.grade]}</span>
-          <span className="text-[11px] text-rm-gray-500">{STATUS_LABEL[c.status]}</span>
-          <ChevronDown className={cn("h-4 w-4 text-rm-gray-500 transition-transform", open && "rotate-180")} />
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <span className={cn("rounded-full border px-2.5 py-1 text-[11px]", STAGE_STYLE[st])}>{STAGE_LABEL[st]}</span>
+          <GradeBadge g={c.grade} />
+          {lastCall?.notes?.tarihTut && <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">🔥 Tarihi 24 saat tut</span>}
         </div>
-      </button>
+        <p className={cn("mt-3 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>➡️ {step.text}</p>
+      </div>
 
-      {open && (
-        <div className="mt-4 space-y-4 border-t border-white/8 pt-4">
-          {c.contactLocked && (
-            <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              🚫 İletişim kapalı — {c.lockReason ?? "kara liste"} ({fmt(c.lockedAt)})
-            </p>
-          )}
-          {c.followUpAt && !c.followUpSentAt && !c.contactLocked && (
-            <p className="text-sm text-amber-200">⏰ Düşünüyor — tekrar arama: {fmt(c.followUpAt)} (açmazsa WhatsApp)</p>
-          )}
+      <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+        {c.contactLocked && (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-sm text-white">
+            <p className="flex items-center gap-2 font-semibold"><Lock className="h-4 w-4" /> İletişim kapalı</p>
+            <p className="mt-1 text-slate-300">{c.lockReason ?? "Kara liste"} · {fmt(c.lockedAt)}</p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                const ok = prompt(`DİKKAT: ${c.name} "${c.lockReason}" sebebiyle kilitli. Çift açıkça izin verdiyse kilidi açmak için KILIDI AC yazın.`);
+                if (ok === "KILIDI AC") onPatch({ unlock: true, confirm: "KILIDI AC" });
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 disabled:opacity-40"
+            >
+              <Unlock className="h-3.5 w-3.5" /> KILIDI AC
+            </button>
+          </div>
+        )}
+        {c.followUpAt && !c.followUpSentAt && !c.contactLocked && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">⏰ Düşünüyor — tekrar arama: {fmt(c.followUpAt)} (açmazsa WhatsApp)</p>
+        )}
 
-          {/* İşlemler */}
-          <div className="flex flex-wrap gap-2">
-            {!c.contactLocked &&
-              (["hot", "warm", "cold"] as AiCoupleGrade[]).map((g) => (
-                <button key={g} type="button" disabled={busy || c.grade === g} onClick={() => onPatch({ grade: g })} className={pill}>
+        {/* Durum kontrolleri */}
+        {!c.contactLocked && (
+          <div className="space-y-2">
+            <p className={label}>Durum</p>
+            <div className="flex flex-wrap gap-2">
+              {(["hot", "warm", "cold"] as AiCoupleGrade[]).map((g) => (
+                <button key={g} type="button" disabled={busy || c.grade === g} onClick={() => onPatch({ grade: g })} className={cn(btn, c.grade === g && "border-indigo-300 bg-indigo-50 text-indigo-700 disabled:opacity-100")}>
                   {GRADE_LABEL[g]}
                 </button>
               ))}
-            {!c.contactLocked && (
-              <>
-                <button type="button" disabled={busy} onClick={() => onPatch({ status: "thinking" as AiCoupleStatus })} className={pill}>Düşünüyor (+7 gün takip)</button>
-                <button type="button" disabled={busy} onClick={() => onPatch({ status: "won" as AiCoupleStatus })} className={pill}>Rezervasyon yaptı</button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (confirm(`${c.name} kara listeye alınsın mı? Bir daha arama veya mesaj gitmez.`)) onPatch({ grade: "blacklist", reason: "Admin kara listeye aldı" });
-                  }}
-                  className={cn(pill, "border-red-500/40 text-red-300")}
-                >
-                  <Lock className="h-3 w-3" /> Kara liste
-                </button>
-              </>
-            )}
-            {c.contactLocked && (
+              <button type="button" disabled={busy} onClick={() => onPatch({ status: "thinking" as AiCoupleStatus })} className={btn}>Düşünüyor (+7 gün)</button>
+              <button type="button" disabled={busy || c.status === "won"} onClick={() => onPatch({ status: "won" as AiCoupleStatus })} className={cn(btn, "border-emerald-200 text-emerald-700 hover:border-emerald-300 hover:text-emerald-800")}>
+                <CheckCircle2 className="h-3.5 w-3.5" /> Anlaşıldı (rezervasyon)
+              </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => {
-                  const ok = prompt(`DİKKAT: ${c.name} "${c.lockReason}" sebebiyle kilitli. Çift açıkça izin verdiyse kilidi açmak için KILIDI AC yazın.`);
-                  if (ok === "KILIDI AC") onPatch({ unlock: true, confirm: "KILIDI AC" });
+                  if (confirm(`${c.name} kara listeye alınsın mı? Bir daha arama veya mesaj gitmez.`)) onPatch({ grade: "blacklist", reason: "Admin kara listeye aldı" });
                 }}
-                className={pill}
+                className={cn(btn, "border-slate-300 text-slate-800 hover:border-slate-800 hover:bg-slate-800 hover:text-white")}
               >
-                <Unlock className="h-3 w-3" /> Kilidi aç
+                <Lock className="h-3.5 w-3.5" /> Kara liste
               </button>
-            )}
-          </div>
-
-          <p className="rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-rm-gray-300">🧭 Şu ana kadar: {historyForAgent(c)}</p>
-          {!c.contactLocked && <ActionBox couple={c} onDone={() => onPatch({})} />}
-
-          <div className="flex gap-2">
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Not" className={field} />
-            <button type="button" disabled={busy} onClick={() => onPatch({ note })} className={pill}>Kaydet</button>
-          </div>
-
-          {/* Aramalar */}
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">Aramalar</p>
-            {c.calls.length === 0 ? (
-              <p className="mt-2 text-sm text-rm-gray-500">Henüz arama yok.</p>
-            ) : (
-              <ul className="mt-2 space-y-3">
-                {[...c.calls].reverse().map((call) => (
-                  <li key={call.id} className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
-                    <p className="text-xs text-rm-gray-400">
-                      {fmt(call.at)} · <span className="text-rm-off-white">{OUTCOME_LABEL[call.outcome]}</span>
-                      {call.durationSec ? ` · ${Math.round(call.durationSec / 60)} dk` : ""}
-                      {typeof call.quotedRemaining === "number" ? ` · söylenen kontenjan: ${call.quotedRemaining}` : ""}
-                    </p>
-                    {call.summary && <p className="mt-1.5 whitespace-pre-wrap text-sm text-rm-gray-200">{call.summary}</p>}
-                    {call.notes && (
-                      <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-rm-gray-300">
-                        {call.notes.cekimTuru && <span>🎬 Çekim: {call.notes.cekimTuru}</span>}
-                        {call.notes.paket && <span>📦 Paket: {call.notes.paket}</span>}
-                        {call.notes.ekstralar && <span>➕ Ekstra: {call.notes.ekstralar}</span>}
-                        {call.notes.itiraz && <span>⚠️ İtiraz: {call.notes.itiraz}</span>}
-                        {call.notes.tarihTut && <span className="text-orange-300">🔥 Tarihi 24 saat tut: EVET</span>}
-                      </p>
-                    )}
-                    {call.recordingUrl && (
-                      <audio controls preload="none" src={call.recordingUrl} className="mt-2 w-full">
-                        <a href={call.recordingUrl}>Ses kaydı</a>
-                      </audio>
-                    )}
-                    {call.transcript && (
-                      <details className="mt-2 text-xs text-rm-gray-400">
-                        <summary className="cursor-pointer">Konuşma metni</summary>
-                        <p className="mt-1 whitespace-pre-wrap">{call.transcript}</p>
-                      </details>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Mesajlar */}
-          {c.messages.length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">Mesajlar</p>
-              <ul className="mt-2 space-y-2">
-                {c.messages.slice(-10).map((m) => (
-                  <li key={m.id} className={cn("max-w-[90%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap", m.direction === "out" ? "ml-auto bg-rm-champagne/10 text-rm-off-white" : "bg-white/[0.05] text-rm-gray-200")}>
-                    {m.text}
-                    <span className="mt-1 block text-[10px] text-rm-gray-500">{m.direction === "out" ? "Giden" : "Gelen"} · {CHANNEL_LABEL[m.channel] ?? m.channel} · {fmt(m.at)}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Zaman çizelgesi */}
-          <details className="text-xs text-rm-gray-400">
-            <summary className="cursor-pointer">Geçmiş ({c.timeline.length})</summary>
-            <ul className="mt-2 space-y-1">
-              {[...c.timeline].reverse().map((t, i) => (
-                <li key={i}>{fmt(t.at)} — {t.text}</li>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
+          <p className={label}>🧭 Şu ana kadar</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{historyForAgent(c)}</p>
+        </div>
+
+        {!c.contactLocked && <ActionBox couple={c} autoFocus={focusWa} onDone={onReload} />}
+
+        <div className="space-y-1.5">
+          <p className={label}>Not</p>
+          <div className="flex gap-2">
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Not ekle" className={field} />
+            <button type="button" disabled={busy} onClick={() => onPatch({ note })} className={btnPrimary}>Kaydet</button>
+          </div>
+        </div>
+
+        {/* Aramalar */}
+        <div className="space-y-2">
+          <p className={label}>Görüşmeler ({c.calls.length})</p>
+          {c.calls.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-500">Henüz arama yok.</p>
+          ) : (
+            <ul className="space-y-3">
+              {[...c.calls].reverse().map((call) => (
+                <li key={call.id} className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                  <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                    <span>{fmt(call.at)}</span>
+                    <span className={cn("rounded-full px-2 py-0.5 font-semibold", call.outcome === "no_answer" ? "bg-orange-50 text-orange-700" : "bg-indigo-50 text-indigo-700")}>{OUTCOME_LABEL[call.outcome]}</span>
+                    {call.durationSec ? <span>{Math.max(1, Math.round(call.durationSec / 60))} dk</span> : null}
+                    {typeof call.quotedRemaining === "number" ? <span>söylenen kontenjan: {call.quotedRemaining}</span> : null}
+                  </p>
+                  {call.summary && <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-800">{call.summary}</p>}
+                  {call.notes && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                      {call.notes.cekimTuru && <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">🎬 {call.notes.cekimTuru}</span>}
+                      {call.notes.paket && <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">📦 {call.notes.paket}</span>}
+                      {call.notes.ekstralar && <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">➕ {call.notes.ekstralar}</span>}
+                      {call.notes.itiraz && <span className="rounded-lg bg-amber-50 px-2 py-1 text-amber-800">⚠️ {call.notes.itiraz}</span>}
+                      {call.notes.tarihTut && <span className="rounded-lg bg-orange-50 px-2 py-1 font-semibold text-orange-700">🔥 Tarihi 24 saat tut: EVET</span>}
+                    </div>
+                  )}
+                  {call.recordingUrl && <WaveAudio src={call.recordingUrl} seed={call.id} />}
+                  {call.transcript && (
+                    <details className="mt-2 text-xs text-slate-600">
+                      <summary className="cursor-pointer font-medium text-indigo-600">Konuşma metni</summary>
+                      <p className="mt-1.5 whitespace-pre-wrap">{call.transcript}</p>
+                    </details>
+                  )}
+                </li>
               ))}
             </ul>
-          </details>
+          )}
         </div>
-      )}
-    </article>
+
+        {/* WhatsApp sohbeti */}
+        {c.messages.length > 0 && (
+          <div className="space-y-2">
+            <p className={label}>Mesajlar ({c.messages.length})</p>
+            <ul className="space-y-2 rounded-2xl bg-[#EFEAE2]/70 p-3">
+              {c.messages.slice(-15).map((m) => (
+                <li
+                  key={m.id}
+                  className={cn(
+                    "max-w-[88%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap shadow-sm",
+                    m.direction === "out" ? "ml-auto rounded-br-md bg-[#D9FDD3] text-slate-900" : "rounded-bl-md bg-white text-slate-900"
+                  )}
+                >
+                  {m.text}
+                  <span className="mt-1 block text-right text-[10px] text-slate-500">
+                    {m.direction === "out" ? "Giden" : "Gelen"} · {CHANNEL_LABEL[m.channel] ?? m.channel} · {fmt(m.at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <details className="rounded-2xl border border-slate-200 bg-white p-3.5 text-xs text-slate-600">
+          <summary className="cursor-pointer font-semibold text-slate-700">Zaman çizelgesi ({c.timeline.length})</summary>
+          <ul className="mt-2 space-y-1.5">
+            {[...c.timeline].reverse().map((t, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="shrink-0 text-slate-400 tabular-nums">{fmt(t.at)}</span>
+                <span>{t.text}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
+    </>
   );
 }
 
-function ActionBox({ couple: c, onDone }: { couple: AiCouple; onDone: () => void }) {
+/* ───────────────────────── Dalga formlu ses oynatıcı ───────────────────────── */
+
+function WaveAudio({ src, seed }: { src: string; seed: string }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [t, setT] = useState(0);
+  const [dur, setDur] = useState(0);
+  const bars = useMemo(() => {
+    const out: number[] = [];
+    for (let i = 0, h = hash(seed); i < 56; i++) {
+      h = (h * 1103515245 + 12345) >>> 0;
+      const env = 0.55 + 0.45 * Math.sin((i / 56) * Math.PI);
+      out.push(Math.round((0.25 + ((h % 1000) / 1000) * 0.75) * env * 100));
+    }
+    return out;
+  }, [seed]);
+  const pct = dur ? t / dur : 0;
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const toggle = () => {
+    const a = ref.current;
+    if (!a) return;
+    if (a.paused) a.play().catch(() => setPlaying(false));
+    else a.pause();
+  };
+  const seek = (ratio: number) => {
+    const a = ref.current;
+    if (a && dur) a.currentTime = Math.min(Math.max(ratio, 0), 1) * dur;
+  };
+  return (
+    <div className="mt-3 flex items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-2.5">
+      <audio
+        ref={ref}
+        src={src}
+        preload="metadata"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        onTimeUpdate={(e) => setT(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => setDur(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+      />
+      <button type="button" onClick={toggle} aria-label={playing ? "Duraklat" : "Ses kaydını oynat"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-[0_6px_14px_-6px_rgba(79,70,229,0.9)]">
+        {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
+      </button>
+      <div
+        className="flex h-10 flex-1 cursor-pointer items-center gap-[2px]"
+        role="slider"
+        aria-label="Ses kaydı konumu"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(dur)}
+        aria-valuenow={Math.round(t)}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (!dur) return;
+          if (e.key === "ArrowRight") seek((t + 5) / dur);
+          if (e.key === "ArrowLeft") seek((t - 5) / dur);
+        }}
+        onClick={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          seek((e.clientX - r.left) / r.width);
+        }}
+      >
+        {bars.map((h, i) => (
+          <span key={i} className={cn("flex-1 rounded-full transition-colors", i / bars.length <= pct ? "bg-indigo-600" : "bg-indigo-200")} style={{ height: `${h}%` }} />
+        ))}
+      </div>
+      <span className="w-20 shrink-0 text-right text-[11px] text-slate-500 tabular-nums">
+        {mmss(t)} / {dur ? mmss(dur) : "–:––"}
+      </span>
+    </div>
+  );
+}
+
+/* ───────────────────────── Müdahale kutusu ───────────────────────── */
+
+function ActionBox({ couple: c, onDone, autoFocus }: { couple: AiCouple; onDone: () => void; autoFocus?: boolean }) {
   const [text, setText] = useState("");
   const [date, setDate] = useState(c.weddingDate ?? "");
   const [info, setInfo] = useState<string | null>(null);
@@ -472,96 +842,59 @@ function ActionBox({ couple: c, onDone }: { couple: AiCouple; onDone: () => void
     const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
     setSending(false);
     setInfo(res.ok ? ok : `⚠️ ${j.error ?? j.message ?? "İşlem yapılamadı"}`);
-    if (res.ok) { setText(""); onDone(); }
+    if (res.ok) {
+      setText("");
+      onDone();
+    }
   };
   return (
-    <div className="space-y-2 rounded-xl border border-white/8 bg-white/[0.02] p-3">
-      <p className="text-[10px] font-semibold tracking-[0.2em] text-rm-champagne uppercase">Müdahale</p>
+    <div className="space-y-3 rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/60 p-3.5">
+      <p className={label}>Müdahale</p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
+        autoFocus={autoFocus}
         placeholder={`${c.name.split(" ")[0]} için WhatsApp mesajı yaz (0540 hattından gider)`}
-        className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-rm-off-white outline-none placeholder:text-rm-gray-600 focus:border-rm-champagne/40"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300"
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" disabled={sending || !text.trim()} onClick={() => run({ action: "whatsapp", text: text.trim() }, "✅ WhatsApp mesajı gönderildi")} className={pill}>
-          WhatsApp gönder
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={sending || !text.trim()} onClick={() => run({ action: "whatsapp", text: text.trim() }, "✅ WhatsApp mesajı gönderildi")} className={cn(btnPrimary, "bg-emerald-600 shadow-none hover:bg-emerald-700")}>
+          <Send className="h-3.5 w-3.5" /> WhatsApp gönder
         </button>
         <button
           type="button"
           disabled={sending}
-          onClick={() => { if (confirm(`${c.name} şimdi sesli asistanla aransın mı?`)) run({ action: "call" }, "📞 Arama başlatıldı — sonuç birkaç dakika içinde burada"); }}
-          className={pill}
+          onClick={() => {
+            if (confirm(`${c.name} şimdi sesli asistanla aransın mı?`)) run({ action: "call" }, "📞 Arama başlatıldı — sonuç birkaç dakika içinde burada");
+          }}
+          className={btnPrimary}
         >
-          <Phone className="h-3 w-3" /> Şimdi ara
+          <Phone className="h-3.5 w-3.5" /> Şimdi ara
         </button>
-        <span className="flex items-center gap-1.5 text-xs text-rm-gray-400">
-          Düğün tarihi
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={cn(field, "h-8 w-40")} />
-          <button
-            type="button"
-            disabled={sending || date === (c.weddingDate ?? "")}
-            onClick={async () => {
-              const res = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weddingDate: date }) });
-              setInfo(res.ok ? "✅ Tarih kaydedildi" : "⚠️ Tarih kaydedilemedi");
-              if (res.ok) onDone();
-            }}
-            className={pill}
-          >
-            Kaydet
-          </button>
-        </span>
       </div>
-      {info && <p className="text-xs text-rm-gray-300">{info}</p>}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        Düğün tarihi
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={cn(field, "h-9 w-40")} />
+        <button
+          type="button"
+          disabled={sending || date === (c.weddingDate ?? "")}
+          onClick={async () => {
+            const res = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weddingDate: date }) });
+            setInfo(res.ok ? "✅ Tarih kaydedildi" : "⚠️ Tarih kaydedilemedi");
+            if (res.ok) onDone();
+          }}
+          className={btn}
+        >
+          Kaydet
+        </button>
+      </div>
+      {info && <p className="text-xs text-slate-700">{info}</p>}
     </div>
   );
 }
 
-type CampaignState = { ok?: boolean; kampanya?: boolean; arama?: boolean; bugunWhatsapp?: number; bugunArama?: number; error?: string };
-
-function CampaignRow({ label, on, today, busy, onToggle }: { label: string; on?: boolean; today?: number; busy: boolean; onToggle: () => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className={cn("inline-block h-2.5 w-2.5 rounded-full", on ? "bg-emerald-400" : "bg-rm-gray-600")} />
-      <span className="text-sm text-rm-off-white">{label}</span>
-      <span className="text-xs text-rm-gray-400">{on === undefined ? "…" : on ? "Çalışıyor" : "Durdu"}{typeof today === "number" ? ` · bugün ${today}/40` : ""}</span>
-      <button type="button" disabled={busy || on === undefined} onClick={onToggle} className={pill}>{on ? "Durdur" : "Başlat"}</button>
-    </div>
-  );
-}
-
-function CampaignControl({ onState }: { onState?: (st: CampaignState) => void }) {
-  const [st, setSt] = useState<CampaignState | null>(null);
-  const [busy, setBusy] = useState(false);
-  const load = useCallback(() => {
-    fetch("/api/admin/ai-campaign")
-      .then((r) => r.json())
-      .then((d: CampaignState) => { setSt(d); onState?.(d); })
-      .catch(() => setSt({ error: "Otomasyona ulaşılamadı" }));
-  }, [onState]);
-  useEffect(() => { load(); }, [load]);
-  const toggle = async (target: "kampanya" | "arama", on: boolean) => {
-    const ad = target === "kampanya" ? "WhatsApp kampanyası" : "Otomatik arama";
-    if (!confirm(`${ad} ${on ? "BAŞLATILSIN" : "DURDURULSUN"} mu?`)) return;
-    setBusy(true);
-    await fetch("/api/admin/ai-campaign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, op: on ? "resume" : "pause" }) }).catch(() => null);
-    setBusy(false);
-    load();
-  };
-  return (
-    <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-white/8 bg-rm-black-elevated/60 p-4">
-      {st?.error ? (
-        <p className="text-sm text-amber-200">⚠️ {st.error}</p>
-      ) : (
-        <>
-          <CampaignRow label="WhatsApp kampanyası" on={st?.kampanya} today={st?.bugunWhatsapp} busy={busy} onToggle={() => toggle("kampanya", !st?.kampanya)} />
-          <CampaignRow label="Otomatik arama" on={st?.arama} today={st?.bugunArama} busy={busy} onToggle={() => toggle("arama", !st?.arama)} />
-        </>
-      )}
-    </div>
-  );
-}
+/* ───────────────────────── Çift ekle ───────────────────────── */
 
 function AddCoupleForm({ onDone }: { onDone: () => void }) {
   const [show, setShow] = useState(false);
@@ -569,14 +902,14 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   if (!show) {
     return (
-      <button type="button" onClick={() => setShow(true)} className={cn(pill, "h-11 justify-center")}>
-        <Plus className="h-3.5 w-3.5" /> Çift ekle
+      <button type="button" onClick={() => setShow(true)} className={cn(btnPrimary, "h-10 px-4 text-sm")}>
+        <Plus className="h-4 w-4" /> Çift ekle
       </button>
     );
   }
   return (
     <form
-      className="flex flex-1 flex-wrap gap-2"
+      className="flex w-full flex-wrap gap-2 sm:w-auto"
       onSubmit={async (e) => {
         e.preventDefault();
         setErr(null);
@@ -589,13 +922,16 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
       }}
     >
       <input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="İsim" className={cn(field, "w-36 flex-1")} />
-      <input required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-36 flex-1")} />
+      <input required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-32 flex-1")} />
       <input type="date" value={f.weddingDate} onChange={(e) => setF({ ...f, weddingDate: e.target.value })} className={cn(field, "w-40")} />
-      <button type="submit" className={pill}>Ekle</button>
-      {err && <p className="w-full text-xs text-red-300">{err}</p>}
+      <button type="submit" className={btnPrimary}>Ekle</button>
+      <button type="button" onClick={() => setShow(false)} className={btn}>Vazgeç</button>
+      {err && <p className="w-full text-xs text-rose-700">{err}</p>}
     </form>
   );
 }
+
+/* ───────────────────────── Kontenjan düzenleyici ───────────────────────── */
 
 function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig; months: AiCapacityInfo[]; onSaved: () => void }) {
   const [def, setDef] = useState(String(config.defaultPerMonth));
@@ -614,17 +950,17 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
   return (
     <AdminSection title="Kontenjan" description="Kalan yer = aylık kapasite − onaylı rezervasyonlar − elle düşülen. Sesli asistan ve takip mesajları bu rakamı söyler — sadece GERÇEK rezervasyonları girin (yanıltıcı kıtlık reklamı yasal risk).">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-xs text-rm-gray-400">
+        <label className="text-xs font-medium text-slate-600">
           Aylık varsayılan kapasite (çift)
           <input type="number" min={0} max={200} value={def} onChange={(e) => setDef(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
-        <label className="text-xs text-rm-gray-400">
-          Drone hediyesi kalan (ilk 10 çift)
+        <label className="text-xs font-medium text-slate-600">
+          Drone hediyesi kalan
           <input type="number" min={0} max={100} value={gift} onChange={(e) => setGift(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
         <button
           type="button"
-          className={pill}
+          className={cn(btnPrimary, "h-10 px-4")}
           onClick={async () => {
             await fetch("/api/admin/ai-capacity", {
               method: "PUT",
@@ -639,37 +975,48 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
           {saved ? "Kaydedildi ✓" : "Kaydet"}
         </button>
       </div>
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead>
-            <tr className="text-left text-[10px] tracking-[0.16em] text-rm-gray-500 uppercase">
-              <th className="py-2">Ay</th>
-              <th>Kapasite</th>
-              <th>Rezervasyon + elle</th>
-              <th>Elle dolu</th>
-              <th>Kalan</th>
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead className="bg-slate-50">
+            <tr className="text-left text-[11px] font-semibold tracking-[0.06em] text-slate-500 uppercase">
+              <th className="px-3 py-2.5">Ay</th>
+              <th className="px-3">Kapasite</th>
+              <th className="px-3">Rezervasyon + elle</th>
+              <th className="px-3">Elle dolu</th>
+              <th className="px-3">Kalan</th>
+              <th className="w-32 px-3">Doluluk</th>
             </tr>
           </thead>
           <tbody>
-            {months.map((w) => (
-              <tr key={w.monthKey} className="border-t border-white/5">
-                <td className="py-2 text-rm-gray-300">{w.monthLabel}</td>
-                <td>
-                  <input type="number" min={0} max={200} placeholder={def} value={totals[w.monthKey] ?? ""} onChange={(e) => setTotals({ ...totals, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
-                </td>
-                <td className="tabular-nums text-rm-gray-400">{w.booked}</td>
-                <td>
-                  <input type="number" min={0} max={200} placeholder="0" value={manual[w.monthKey] ?? ""} onChange={(e) => setManual({ ...manual, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
-                </td>
-                <td className={cn("font-semibold tabular-nums", w.remaining <= 1 ? "text-orange-300" : "text-rm-off-white")}>{w.remaining}</td>
-              </tr>
-            ))}
+            {months.map((w) => {
+              const pct = w.total ? Math.round(((w.total - w.remaining) / w.total) * 100) : 0;
+              return (
+                <tr key={w.monthKey} className="border-t border-slate-100">
+                  <td className="px-3 py-2 font-medium text-slate-800">{w.monthLabel}</td>
+                  <td className="px-3">
+                    <input type="number" min={0} max={200} placeholder={def} value={totals[w.monthKey] ?? ""} onChange={(e) => setTotals({ ...totals, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
+                  </td>
+                  <td className="px-3 text-slate-600 tabular-nums">{w.booked}</td>
+                  <td className="px-3">
+                    <input type="number" min={0} max={200} placeholder="0" value={manual[w.monthKey] ?? ""} onChange={(e) => setManual({ ...manual, [w.monthKey]: e.target.value })} className={cn(field, "h-8 w-20")} />
+                  </td>
+                  <td className={cn("px-3 font-semibold tabular-nums", w.remaining <= 1 ? "text-rose-700" : "text-slate-900")}>{w.remaining}</td>
+                  <td className="px-3">
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div className={cn("h-full rounded-full", w.remaining <= 2 ? "bg-rose-500" : "bg-indigo-500")} style={{ width: `${pct}%` }} />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
     </AdminSection>
   );
 }
+
+/* ───────────────────────── Entegrasyon ───────────────────────── */
 
 function IntegrationBox({ integration }: { integration: Payload["integration"] }) {
   const [show, setShow] = useState(false);
@@ -690,32 +1037,35 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
   return (
     <AdminSection title="Entegrasyon (n8n · sesli asistan · Telegram)" description="n8n isteklerinde başlık: Authorization: Bearer <anahtar>. Anahtarı kimseyle paylaşmayın.">
       <div className="flex flex-wrap items-center gap-2">
-        <code className="flex-1 truncate rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-rm-gray-300">
+        <code className="flex-1 truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-700">
           {show ? integration.apiToken : "•".repeat(32)}
         </code>
-        <button type="button" onClick={() => setShow(!show)} className={pill} aria-label="Anahtarı göster">
+        <button type="button" onClick={() => setShow(!show)} className={btn} aria-label="Anahtarı göster">
           {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </button>
-        <button type="button" onClick={() => navigator.clipboard?.writeText(integration.apiToken)} className={pill} aria-label="Kopyala">
+        <button type="button" onClick={() => navigator.clipboard?.writeText(integration.apiToken)} className={btn} aria-label="Kopyala">
           <Copy className="h-3.5 w-3.5" />
         </button>
       </div>
-      <ul className="mt-4 space-y-1.5 text-xs">
-        {endpoints.map(([m, p, d]) => (
-          <li key={p} className="flex flex-wrap gap-x-2">
-            <span className="w-12 font-semibold text-rm-champagne">{m}</span>
-            <code className="text-rm-gray-300">{base}{p}</code>
-            <span className="text-rm-gray-500">— {d}</span>
-          </li>
-        ))}
-      </ul>
+      <details className="mt-4 text-xs">
+        <summary className="cursor-pointer font-semibold text-indigo-600">Uç noktalar ({endpoints.length})</summary>
+        <ul className="mt-2 space-y-1.5">
+          {endpoints.map(([m, p, d]) => (
+            <li key={p} className="flex flex-wrap gap-x-2">
+              <span className="w-12 font-semibold text-indigo-600">{m}</span>
+              <code className="text-slate-700">{base}{p}</code>
+              <span className="text-slate-500">— {d}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <input
           type="password"
           value={botToken}
           onChange={(e) => setBotToken(e.target.value)}
           placeholder={integration.telegramReady ? "Bot ayarlı — değiştirmek için yeni anahtar" : "BotFather'dan aldığın bot anahtarı (123456:AA…)"}
-          className="min-w-[16rem] flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-rm-gray-500"
+          className={cn(field, "min-w-[16rem] flex-1 text-xs")}
           autoComplete="off"
         />
         <button
@@ -732,12 +1082,12 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
             if (j.ok) setBotToken("");
             setTg(j.ok ? "✅ Bağlandı — Telegram'a test mesajı gitti" : `⚠️ ${j.error ?? "Bağlanamadı"}`);
           }}
-          className={pill}
+          className={btnPrimary}
         >
           <Send className="h-3.5 w-3.5" /> {"Telegram'ı bağla"}
         </button>
       </div>
-      <p className="mt-2 text-xs text-rm-gray-400">
+      <p className="mt-2 text-xs text-slate-500">
         {tg ?? (integration.telegramReady ? "Bot ayarlı" : "1) Telegram'da @BotFather → /newbot  2) Verdiği anahtarı buraya yapıştır  3) Kendi botuna /start yaz  4) Butona bas")}
       </p>
     </AdminSection>

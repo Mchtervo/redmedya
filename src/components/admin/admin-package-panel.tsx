@@ -66,7 +66,7 @@ export function AdminPackagePanel() {
     return (
       <div className="space-y-4">
         <AdminPanelHeader eyebrow="Sepetler" title="Paket istatistikleri" icon={ShoppingCart} />
-        <div className="h-32 animate-pulse rounded-2xl border border-white/8 bg-rm-black-elevated/40" />
+        <div className="h-32 animate-pulse rm-card" />
       </div>
     );
   }

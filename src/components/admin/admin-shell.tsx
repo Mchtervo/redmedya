@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ExternalLink, ShieldCheck, Search } from "lucide-react";
+import { Menu, X, ExternalLink, Search, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ADMIN_NAV,
@@ -30,8 +30,29 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 import { EASE_LUXURY } from "@/lib/animations";
 import { useAdminCounts } from "@/hooks/use-admin-counts";
 import { AdminCommandPalette } from "@/components/admin/admin-command-palette";
+import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 
-function AdminShellInner({ children }: { children?: React.ReactNode }) {
+type PillState = "ok" | "warn" | "bad" | "wait";
+
+/** Canlı durum rozeti: yeşil = çalışıyor (nabız), amber = beklemede, kırmızı = sorun, gri = yükleniyor */
+function StatusPill({ label, state, text }: { label: string; state: PillState; text: string }) {
+  const dot = { ok: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-rose-500", wait: "bg-slate-300" }[state];
+  const tone = {
+    ok: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    warn: "border-amber-200 bg-amber-50 text-amber-800",
+    bad: "border-rose-200 bg-rose-50 text-rose-700",
+    wait: "border-slate-200 bg-white text-slate-500",
+  }[state];
+  return (
+    <span className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap", tone)}>
+      <span className={cn("rm-live-dot", dot, state === "ok" && "rm-ping")} />
+      <span className="text-slate-500">{label}:</span>
+      <span className="font-semibold">{text}</span>
+    </span>
+  );
+}
+
+function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; fontClass?: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
@@ -39,6 +60,29 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   const [mobileNav, setMobileNav] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const counts = useAdminCounts();
+  const { status } = useAiSystemStatus();
+
+  /** Açık tema + yazı tipleri body'ye: Radix dialog/portal'lar da aynı temayı alsın. */
+  useEffect(() => {
+    const cls = ["rm-admin", ...(fontClass ?? "").split(" ").filter(Boolean)];
+    document.body.classList.add(...cls);
+    return () => document.body.classList.remove(...cls);
+  }, [fontClass]);
+
+  const loading = status.n8n === undefined;
+  const pills: { label: string; state: PillState; text: string }[] = [
+    { label: "n8n", state: loading ? "wait" : status.n8n ? "ok" : "bad", text: loading ? "…" : status.n8n ? "Aktif" : "Ulaşılamıyor" },
+    {
+      label: "WhatsApp",
+      state: status.whatsapp === undefined ? (loading ? "wait" : "bad") : status.whatsapp ? "ok" : "bad",
+      text: status.whatsapp === undefined ? (loading ? "…" : "Bilinmiyor") : status.whatsapp ? "Bağlı" : "Kopuk",
+    },
+    {
+      label: "Sesli AI",
+      state: loading ? "wait" : status.arama ? "ok" : status.n8n ? "warn" : "bad",
+      text: loading ? "…" : status.arama ? "Hazır" : status.n8n ? "Oto-arama kapalı" : "Bilinmiyor",
+    },
+  ];
 
   /** Hangi nav item'ında badge gözüksün */
   const badgeFor = (id: AdminTabId): { count: number; tone: "gold" | "red" } | null => {
@@ -73,9 +117,12 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
     setMobileNav(false);
   };
 
-  useEffect(() => {
+  // Sekme değişince (geri tuşu dahil) mobil menüyü kapat — effect yerine render sırasında
+  const [navTab, setNavTab] = useState(tab);
+  if (navTab !== tab) {
+    setNavTab(tab);
     setMobileNav(false);
-  }, [tab]);
+  }
 
   const activeNav = ADMIN_NAV.find((n) => n.id === tab);
 
@@ -121,36 +168,34 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   // Bileşen değil render fonksiyonu: render içinde bileşen tanımlamak her
   // render'da menüyü yeniden kurar (kaydırma/durum sıfırlanır).
   const renderSidebar = (className?: string) => (
-    <aside
-      className={cn(
-        "flex h-full flex-col border-r border-white/8 bg-gradient-to-b from-rm-black via-rm-black to-rm-black-elevated/40 backdrop-blur-xl",
-        className
-      )}
-    >
-      <div className="border-b border-white/8 px-5 pt-5 pb-4">
+    <aside className={cn("rm-glass flex h-full flex-col border-r border-slate-200/80", className)}>
+      <div className="px-5 pt-5 pb-4">
         <div className="flex items-center justify-between gap-2">
-          <BrandLogo size="admin" variant="on-dark" href="/" />
-          <span
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-            title="Yönetim oturumu aktif"
+          <BrandLogo size="admin" href="/" />
+          <Link
+            href="/"
+            target="_blank"
+            title="Siteyi yeni sekmede aç"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600"
           >
-            <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.6} />
-          </span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
         </div>
-        <Link
-          href="/"
-          target="_blank"
-          className="mt-4 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.2em] text-rm-gray-500 uppercase transition-colors hover:text-rm-champagne"
-        >
-          <ExternalLink className="h-3 w-3" />
-          Siteye dön
-        </Link>
+        <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 px-3.5 py-3 text-white shadow-[0_12px_24px_-12px_rgba(79,70,229,0.7)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[13px] leading-tight font-semibold">AI Komuta Merkezi</p>
+            <p className="text-[11px] text-indigo-100">Arama · WhatsApp · Takip</p>
+          </div>
+        </div>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto p-3">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
         {ADMIN_NAV_GROUPS.map((group) => (
           <div key={group.title}>
-            <p className="mb-1.5 px-3 text-[9px] font-bold tracking-[0.32em] text-rm-gray-600 uppercase">
+            <p className="mb-1.5 px-3 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
               {group.title}
             </p>
             <div className="space-y-0.5">
@@ -167,32 +212,25 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
                       type="button"
                       onClick={() => navigate(item.id)}
                       className={cn(
-                        "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all",
+                        "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all",
                         active
-                          ? "bg-rm-champagne/[0.12] text-rm-off-white shadow-[inset_0_0_0_1px_rgba(196,160,82,0.18)]"
-                          : "text-rm-gray-400 hover:bg-white/[0.04] hover:text-rm-off-white"
+                          ? "bg-indigo-50 font-semibold text-indigo-700 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.15)]"
+                          : "font-medium text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
                       )}
                     >
-                      {active && (
-                        <span className="absolute top-1/2 -left-3 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-rm-champagne" />
-                      )}
                       <Icon
                         className={cn(
-                          "h-4 w-4 shrink-0 transition-colors",
-                          active
-                            ? "text-rm-champagne"
-                            : "text-rm-gray-500 group-hover:text-rm-champagne"
+                          "h-[18px] w-[18px] shrink-0 transition-colors",
+                          active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
                         )}
-                        strokeWidth={1.5}
+                        strokeWidth={1.8}
                       />
-                      <span className="flex-1 font-medium">{item.label}</span>
+                      <span className="flex-1 truncate">{item.label}</span>
                       {badge && (
                         <span
                           className={cn(
-                            "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                            badge.tone === "gold"
-                              ? "bg-rm-champagne/25 text-rm-champagne"
-                              : "bg-red-500/25 text-red-300"
+                            "min-w-[22px] rounded-full px-2 py-0.5 text-center text-[11px] font-bold tabular-nums",
+                            badge.tone === "gold" ? "bg-indigo-600 text-white" : "bg-rose-600 text-white"
                           )}
                         >
                           {badge.count}
@@ -206,16 +244,16 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
         ))}
       </nav>
 
-      <div className="border-t border-white/8 p-3">
+      <div className="border-t border-slate-200/80 p-3">
         <AdminLogoutButton />
       </div>
     </aside>
   );
 
   return (
-    <div className="flex min-h-screen bg-rm-black">
-      <div className="hidden w-[260px] shrink-0 lg:block">
-        {renderSidebar("fixed inset-y-0 left-0 z-40 w-[260px]")}
+    <div className="flex min-h-screen">
+      <div className="hidden w-[264px] shrink-0 lg:block">
+        {renderSidebar("fixed inset-y-0 left-0 z-40 w-[264px]")}
       </div>
 
       <AnimatePresence>
@@ -225,15 +263,15 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-sm lg:hidden"
               onClick={() => setMobileNav(false)}
             />
             <motion.div
-              initial={{ x: -280 }}
+              initial={{ x: -290 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -290 }}
               transition={{ ease: EASE_LUXURY, duration: 0.25 }}
-              className="fixed inset-y-0 left-0 z-50 w-[280px] lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[280px] bg-white lg:hidden"
             >
               {renderSidebar()}
             </motion.div>
@@ -241,67 +279,78 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      <div className="flex min-w-0 flex-1 flex-col lg:pl-[260px]">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-white/8 bg-rm-black/85 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3.5 md:px-8">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 text-rm-off-white transition-colors hover:border-rm-champagne/40 hover:bg-rm-champagne/10 lg:hidden"
-              onClick={() => setMobileNav(true)}
-              aria-label="Menü"
-            >
-              {mobileNav ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
-            <div className="flex min-w-0 items-baseline gap-1.5 sm:gap-2">
-              <p className="hidden text-[10px] font-semibold tracking-[0.3em] text-rm-gray-500 uppercase sm:inline">
-                Yönetim
-              </p>
-              <span className="hidden text-rm-gray-700 sm:inline">/</span>
-              <h1 className="truncate font-editorial text-base text-rm-off-white sm:text-lg md:text-xl">
-                {activeNav?.label ?? "Admin"}
-              </h1>
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-[264px]">
+        <header className="rm-glass sticky top-0 z-30 border-b border-slate-200/70 px-3 py-3 sm:px-5 md:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 lg:hidden"
+                onClick={() => setMobileNav(true)}
+                aria-label="Menü"
+              >
+                {mobileNav ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
+              <div className="min-w-0">
+                <p className="truncate font-editorial text-base text-slate-900 sm:text-lg">
+                  Merhaba Mücahit <span aria-hidden>👋</span>
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  <span className="hidden sm:inline">Red Medya AI Komuta Merkezi · </span>
+                  <span className="font-medium text-indigo-600">{activeNav?.label ?? "Admin"}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                className="hidden h-10 w-64 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition-colors hover:border-indigo-200 md:inline-flex xl:w-72"
+                title="Komut paleti (Ctrl+K)"
+              >
+                <Search className="h-4 w-4" strokeWidth={1.8} />
+                <span className="flex-1 text-left">Çift, rezervasyon, sayfa ara…</span>
+                <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                  Ctrl K
+                </kbd>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 md:hidden"
+                aria-label="Hızlı ara"
+              >
+                <Search className="h-4 w-4" strokeWidth={1.8} />
+              </button>
+              <div className="lg:hidden">
+                <AdminLogoutButton compact />
+              </div>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white lg:hidden"
-              aria-label="Hızlı ara"
-              title="Hızlı ara"
-            >
-              <Search className="h-4 w-4" strokeWidth={1.7} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-rm-gray-400 transition-colors hover:border-rm-champagne/30 hover:text-rm-off-white lg:inline-flex"
-              title="Komut paleti (Ctrl+K)"
-            >
-              <span>Hızlı ara…</span>
-              <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-rm-gray-500">
-                Ctrl K
-              </kbd>
-            </button>
-            <span className="hidden items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] text-emerald-300 uppercase lg:inline-flex">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Canlı
-            </span>
-            <div className="lg:hidden">
-              <AdminLogoutButton compact />
-            </div>
+          <div className="mt-2.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none]">
+            {pills.map((p) => (
+              <StatusPill key={p.label} label={p.label} state={p.state} text={p.text} />
+            ))}
+            {typeof status.bugunWhatsapp === "number" && (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs whitespace-nowrap text-slate-500">
+                Bugün:<b className="mx-1 text-slate-900 tabular-nums">{status.bugunWhatsapp}</b>WhatsApp ·
+                <b className="mx-1 text-slate-900 tabular-nums">{status.bugunArama ?? 0}</b>arama
+              </span>
+            )}
           </div>
         </header>
 
-        <main className="flex-1 p-3 sm:p-4 md:p-8">
+        <main className="mx-auto w-full max-w-[1480px] flex-1 p-3 sm:p-5 md:p-8">
           <AdminMissingPhoneAlerts />
           <AnimatePresence mode="wait">
             <motion.div
               key={tab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: EASE_LUXURY }}
+              transition={{ duration: 0.2, ease: EASE_LUXURY }}
+              className="rm-stagger"
             >
               {content()}
             </motion.div>
@@ -318,16 +367,16 @@ function AdminShellInner({ children }: { children?: React.ReactNode }) {
   );
 }
 
-export function AdminShell({ children }: { children?: React.ReactNode }) {
+export function AdminShell({ children, fontClass }: { children?: React.ReactNode; fontClass?: string }) {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-rm-black text-rm-gray-500">
+        <div className="flex min-h-screen items-center justify-center bg-[#f5f7fb] text-slate-500">
           Yükleniyor…
         </div>
       }
     >
-      <AdminShellInner>{children}</AdminShellInner>
+      <AdminShellInner fontClass={fontClass}>{children}</AdminShellInner>
     </Suspense>
   );
 }
