@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminEmptyState, AdminPanelHeader, AdminSection } from "@/components/admin/admin-panel-header";
-import { AiAgentsCard, AiCapacityDonut, AiKpiRow, AiTrendChart } from "@/components/admin/admin-ai-command-center";
+import { AiAgentsCard, AiKpiRow } from "@/components/admin/admin-ai-command-center";
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
 import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 import type {
@@ -200,7 +200,7 @@ export function AdminAiCouplesPanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const { status, refresh } = useAiSystemStatus();
-  const capacityRef = useRef<HTMLDivElement>(null);
+  const capacityRef = useRef<HTMLDetailsElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(() => {
@@ -276,7 +276,10 @@ export function AdminAiCouplesPanel() {
   };
 
   const openStage = (what: "calls" | "whatsapp" | "hot" | "capacity") => {
-    if (what === "capacity") return capacityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (what === "capacity") {
+      if (capacityRef.current) capacityRef.current.open = true;
+      return capacityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
     setSearch("");
     if (what === "hot") { setFilter("hot"); setStage("all"); }
     if (what === "calls") { setFilter("all"); setStage("called"); }
@@ -305,20 +308,13 @@ export function AdminAiCouplesPanel() {
       <AdminPanelHeader
         eyebrow="AI Satış"
         title="AI Çift Yönetimi"
-        description="Düğün.com ve Meta formdan gelen çiftler, sesli arama sonuçları, WhatsApp takibi ve kontenjan. Kara listedeki çifte hiçbir kanaldan ulaşılmaz; kayıtlar silinmez."
         icon={Bot}
         meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık · ${stageCounts.needsReply ?? 0} cevap bekliyor`}
       />
 
       <AiKpiRow couples={couples} months={data.months} onOpenStage={openStage} />
 
-      <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-        <AiTrendChart couples={couples} />
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-          <AiAgentsCard status={status} onToggle={toggleCampaign} />
-          <AiCapacityDonut months={data.months} />
-        </div>
-      </div>
+      <AiAgentsCard status={status} onToggle={toggleCampaign} horizontal />
 
       {msg && (
         <p className={cn("rounded-2xl border px-4 py-2.5 text-sm", msg.ok ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-rose-200 bg-rose-50 text-rose-800")}>
@@ -399,10 +395,20 @@ export function AdminAiCouplesPanel() {
         )}
       </div>
 
-      <div ref={capacityRef} className="scroll-mt-28">
-        <CapacityEditor config={data.capacityConfig} months={data.months} onSaved={load} />
-      </div>
-      <IntegrationBox integration={data.integration} />
+      <details ref={capacityRef} className="group rm-card scroll-mt-28 overflow-hidden">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 sm:px-5 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="block text-sm font-semibold text-slate-900">⚙️ Kontenjan ve bağlantı ayarları</span>
+            <span className="block text-xs text-slate-500">Aylık kapasite, drone hediyesi, n8n anahtarı, Telegram</span>
+          </span>
+          <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 group-open:hidden">Aç</span>
+          <span className="hidden rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 group-open:inline">Kapat</span>
+        </summary>
+        <div className="space-y-4 border-t border-slate-100 p-3 sm:p-4">
+          <CapacityEditor config={data.capacityConfig} months={data.months} onSaved={load} />
+          <IntegrationBox integration={data.integration} />
+        </div>
+      </details>
 
       <CoupleDrawer
         couple={openCouple}

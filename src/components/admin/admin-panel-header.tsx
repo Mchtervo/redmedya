@@ -36,33 +36,29 @@ export function AdminPanelHeader({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: EASE_LUXURY }}
-      className="rm-card relative overflow-hidden p-4 sm:p-5 md:p-6"
+      className="relative px-1 pt-1"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-gradient-to-br from-indigo-200/50 via-blue-100/40 to-rose-100/40 blur-3xl"
-      />
-      <div className="relative flex flex-wrap items-start justify-between gap-3 md:gap-5">
-        <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
+      <div className="relative flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           {Icon && (
-            <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-[0_10px_20px_-10px_rgba(79,70,229,0.8)] sm:h-12 sm:w-12">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-[0_10px_20px_-10px_rgba(79,70,229,0.8)]">
               <Icon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.6} />
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold tracking-[0.08em] text-indigo-600 uppercase">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-indigo-600 uppercase">
               {eyebrow}
             </p>
-            <h1 className="mt-1 font-editorial text-2xl leading-tight text-slate-900 sm:text-[1.75rem]">
+            <h1 className="font-editorial text-xl leading-tight text-slate-900 sm:text-2xl">
               {title}
             </h1>
             {description && (
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
+              <p className="mt-0.5 hidden max-w-2xl truncate text-xs text-slate-500 md:block">
                 {description}
               </p>
             )}
             {meta && (
-              <p className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+              <p className="mt-1 text-xs text-slate-500">
                 {meta}
               </p>
             )}

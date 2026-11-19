@@ -149,7 +149,8 @@ export const ADMIN_NAV_GROUPS: { title: string; ids: AdminTabId[] }[] = [
   },
   {
     title: "Analitik",
-    ids: ["funnel", "sessions", "ads", "form_errors", "tech_errors", "journey"],
+    // "journey" (eski yolculuk) menüden kaldırıldı; ?tab=journey ile hâlâ açılır
+    ids: ["funnel", "sessions", "ads", "form_errors", "tech_errors"],
   },
   { title: "Müşteri", ids: ["packages", "rehber"] },
   { title: "Ayarlar", ids: ["cms", "operations", "data"] },

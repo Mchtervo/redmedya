@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ExternalLink, Search, Sparkles } from "lucide-react";
+import { Menu, X, ExternalLink, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ADMIN_NAV,
@@ -181,15 +181,6 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
             <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 px-3.5 py-3 text-white shadow-[0_12px_24px_-12px_rgba(79,70,229,0.7)]">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[13px] leading-tight font-semibold">AI Komuta Merkezi</p>
-            <p className="text-[11px] text-indigo-100">Arama · WhatsApp · Takip</p>
-          </div>
-        </div>
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
@@ -297,7 +288,6 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
                   Merhaba Mücahit <span aria-hidden>👋</span>
                 </p>
                 <p className="truncate text-xs text-slate-500">
-                  <span className="hidden sm:inline">Red Medya AI Komuta Merkezi · </span>
                   <span className="font-medium text-indigo-600">{activeNav?.label ?? "Admin"}</span>
                 </p>
               </div>
@@ -333,18 +323,13 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
             {pills.map((p) => (
               <StatusPill key={p.label} label={p.label} state={p.state} text={p.text} />
             ))}
-            {typeof status.bugunWhatsapp === "number" && (
-              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs whitespace-nowrap text-slate-500">
-                Bugün:<b className="mx-1 text-slate-900 tabular-nums">{status.bugunWhatsapp}</b>WhatsApp ·
-                <b className="mx-1 text-slate-900 tabular-nums">{status.bugunArama ?? 0}</b>arama
-              </span>
-            )}
           </div>
           </div>
         </header>
 
         <main className="mx-auto w-full max-w-[1480px] flex-1 p-3 sm:p-5 md:p-8">
-          <AdminMissingPhoneAlerts />
+          {/* Eksik telefon uyarısı sadece ilgili sayfalarda (her sayfada kalabalık yapmasın) */}
+          {(tab === "overview" || tab === "calendar") && <AdminMissingPhoneAlerts />}
           <AnimatePresence mode="wait">
             <motion.div
               key={tab}

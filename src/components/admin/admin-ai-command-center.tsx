@@ -398,7 +398,9 @@ function Working({ on }: { on: boolean }) {
   );
 }
 
-export function AiAgentsCard({ status, onToggle, onOpen }: {
+export function AiAgentsCard({ status, onToggle, onOpen, horizontal }: {
+  /** AI sayfasında 3 ajan yan yana (geniş ekran) */
+  horizontal?: boolean;
   status: AiSystemStatus;
   /** Verilirse başlat/durdur düğmeleri görünür (AI sayfası) */
   onToggle?: (target: "kampanya" | "arama", on: boolean) => void;
@@ -420,7 +422,7 @@ export function AiAgentsCard({ status, onToggle, onOpen }: {
         )}
       </div>
       {status.error && <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">⚠️ {status.error}</p>}
-      <ul className="mt-3 space-y-2.5">
+      <ul className={cn("mt-3 gap-2.5", horizontal ? "grid lg:grid-cols-3" : "space-y-2.5")}>
         {agents.map((a) => {
           const Icon = a.icon;
           return (
