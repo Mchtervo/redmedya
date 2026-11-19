@@ -255,7 +255,9 @@ export function applyCallOutcome(
       next = markThinking(next, now, "Telefonda düşüneceğini söyledi");
       break;
     case "callback_requested": {
-      const prevCallbacks = c.calls.filter((x) => x.outcome === "callback_requested").length;
+      // c.calls bu aramayı da içeriyor (önce eklenip sonra sonuç uygulanıyor) → öncekileri say
+      const allCb = c.calls.filter((x) => x.outcome === "callback_requested").length;
+      const prevCallbacks = c.calls.at(-1)?.outcome === "callback_requested" ? allCb - 1 : allCb;
       if (prevCallbacks >= MAX_CALLBACKS) {
         next = {
           ...next,
@@ -382,6 +384,7 @@ function followUpTime(c: AiCouple, now: Date): boolean {
 
 /** Takip zamanı geldi ve 1 haftalık tekrar araması henüz yapılmadı → ARA. */
 export function isFollowUpCallDue(c: AiCouple, now: Date): boolean {
+  if (c.callsPaused) return false; // arama iptal → takip WhatsApp'tan (isFollowUpDue)
   if (!followUpTime(c, now)) return false;
   const since = new Date(c.followUpAt as string).getTime();
   return !c.calls.some((x) => new Date(x.at).getTime() >= since);

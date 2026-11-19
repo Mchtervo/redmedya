@@ -131,6 +131,7 @@ export async function POST(request: Request, { params }: Ctx) {
       : Number.isFinite(inMin) && inMin > 0
         ? new Date(now.getTime() + Math.min(Math.max(inMin, 5), 3 * 24 * 60) * 60_000)
         : null;
+    if (!after.callbackRequested) return after; // geri arama hakkı doldu → zaman planlanmaz
     if (!when) {
       // Saat söylemedi → kural: ertesi gün 11:00 (applyCallOutcome ayarladı); plan notu düşsün
       if (!after.callbackAt) return after;

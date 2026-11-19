@@ -84,9 +84,10 @@ export function AdminTestCallBox() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, name }),
-    });
-    const j = (await res.json().catch(() => ({}))) as { error?: string };
+    }).catch(() => null);
     setBusy(false);
+    if (!res) return setInfo({ ok: false, text: "⚠️ Bağlantı hatası — tekrar deneyin" });
+    const j = (await res.json().catch(() => ({}))) as { error?: string };
     setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar; görüşmeye göre WhatsApp teklifi de 1-2 dk içinde gider." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
     if (res.ok) {
       setToggled({}); // yeni arama açık gelsin

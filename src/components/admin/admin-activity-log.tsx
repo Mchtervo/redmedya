@@ -16,6 +16,8 @@ import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
 import type { AiCallRecord, AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { displayPhone, GRADE_LABEL, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
 import { nextStep } from "@/lib/ai-couples/journey";
+import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
+import { useAutomation } from "@/components/admin/admin-automation-settings";
 
 type TestCall = {
   id: string; phone: string; name: string; at: string; status?: string; durationSec?: number; summary?: string; sonuc?: string;
@@ -147,6 +149,9 @@ export function AdminActivityLog() {
   const [q, setQ] = useState("");
   const [limit, setLimit] = useState(150);
   const [now, setNow] = useState(0);
+  const { status } = useAiSystemStatus();
+  const callsEnabled = status.arama !== false;
+  const auto = useAutomation(); // takip gün ayarlarını yükler (Sırada metinleri doğru gün göstersin)
   const [open, setOpen] = useState<Ev | null>(null);
 
   const load = useCallback(() => {
@@ -173,18 +178,21 @@ export function AdminActivityLog() {
   const togglePause = async (c: AiCouple, what: "callsPaused" | "messagesPaused" = "callsPaused") => {
     if (what === "messagesPaused") {
       if (!c.messagesPaused && !confirm(`${c.name} için otomatik WhatsApp mesajları iptal edilsin mi?\n(Sizin elle yazdıklarınız gider.)`)) return;
-      await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messagesPaused: !c.messagesPaused }) }).catch(() => null);
+      const r = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messagesPaused: !c.messagesPaused }) }).catch(() => null);
+      if (!r?.ok) alert("Kaydedilemedi — tekrar deneyin");
       return load();
     }
     if (!c.callsPaused && !confirm(`${c.name} için planlanan / otomatik aramalar iptal edilsin mi?
 (WhatsApp ve elle arama devam eder; istediğinizde geri açabilirsiniz.)`)) return;
-    await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callsPaused: !c.callsPaused }) }).catch(() => null);
+    const r = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callsPaused: !c.callsPaused }) }).catch(() => null);
+    if (!r?.ok) alert("Kaydedilemedi — tekrar deneyin");
     load();
   };
 
   const events = useMemo(() => {
     const out: Ev[] = [];
     for (const c of couples ?? []) {
+      if (c.sourceRef === "test") continue; // test aramaları aşağıda ayrıca (çift görünmesin)
       const mine: Ev[] = [];
       for (const [i, call] of c.calls.entries()) {
         const d = describeCall(call, c, i + 1);
@@ -205,7 +213,7 @@ export function AdminActivityLog() {
       }
       // Çiftin en son hareketine "sırada ne var" notu
       const last = mine.reduce<Ev | null>((a, b) => (!a || b.at > a.at ? b : a), null);
-      if (last) last.next = nextStep(c, new Date(now)).text;
+      if (last) last.next = nextStep(c, new Date(now), callsEnabled).text;
       out.push(...mine);
     }
     for (const t of tests) {
@@ -227,7 +235,7 @@ export function AdminActivityLog() {
         return name.includes(term) || (digits.length >= 3 && phone.includes(digits)) || (e.text ?? "").toLocaleLowerCase("tr-TR").includes(term);
       })
       .sort((a, b) => b.at.localeCompare(a.at));
-  }, [couples, tests, kind, q, now]);
+  }, [couples, tests, kind, q, now, callsEnabled, auto]);
 
   const shown = events.slice(0, limit);
   const groups: { day: string; items: Ev[] }[] = [];
@@ -281,7 +289,7 @@ export function AdminActivityLog() {
         </div>
       )}
 
-      <DetailModal e={open} onClose={() => setOpen(null)} />
+      <DetailModal e={open} onClose={() => setOpen(null)} callsEnabled={callsEnabled} />
     </div>
   );
 }
@@ -337,7 +345,7 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
   );
 }
 
-function DetailModal({ e, onClose }: { e: Ev | null; onClose: () => void }) {
+function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () => void; callsEnabled: boolean }) {
   useEffect(() => {
     if (!e) return;
     const k = (ev: KeyboardEvent) => ev.key === "Escape" && onClose();
@@ -391,7 +399,7 @@ function DetailModal({ e, onClose }: { e: Ev | null; onClose: () => void }) {
               {c && (
                 <div className="flex flex-wrap gap-1.5 text-[11px]">
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-700">{GRADE_LABEL[c.grade]}</span>
-                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">➡️ {nextStep(c).text}</span>
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">➡️ {nextStep(c, new Date(), callsEnabled).text}</span>
                 </div>
               )}
 

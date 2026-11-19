@@ -37,7 +37,7 @@ export type TestCallDetail = TestCallRecord & {
 
 const titleCase = (n: string) =>
   n
-    .split(/s+/)
+    .split(/\s+/)
     .filter(Boolean)
     .map((w) => w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR"))
     .join(" ");

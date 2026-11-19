@@ -25,7 +25,7 @@ import { AiAgentsCard, AiKpiRow } from "@/components/admin/admin-ai-command-cent
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
 import { WaveAudio } from "@/components/admin/admin-wave-audio";
 import { AdminTestCallBox } from "@/components/admin/admin-ai-test-call";
-import { AdminAutomationSettings } from "@/components/admin/admin-automation-settings";
+import { AdminAutomationSettings, useAutomation } from "@/components/admin/admin-automation-settings";
 import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 import type {
   AiCapacityConfig,
@@ -222,6 +222,7 @@ export function AdminAiCouplesPanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const { status, refresh } = useAiSystemStatus();
+  useAutomation(); // takip gün ayarı yüklenince liste yeniden çizilir
   const capacityRef = useRef<HTMLDetailsElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -238,11 +239,12 @@ export function AdminAiCouplesPanel() {
   useAdminDataSync(load);
 
   const couples = useMemo(() => data?.couples ?? [], [data]);
+  const real = useMemo(() => couples.filter((x) => x.sourceRef !== "test"), [couples]);
   const counts = useMemo(() => {
     const c: Record<AiCoupleGrade, number> = { hot: 0, warm: 0, cold: 0, blacklist: 0 };
-    for (const x of couples) c[x.grade] += 1;
+    for (const x of real) c[x.grade] += 1;
     return c;
-  }, [couples]);
+  }, [real]);
 
   const visible = useMemo(() => {
     const q = search.toLocaleLowerCase("tr-TR").trim();
@@ -260,12 +262,12 @@ export function AdminAiCouplesPanel() {
   }, [visible]);
   const stageCounts = useMemo(() => {
     const m = {} as Record<Stage, number>;
-    for (const c of couples) {
+    for (const c of real) {
       const s = stageOf(c);
       m[s] = (m[s] ?? 0) + 1;
     }
     return m;
-  }, [couples]);
+  }, [real]);
 
   const patch = async (id: string, body: Record<string, unknown>) => {
     setBusy(true);
@@ -288,17 +290,22 @@ export function AdminAiCouplesPanel() {
 
   const quickCall = async (c: AiCouple) => {
     if (!confirm(`${c.name} şimdi sesli asistanla aransın mı?`)) return;
-    setMsg({ text: `📞 ${c.name} aranıyor…`, ok: true });
-    const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "call" }) });
-    const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
-    setMsg(res.ok ? { text: `📞 ${c.name} için arama başlatıldı — sonuç birkaç dakika içinde burada`, ok: true } : { text: `⚠️ ${j.error ?? j.message ?? "Arama başlatılamadı"}`, ok: false });
-    if (res.ok) load();
+    setMsg({ text: `📞 ${c.name} aranıyor… (20-40 sn içinde telefon çalar)`, ok: true });
+    try {
+      const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "call" }) });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      setMsg(res.ok ? { text: `📞 ${c.name} için arama başlatıldı — sonuç birkaç dakika içinde burada`, ok: true } : { text: `⚠️ ${j.error ?? j.message ?? "Arama başlatılamadı"}`, ok: false });
+      if (res.ok) load();
+    } catch {
+      setMsg({ text: "⚠️ Bağlantı hatası — arama başlatılamadı, tekrar deneyin", ok: false });
+    }
   };
 
   const toggleCampaign = async (target: "kampanya" | "arama", on: boolean) => {
     const ad = target === "kampanya" ? "WhatsApp kampanyası" : "Otomatik arama";
     if (!confirm(`${ad} ${on ? "BAŞLATILSIN" : "DURDURULSUN"} mu?`)) return;
-    await fetch("/api/admin/ai-campaign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, op: on ? "resume" : "pause" }) }).catch(() => null);
+    const res = await fetch("/api/admin/ai-campaign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target, op: on ? "resume" : "pause" }) }).catch(() => null);
+    setMsg(res?.ok ? { text: `✅ ${ad} ${on ? "başlatıldı" : "durduruldu"}`, ok: true } : { text: `⚠️ ${ad} değiştirilemedi — tekrar deneyin`, ok: false });
     refresh();
   };
 
@@ -336,7 +343,7 @@ export function AdminAiCouplesPanel() {
         eyebrow="AI Satış"
         title="AI Çift Yönetimi"
         icon={Bot}
-        meta={`${couples.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık · ${stageCounts.needsReply ?? 0} cevap bekliyor`}
+        meta={`${real.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık · ${stageCounts.needsReply ?? 0} cevap bekliyor`}
       />
 
       <AiKpiRow couples={couples} months={data.months} onOpenStage={openStage} />
@@ -346,8 +353,15 @@ export function AdminAiCouplesPanel() {
       <AdminTestCallBox />
 
       {msg && (
-        <p className={cn("rounded-2xl border px-4 py-2.5 text-sm", msg.ok ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-rose-200 bg-rose-50 text-rose-800")}>
+        <p
+          role="status"
+          className={cn(
+            "fixed top-4 left-1/2 z-[90] w-[min(92vw,34rem)] -translate-x-1/2 rounded-2xl border px-4 py-2.5 text-sm shadow-lg",
+            msg.ok ? "border-indigo-100 bg-indigo-50 text-indigo-800" : "border-rose-200 bg-rose-50 text-rose-800"
+          )}
+        >
           {msg.text}
+          <button type="button" onClick={() => setMsg(null)} className="ml-2 font-semibold underline">Kapat</button>
         </p>
       )}
 
@@ -866,13 +880,18 @@ function ActionBox({ couple: c, onDone, autoFocus }: { couple: AiCouple; onDone:
   const run = async (body: Record<string, unknown>, ok: string) => {
     setSending(true);
     setInfo("Gönderiliyor…");
-    const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
-    setSending(false);
-    setInfo(res.ok ? ok : `⚠️ ${j.error ?? j.message ?? "İşlem yapılamadı"}`);
-    if (res.ok) {
-      setText("");
-      onDone();
+    try {
+      const res = await fetch(`/api/admin/ai-couples/${c.id}/action`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      setInfo(res.ok ? ok : `⚠️ ${j.error ?? j.message ?? "İşlem yapılamadı"}`);
+      if (res.ok) {
+        setText("");
+        onDone();
+      }
+    } catch {
+      setInfo("⚠️ Bağlantı hatası — tekrar deneyin");
+    } finally {
+      setSending(false);
     }
   };
   return (
@@ -908,9 +927,9 @@ function ActionBox({ couple: c, onDone, autoFocus }: { couple: AiCouple; onDone:
           type="button"
           disabled={sending || date === (c.weddingDate ?? "")}
           onClick={async () => {
-            const res = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weddingDate: date }) });
-            setInfo(res.ok ? "✅ Tarih kaydedildi" : "⚠️ Tarih kaydedilemedi");
-            if (res.ok) onDone();
+            const res = await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ weddingDate: date }) }).catch(() => null);
+            setInfo(res?.ok ? "✅ Tarih kaydedildi" : "⚠️ Tarih kaydedilemedi");
+            if (res?.ok) onDone();
           }}
           className={btn}
         >
@@ -997,11 +1016,12 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
           type="button"
           className={cn(btnPrimary, "h-10 px-4")}
           onClick={async () => {
-            await fetch("/api/admin/ai-capacity", {
+            const res = await fetch("/api/admin/ai-capacity", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ defaultPerMonth: Number(def), droneGiftLeft: Number(gift), perDay: Number(perDay), blockedDates: blocked, months: toNums(totals), manualBooked: toNums(manual) }),
-            });
+            }).catch(() => null);
+            if (!res?.ok) return alert("Kontenjan kaydedilemedi — tekrar deneyin");
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
             onSaved();

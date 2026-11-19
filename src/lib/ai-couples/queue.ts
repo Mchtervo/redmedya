@@ -35,7 +35,7 @@ const CATALOG_OUTCOMES = new Set(["info_requested", "offer_requested", "thinking
 /** Toplu kampanya çiftlerine katalog, kampanya akışından (aramaya göre kişiselleştirilmiş) gider. */
 export const CAMPAIGN_REFS = new Set(["kampanya-2027"]);
 /** Kampanya çiftleri sahibi "aramaları başlat" diyene kadar ARANMAZ (yeni gelen talepler aranır). */
-export const CAMPAIGN_CALLS_ENABLED = false;
+export const CAMPAIGN_CALLS_ENABLED = true; // sahibi 19.11.2026: Düğün.com listesi de aransın
 
 /**
  * Arama sonrası WhatsApp artık n8n "RM K" akışından, aramanın notlarına göre kişisel gidiyor.
@@ -124,7 +124,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
-    .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now))
+    .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED) || isFollowCallDue(c, now) || isFollowUpCallDue(c, now) || isCallbackDue(c, now) || isSecondCallDue(c, now))
     .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için
     //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce
