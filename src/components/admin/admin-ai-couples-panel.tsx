@@ -676,6 +676,17 @@ function DrawerBody({
             <Calendar className="h-4 w-4 shrink-0" /> 📅 {weddingText(c)}: {dayState.text}
           </p>
         )}
+        {!c.contactLocked && c.status !== "won" && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-slate-500">Müşteri bizi geri aradıysa:</span>
+            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "talked" })} className="rounded-lg border border-emerald-300 bg-white px-2.5 py-1 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40">
+              📞 Geri aradı, konuştum
+            </button>
+            <button type="button" disabled={busy} onClick={() => onPatch({ inbound: "missed" })} className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-40">
+              📵 Geri aradı, açamadım (asistan arasın)
+            </button>
+          </div>
+        )}
         {st === "needsReply" && (
           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             <span className="min-w-0 flex-1">Çift yazdı, cevap bekliyor. Telefondan cevap verdiyseniz işaretleyin.</span>

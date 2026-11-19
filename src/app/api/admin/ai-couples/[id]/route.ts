@@ -64,6 +64,27 @@ export async function PATCH(request: Request, { params }: Ctx) {
         updatedAt: at,
       };
     }
+    // "Geri aradı" (elle): konuştum → otomatik tekrar arama yok; açamadım → asistan 10 dk sonra geri arar
+    if ((body.inbound === "talked" || body.inbound === "missed") && !next.contactLocked) {
+      if (body.inbound === "talked") {
+        next = {
+          ...next,
+          inboundAt: at,
+          status: next.status === "new" ? "contacted" : next.status,
+          callbackRequested: false,
+          callbackAt: undefined,
+          busyRetries: 0,
+          timeline: [...next.timeline, { at, type: "inbound", text: "📞 Bizi geri aradı — telefonda görüşüldü (panelden işaretlendi)" }],
+        };
+      } else {
+        const canCall = !next.callsPaused && next.status !== "won" && next.status !== "lost";
+        next = {
+          ...next,
+          ...(canCall ? { callbackRequested: true, callbackAt: new Date(now.getTime() + 10 * 60_000).toISOString() } : {}),
+          timeline: [...next.timeline, { at, type: "inbound_missed", text: `📵 Bizi geri aradı — AÇILMADI${canCall ? " → asistan 10 dk içinde geri arayacak" : ""} (panelden işaretlendi)` }],
+        };
+      }
+    }
     if (typeof body.messagesPaused === "boolean" && Boolean(next.messagesPaused) !== body.messagesPaused) {
       next = body.messagesPaused
         ? { ...next, messagesPaused: true, timeline: [...next.timeline, { at, type: "edit", text: "🚫 Otomatik WhatsApp mesajları İPTAL edildi (panelden) — kampanya / takip / hatırlatma gitmez" }] }
