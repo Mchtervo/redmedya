@@ -10,6 +10,7 @@ import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { AI_EVENTS, applyEvent, lockCouple, type AiEvent } from "@/lib/ai-couples/rules";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import type { AiCoupleGrade } from "@/types/ai-couples";
+import { selamFor } from "@/lib/ai-couples/hitap";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -19,7 +20,8 @@ export async function GET(request: Request, { params }: Ctx) {
   if (denied) return denied;
   const couple = await getCouple((await params).id);
   if (!couple) return bad("Bulunamadı", 404);
-  return NextResponse.json({ ok: true, couple });
+  // selam: sesli asistanın açılışı ("Merhabalar Ayşe Hanım") — panelden "Şimdi ara" (n8n P2) kullanır
+  return NextResponse.json({ ok: true, couple: { ...couple, selam: selamFor(couple.name) } });
 }
 
 export async function PATCH(request: Request, { params }: Ctx) {

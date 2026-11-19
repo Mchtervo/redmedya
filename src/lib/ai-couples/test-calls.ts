@@ -7,6 +7,7 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { dataPath } from "@/lib/data-dir";
 import { readIntegrations } from "@/lib/ai-couples/integrations";
+import { selamFor } from "@/lib/ai-couples/hitap";
 import { capacitySpeech, dayLabel, monthKeyOf, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
 
 const FILE = dataPath("ai-test-calls.json");
@@ -64,7 +65,7 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
       to_number: input.phone,
       conversation_initiation_client_data: {
         dynamic_variables: {
-          selam: isim !== "bilinmiyor" ? `Merhabalar ${isim}` : "Merhabalar",
+          selam: selamFor(input.name),
           couple_id: "TEST",
           isim,
           kaynak: "Düğün.com",

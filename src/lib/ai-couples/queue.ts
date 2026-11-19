@@ -16,6 +16,7 @@ import {
 } from "@/lib/ai-couples/rules";
 import { readCouples } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
+import { selamFor } from "@/lib/ai-couples/hitap";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
 
@@ -99,6 +100,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       source: c.source,
       capacity: await getCapacityForDate(c.weddingDate, cfg),
       capacitySpeech: capacitySpeech(months, monthKeyOf(c.weddingDate)),
+      selam: selamFor(c.name),
       history: historyForAgent(c),
       followUp: isFollowUpCallDue(c, now),
       reason: isSecondCallDue(c, now)
