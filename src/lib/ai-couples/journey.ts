@@ -70,6 +70,10 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
     return { text: `Düşünüyor — ${when(nextCallSlot(new Date(c.followUpAt)), now)} 1 kez tekrar aranacak.`, tone: "wait" };
   }
 
+  if ((c.busyRetries ?? 0) > 0 && c.callbackRequested) {
+    const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));
+    return { text: `Hat meşguldü — ${when(at, now)} tekrar aranacak (${c.busyRetries}/2)${offNote}.`, tone: "action" };
+  }
   if (!calls.length) {
     return callsEnabled
       ? { text: `1. arama ${when(nextCallSlot(now), now)}. Ardından WhatsApp.`, tone: "action" }
@@ -90,7 +94,8 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
   }
   if (lastCall.outcome === "no_answer") return { text: "2 arama + son mesaj tamam — bir daha aranmayacak. Cevap bekleniyor.", tone: "done" };
   if (lastCall.outcome === "callback_requested" || c.callbackRequested) {
-    return { text: `Sonra arayın dedi — tekrar arama ${when(nextCallSlot(now), now)}${offNote}.`, tone: "action" };
+    const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));
+    return { text: `Sonra arayın dedi — tekrar arama ${when(at, now)}${offNote}.`, tone: "action" };
   }
   return { text: "Görüşüldü, WhatsApp gitti — çiftin cevabı bekleniyor.", tone: "done" };
 }

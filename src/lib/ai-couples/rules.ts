@@ -23,6 +23,16 @@ export const CALL_WINDOW_TEXT = "09:30–20:30";
 /** Otomatik WhatsApp/SMS de gece gitmez. */
 export const MESSAGE_WINDOW = { startHour: 9, endHour: 21 } as const;
 export const FOLLOW_UP_DAYS = 7;
+/** "Sonra arayın" diyen çift bu kadar sonra tekrar aranır */
+export const CALLBACK_DELAY_MS = 2 * 3600_000;
+/** Hat meşgulse bu kadar sonra tekrar denenir (en fazla BUSY_MAX_RETRIES kez) */
+export const BUSY_RETRY_MS = 5 * 60_000;
+export const BUSY_MAX_RETRIES = 2;
+
+/** "Tekrar arayın" / meşgul tekrar araması zamanı geldi mi? */
+export function isCallbackDue(c: AiCouple, now: Date): boolean {
+  return Boolean(c.callbackRequested) && (!c.callbackAt || Date.parse(c.callbackAt) <= now.getTime());
+}
 const DAY_MS = 86_400_000;
 
 /** Kaynağa göre en fazla sesli arama sayısı ("tekrar arayın" hariç). */
@@ -130,6 +140,9 @@ export function canContact(
       return { allowed: false, reason: `Arama saatleri dışında (${CALL_WINDOW_TEXT})` };
     }
     const max = MAX_CALLS[c.source] ?? 1;
+    if (c.callbackRequested && !isCallbackDue(c, now)) {
+      return { allowed: false, reason: "Tekrar arama saati henüz gelmedi" };
+    }
     if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now) && !isSecondCallDue(c, now)) {
       return {
         allowed: false,
@@ -187,8 +200,10 @@ export function applyCallOutcome(
     ...c,
     callCount: c.callCount + 1,
     lastCallAt: at,
-    // Kullanılmış "tekrar arayın" hakkı bu aramayla tükenir.
+    // Kullanılmış "tekrar arayın" hakkı bu aramayla tükenir; meşgul sayacı sıfırlanır.
     callbackRequested: false,
+    callbackAt: undefined,
+    busyRetries: 0,
     lastQuotedRemaining:
       typeof quotedRemaining === "number" ? quotedRemaining : c.lastQuotedRemaining,
     updatedAt: at,
@@ -224,6 +239,7 @@ export function applyCallOutcome(
       next = {
         ...next,
         callbackRequested: true,
+        callbackAt: new Date(now.getTime() + CALLBACK_DELAY_MS).toISOString(),
         grade: next.grade === "hot" ? "hot" : "warm",
       };
       break;

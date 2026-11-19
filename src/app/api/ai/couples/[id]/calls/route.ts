@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
-import { applyCallOutcome, displayPhone, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
+import { applyCallOutcome, BUSY_MAX_RETRIES, BUSY_RETRY_MS, displayPhone, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { mutateCouple } from "@/lib/ai-couples/store";
 import { checkDate } from "@/lib/ai-couples/capacity";
@@ -61,8 +61,46 @@ export async function POST(request: Request, { params }: Ctx) {
   const weddingDate = learnedDate && /^\d{4}-\d{2}-\d{2}$/.test(learnedDate) && !Number.isNaN(Date.parse(learnedDate))
     ? learnedDate
     : undefined;
+  const coupleId = (await params).id;
+
+  // HAT MEŞGUL: arama sayılmaz, 5 dk sonra tekrar denenir (en fazla 2 kez); sonra normal "açmadı" akışı
+  if (body.busy === true && outcome === "no_answer") {
+    let retried = 0;
+    let handled = false;
+    const busyUpdated = await mutateCouple(coupleId, (c) => {
+      const tries = c.busyRetries ?? 0;
+      if (c.contactLocked || tries >= BUSY_MAX_RETRIES) return c;
+      if (record.externalId && c.timeline.some((e) => e.type === "busy" && e.text.endsWith(`#${record.externalId!.slice(-6)}`))) {
+        handled = true;
+        retried = tries;
+        return c;
+      }
+      handled = true;
+      retried = tries + 1;
+      return {
+        ...c,
+        busyRetries: retried,
+        callbackRequested: true,
+        callbackAt: new Date(now.getTime() + BUSY_RETRY_MS).toISOString(),
+        updatedAt: record.at,
+        timeline: [
+          ...c.timeline,
+          { at: record.at, type: "busy", text: `Hat meşgul — 5 dk sonra tekrar aranacak (${retried}/${BUSY_MAX_RETRIES}) #${(record.externalId ?? "").slice(-6)}` },
+        ],
+      };
+    });
+    if (!busyUpdated) return bad("Bulunamadı", 404);
+    if (handled) {
+      await sendTelegramMessage(
+        `📵 Hat meşgul: ${busyUpdated.name} — ${displayPhone(busyUpdated.phone)}\nKapatıldı, 5 dk sonra tekrar aranacak (${retried}/${BUSY_MAX_RETRIES}).`
+      ).catch(() => false);
+      return NextResponse.json({ ok: true, busy: true, retry: retried, couple: busyUpdated });
+    }
+    record.summary = [record.summary, `Hat ${BUSY_MAX_RETRIES + 1} kez meşgul çıktı.`].filter(Boolean).join("\n");
+  }
+
   let duplicate = false;
-  const updated = await mutateCouple((await params).id, (c) => {
+  const updated = await mutateCouple(coupleId, (c) => {
     // Aynı arama iki kez gelirse (webhook tekrarı) ikinci kez sayma.
     if (record.externalId && c.calls.some((x) => x.externalId === record.externalId)) {
       duplicate = true;
@@ -77,7 +115,14 @@ export async function POST(request: Request, { params }: Ctx) {
         timeline: [...c.timeline, { at: record.at, type: "violation", text: "UYARI: kara listedeki çift arandı" }],
       };
     }
-    return applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
+    const after = applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
+    // Çift "yarım saat sonra arayın" dediyse o süreye göre (5 dk – 3 gün arası); demediyse kural: 2 saat
+    const inMin = Number(body.callbackInMin);
+    if (outcome === "callback_requested" && Number.isFinite(inMin) && inMin > 0) {
+      const ms = Math.min(Math.max(inMin, 5), 3 * 24 * 60) * 60_000;
+      return { ...after, callbackAt: new Date(now.getTime() + ms).toISOString() };
+    }
+    return after;
   });
   if (!updated) return bad("Bulunamadı", 404);
 

@@ -91,6 +91,10 @@ export type AiCouple = {
   lastCallAt?: string;
   /** Çift "tekrar arayın" dedi → bir arama hakkı daha */
   callbackRequested: boolean;
+  /** "Tekrar arayın" / hat meşgul → bu andan önce aranmaz */
+  callbackAt?: string;
+  /** Art arda "hat meşgul" denemesi (en fazla 2 tekrar, sonra normal "açmadı" akışı) */
+  busyRetries?: number;
   calls: AiCallRecord[];
   messages: AiMessageRecord[];
 

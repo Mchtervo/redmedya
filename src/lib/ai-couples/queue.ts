@@ -11,6 +11,7 @@ import {
   buildFollowUpMessage,
   canContact,
   isFollowUpCallDue,
+  isCallbackDue,
   isSecondCallDue,
   isFollowUpDue,
 } from "@/lib/ai-couples/rules";
@@ -56,7 +57,8 @@ export const FRESH_LEAD_MS = 48 * 3600 * 1000;
 export function callPriority(c: AiCouple, now: Date): number {
   const fresh = !c.calls.length && c.status === "new" && now.getTime() - Date.parse(c.createdAt) < FRESH_LEAD_MS;
   if (fresh) return 0;
-  if (isSecondCallDue(c, now) || c.callbackRequested) return 1;
+  if ((c.busyRetries ?? 0) > 0 && isCallbackDue(c, now)) return 0; // meşgul çıkan yeni çift: hemen tekrar
+  if (isSecondCallDue(c, now) || isCallbackDue(c, now)) return 1;
   if (isFollowUpCallDue(c, now)) return 2;
   return 3;
 }
@@ -111,7 +113,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const months = await upcomingCapacity(14, cfg);
   const callable = couples
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
-    .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
+    .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için
     //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce
     //  1) 2. arama zamanı gelenler / "tekrar arayın" diyenler
@@ -135,7 +137,9 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
         ? "1. arama açılmadı, WhatsApp’a da dönmedi — 2. (son) arama"
         : isFollowUpCallDue(c, now)
         ? "Düşüneyim dedi — 1 hafta sonra tekrar arama"
-        : c.callbackRequested
+        : (c.busyRetries ?? 0) > 0
+          ? `Hat meşguldü — tekrar deneme (${c.busyRetries}/2)`
+          : c.callbackRequested
           ? "Tekrar aranmak istedi"
           : "Yeni talep",
     });
