@@ -43,6 +43,7 @@ export type NextStep = { text: string; tone: "action" | "wait" | "done" | "stop"
 export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): NextStep {
   if (c.contactLocked) return { text: `Durdu — ${c.lockReason ?? "iletişim kapalı"}. Arama ve mesaj yok.`, tone: "stop" };
   if (c.status === "won") return { text: "Rezervasyon yaptı. Satış iletişimi yok.", tone: "done" };
+  if ((c.note ?? "").includes("yanlış numara")) return { text: "Yanlış numara (telefonda söyledi) — bir daha aranmaz, mesaj gitmez.", tone: "stop" };
   if ((c.note ?? "").includes("Numara hatalı")) return { text: "Numara hatalı (WhatsApp yok) — otomatik işlem yok.", tone: "stop" };
   if (c.status === "lost") return { text: "İlgilenmediğini söyledi — takip durdu.", tone: "stop" };
 

@@ -87,7 +87,7 @@ function describeCall(call: AiCallRecord, c: AiCouple, no: number): { title: str
     const sum = call.summary ?? "";
     // SIP 480/408/487 = arama gitti, çaldı ama açılmadı (ya da telefon kapalı)
     const rang = /\b(480|408|487)\b|temporarily/i.test(sum);
-    const why = voicemail ? "telesekretere düştü" : /dinlemeden kapattı/i.test(sum) ? "açtı, dinlemeden kapattı" : /meşgul/i.test(sum) ? "hat meşgul" : rang ? "çaldı, açmadı (ya da telefon kapalı)" : /bağlanmadı/i.test(sum) ? "bağlanamadı" : "açmadı";
+    const why = /YANLIŞ NUMARA/i.test(sum) ? "YANLIŞ NUMARA (aranmayacak)" : voicemail ? "telesekretere düştü" : /dinlemeden kapattı/i.test(sum) ? "açtı, dinlemeden kapattı" : /meşgul/i.test(sum) ? "hat meşgul" : rang ? "çaldı, açmadı (ya da telefon kapalı)" : /bağlanmadı/i.test(sum) ? "bağlanamadı" : "açmadı";
     return { title: `📵 ${no}. arama — ${why}`, text: sum && !voicemail && !rang ? sum.split("\n")[0] : "", tone: "orange", icon: "noanswer" };
   }
   const n = call.notes ?? {};
@@ -141,7 +141,7 @@ const SYSTEM_TYPES: Record<string, { title: string; tone: Ev["tone"] }> = {
   follow_up: { title: "Takip", tone: "blue" },
   locked: { title: "Kara listeye alındı", tone: "rose" },
   unlocked: { title: "Kilit açıldı", tone: "slate" },
-  lost: { title: "İlgilenmiyor", tone: "slate" },
+  lost: { title: "Takip durdu", tone: "slate" },
   won: { title: "💍 Rezervasyon yaptı", tone: "green" },
   violation: { title: "Uyarı", tone: "rose" },
   edit: { title: "Bilgi güncellendi", tone: "slate" },

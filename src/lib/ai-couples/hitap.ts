@@ -16,7 +16,16 @@ const KADIN = new Set(
   kumsal lara melis miray naz nazlıcan neval nisa öykü rana rüya sena seren sude sudenaz şevval tuana yağmur zerrin hira hilal
   büşranur fatmanur zeynepnur merveden gülizar aysun ayten aysu ayla nergis nermin nevin nurgül nurhan perihan saliha sadiye
   safiye semiha sevinç şükran tülin vildan zeliha zekiye hümeyra mukaddes münevver nazife necla necmiye nefise nesibe nuriye
-  güllü melda dilan dilşad rojda berivan helin`.split(/\s+/).filter(Boolean)
+  güllü melda dilan dilşad rojda berivan helin
+  berfin delal dadiya halima husnia hava havva kamile şennur ikbal medine sedanur sebahat sabahat yaren feryal mislina arzu tuğçe busenur
+  gülşah beste ayça aleyna azize bahar banu belgin beril birgül buket cemile deren dicle didem dilay duru ecenur elanur esmanur
+  fadime fatoş feride fidan figen gülbahar gülcan güler gülhan gülistan gülten günay hanife hatun hediye kezban kıymet lütfiye
+  mehtap melisa meral mihriban müge nagihan nalan narin nazan nebahat nida nihan oya özge rahime remziye ruken sevcan sevtap sıla
+  suna şahika şeyda şirin tansu ümran yaprak yonca zerda zilan zümra zümrüt mervee merve hira nur gamze songül seda emine asuman
+  hilal fatma güler nazlıcan sezen sezensu neslihan kübranur ilknur betül melisa medine feryal gözde belit sedef zehra gurbet nermin
+  şükran pınar elif safiye yasemin büşra ayşegül irem leyla sümeyra sümeyye rümeysa tuğçenur aybüke aybike ayşenur esranur hatice
+  hacer kader kadriye kamuran latife makbule melahat muazzez mualla müzeyyen nadide naciye nevra nurdan nurcihan nursel nurşen
+  aslıhan nurhayat peri perihan rahşan sacide sevilay sevinç solmaz süheyla şaziye şehriban şennur tenzile tijen türkan ulviye vesile yadigar zahide`.split(/\s+/).filter(Boolean)
 );
 
 const ERKEK = new Set(
@@ -30,7 +39,16 @@ const ERKEK = new Set(
   sercan sezer soner suat şaban şenol şeref talha tamer tekin timur tuna turgut ufuk yaşar yılmaz yiğitcan alperen alp aras arda
   atakan batuhan berkant baran batu bora çağan çağatay çağrı doruk efe ege eray erdoğan görkem kağan kerim mirza ozan poyraz
   rüzgar sarp taha tamer toprak tuğrul yağız yalçın emin eyüp abdulkadir abdurrahman ahmed ayhan aykut aytekin bedirhan
-  yavuzhan alican aliihsan ihsan ishak ilyas veli adem âdem adnan agah akif arif asım aziz bahadır başar caner cavit`.split(/\s+/).filter(Boolean)
+  yavuzhan alican aliihsan ihsan ishak ilyas veli adem âdem adnan agah akif arif asım aziz bahadır başar caner cavit
+  berkcan mertcan erencan berkan samet samed eyyüp nafi tayyip durmuş resul demirkan dermirkan riza enes ensar berat bünyamin
+  celil cüneyt çetin dinçer erdinç ergin fikret gökmen güray halit hayri hüsnü kutay mete murathan nazmi necip nurettin oktay
+  onurcan ömercan özcan özkan rıdvan sabahattin savaş selçuk serhat sertaç tayfur tolgahan turgay uğurcan vahit yahya yasir
+  zekeriya kaancan canberk cankat oğulcan emirhan emircan mustafacan ahmetcan alihan abdulsamet kadircan miraç yusufcan burakcan
+  efecan egemen eymen ata ateş cemal cemil coşkun erkin erman faruk ferdi ferit fevzi galip gencer hamit haydar kürşad lütfi
+  mahir mansur nail naim nevzat niyazi nusret raşit refik remzi rüştü saffet sait seyfi sıtkı şerafettin tahsin yekta zülfikar
+  mehmetnuri mehmetali mehmetcan alirıza muhammedali fatihcan emrecan sefa sezer taner tayyip harun ahmet erdem emre burak
+  belit gurbet ergin oğuzhan ismail mustafa ibrahim hamdi hasancan hüseyincan abdülkadir abdülkerim abdullah şahan şafak
+  toygar enis seyfettin seyfi nurullah mücahit ramazan ramazancan recai rauf reşat rıfat sebahattin seyit seyithan sıddık şemsettin taylan teoman ulaş vural yetkin`.split(/\s+/).filter(Boolean)
 );
 
 /** İkisi de olabilen isimler: sadece isimle hitap */

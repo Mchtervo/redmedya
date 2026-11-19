@@ -12,7 +12,7 @@ import { sendTelegramMessage } from "@/lib/lead-notify";
 import { mutateCouple } from "@/lib/ai-couples/store";
 import { checkDate } from "@/lib/ai-couples/capacity";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
-import type { AiCallOutcome, AiCallRecord } from "@/types/ai-couples";
+import type { AiCallOutcome, AiCallRecord, AiCouple } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -131,7 +131,20 @@ export async function POST(request: Request, { params }: Ctx) {
         timeline: [...c.timeline, { at: record.at, type: "violation", text: "UYARI: kara listedeki çift arandı" }],
       };
     }
-    const after = applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
+    const after0 = applyCallOutcome(withCall, outcome, now, record.quotedRemaining);
+    // YANLIŞ NUMARA (telefonda "ben o değilim / düğünüm yok" dedi): bir daha aranmaz, WhatsApp gitmez
+    const after: AiCouple = body.wrongNumber === true
+      ? {
+          ...after0,
+          status: "lost",
+          grade: "cold",
+          callbackRequested: false,
+          callbackAt: undefined,
+          followUpAt: undefined,
+          note: (after0.note ?? "").includes("Numara hatalı") ? after0.note : [after0.note, "Numara hatalı (yanlış numara — telefonda söyledi)"].filter(Boolean).join(" · ").slice(0, 1000),
+          timeline: [...after0.timeline, { at: record.at, type: "lost", text: "☎️ YANLIŞ NUMARA — aranan kişi o değil / düğünü yok. Arama ve mesaj durduruldu." }],
+        }
+      : after0;
     if (outcome !== "callback_requested") return after;
     // Çiftin söylediği zaman: önce sözlü ifade ("yarın 15:00", "akşam"), sonra dakika; ikisi de yoksa kural: 2 saat sonra
     const said = parseCallbackTime(str(body.callbackText, 120), now);

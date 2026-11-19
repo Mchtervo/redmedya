@@ -129,7 +129,7 @@ const STAGE_LABEL: Record<Stage, string> = {
   won: "Rezervasyon yaptı",
   lost: "İlgilenmiyor",
   stopped: "İstemiyor / kara liste",
-  badnumber: "Numara hatalı",
+  badnumber: "Numara hatalı / yanlış numara",
 };
 const STAGE_STYLE: Record<Stage, string> = {
   needsReply: "border-rose-300 bg-rose-600 text-white font-semibold",
