@@ -41,7 +41,7 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
   const [mode, setMode] = useState("esprili");
   const [duration, setDuration] = useState("normal");
   const [topic, setTopic] = useState("");
-  const [info, setInfo2] = useState("");
+  const [person, setPerson] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<{ ok: boolean; text: string } | null>(null);
   const [data, setData] = useState<{ calls: Prank[]; today: number; limit: number } | null>(null);
@@ -73,7 +73,7 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
   const start = async () => {
     setBusy(true);
     setInfo({ ok: true, text: "📞 Aranıyor… telefon 20-40 saniye içinde çalar." });
-    const res = await fetch("/api/admin/ai-prank-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, name, mode, duration, topic, info }) }).catch(() => null);
+    const res = await fetch("/api/admin/ai-prank-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, name, mode, duration, topic, info: person }) }).catch(() => null);
     setBusy(false);
     if (!res) return setInfo({ ok: false, text: "⚠️ Bağlantı hatası — tekrar deneyin" });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -140,8 +140,8 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
           <label className="block">
             <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Kişi hakkında bilgiler — espri malzemesi</span>
             <textarea
-              value={info}
-              onChange={(e) => setInfo2(e.target.value)}
+              value={person}
+              onChange={(e) => setPerson(e.target.value)}
               rows={4}
               maxLength={1200}
               placeholder="örn. “Fenerbahçeli, maç kaybedince küser. Çiğ köfteye bayılır. Sabahları kalkamaz. Kedisinin adı Paşa. Komşusu Ayşe Hanım. Arabasını hep yanlış park eder.”"
