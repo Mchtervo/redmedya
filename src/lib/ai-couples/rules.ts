@@ -25,6 +25,8 @@ export const MESSAGE_WINDOW = { startHour: 9, endHour: 21 } as const;
 export const FOLLOW_UP_DAYS = 7;
 /** "Sonra arayın" diyen çift bu kadar sonra tekrar aranır */
 export const CALLBACK_DELAY_MS = 2 * 3600_000;
+/** WhatsApp mesajlarında paylaşılan Instagram hesabımız */
+export const INSTAGRAM_URL = "https://www.instagram.com/redmedia.co/";
 /** "Sonra arayın" deyip saat vermeyen çift: ertesi gün bu saatte aranır (İstanbul) */
 export const CALLBACK_DEFAULT_HOUR = 11;
 export function defaultCallbackAt(now: Date): Date {
@@ -300,6 +302,7 @@ export function buildCatalogMessage(
     "Tarihinizi 24 saat ücretsiz tutuyoruz; 1.000 TL kapora ile kesinleşiyor (15.000 TL üzeri tutarlarda 2.000 TL). Kalan ödeme çekim günü.",
     "",
     `📸 Örnek çalışmalarımız: ${links.gallery}`,
+    `📱 Detaylı çekimlerimizi Instagram hesabımızdan da inceleyebilirsiniz: ${INSTAGRAM_URL}`,
   ];
   if (links.video) lines.push(`🎬 Örnek video: ${links.video}`);
   lines.push("", "Düğün tarihinizi bu mesaja yazın, müsaitliği hemen kontrol edelim.");
