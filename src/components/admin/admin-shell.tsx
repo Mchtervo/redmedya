@@ -279,8 +279,9 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
         )}
       </AnimatePresence>
 
-      <div className="flex min-w-0 flex-1 flex-col lg:pl-[264px]">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="rm-glass sticky top-0 z-30 border-b border-slate-200/70 px-3 py-3 sm:px-5 md:px-8">
+          <div className="mx-auto w-full max-w-[1480px]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <button
@@ -306,11 +307,11 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
               <button
                 type="button"
                 onClick={() => setPaletteOpen(true)}
-                className="hidden h-10 w-64 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400 transition-colors hover:border-indigo-200 md:inline-flex xl:w-72"
+                className="hidden h-10 w-64 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm whitespace-nowrap text-slate-400 transition-colors hover:border-indigo-200 hover:shadow-sm md:inline-flex xl:w-80"
                 title="Komut paleti (Ctrl+K)"
               >
                 <Search className="h-4 w-4" strokeWidth={1.8} />
-                <span className="flex-1 text-left">Çift, rezervasyon, sayfa ara…</span>
+                <span className="min-w-0 flex-1 truncate text-left">Çift, rezervasyon, sayfa ara…</span>
                 <kbd className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
                   Ctrl K
                 </kbd>
@@ -338,6 +339,7 @@ function AdminShellInner({ children, fontClass }: { children?: React.ReactNode; 
                 <b className="mx-1 text-slate-900 tabular-nums">{status.bugunArama ?? 0}</b>arama
               </span>
             )}
+          </div>
           </div>
         </header>
 

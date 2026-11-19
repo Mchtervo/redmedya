@@ -95,28 +95,29 @@ function KpiCard({ k }: { k: Kpi }) {
   return (
     <Tag
       {...(k.onClick ? { type: "button" as const, onClick: k.onClick } : {})}
-      className="rm-card rm-card-hover group flex flex-col p-4 text-left sm:p-5"
+      className="rm-card rm-card-hover group flex min-w-0 flex-col p-3.5 text-left sm:p-5"
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", k.iconTone)}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 sm:h-11 sm:w-11", k.iconTone)}>
           <Icon className="h-5 w-5" strokeWidth={1.8} />
         </span>
         {k.badge && (
-          <span className={cn("inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-[11px] font-semibold whitespace-nowrap", BADGE_TONE[k.badge.tone])}>
+          <span className={cn("inline-flex max-w-full items-center gap-0.5 truncate rounded-full px-2 py-1 text-[10px] font-semibold whitespace-nowrap sm:text-[11px]", BADGE_TONE[k.badge.tone])}>
             {Arrow && <Arrow className="h-3 w-3" strokeWidth={2.2} />}
             {k.badge.text}
           </span>
         )}
       </div>
-      <p className="mt-4 text-[13px] font-medium text-slate-500">{k.label}</p>
-      <p className="mt-0.5 font-editorial text-[2rem] leading-none text-slate-900 tabular-nums">{k.value}</p>
-      {k.hint && <p className="mt-2 text-xs text-slate-500">{k.hint}</p>}
+      <p className="mt-3 text-xs font-medium text-slate-500 sm:mt-4 sm:text-[13px]">{k.label}</p>
+      <p className="mt-0.5 font-editorial text-2xl leading-none text-slate-900 tabular-nums sm:text-[2rem]">{k.value}</p>
+      {k.hint && <p className="mt-2 hidden text-xs text-slate-500 sm:block">{k.hint}</p>}
     </Tag>
   );
 }
 
 function pctBadge(today: number, yesterday: number): Kpi["badge"] {
   if (!yesterday) return today ? { text: `${today} yeni`, tone: "up" } : { text: "dün 0", tone: "flat" };
+  if (!today) return { text: `dün ${yesterday}`, tone: "flat" };
   const p = Math.round(((today - yesterday) / yesterday) * 100);
   return { text: `${p > 0 ? "+" : ""}${p}% düne göre`, tone: p > 0 ? "up" : p < 0 ? "down" : "flat" };
 }
@@ -179,7 +180,7 @@ export function AiKpiRow({
     },
   ];
   return (
-    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
       {kpis.map((k) => (
         <KpiCard key={k.label} k={k} />
       ))}
@@ -423,18 +424,18 @@ export function AiAgentsCard({ status, onToggle, onOpen }: {
         {agents.map((a) => {
           const Icon = a.icon;
           return (
-            <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+            <li key={a.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3 transition-colors hover:border-indigo-100 hover:bg-white">
               <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", a.tone)}>
                 <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">{a.name}</p>
-                <p className="truncate text-xs text-slate-500">{a.desc}</p>
+                <p className="line-clamp-2 text-xs text-slate-500">{a.desc}</p>
               </div>
               {status.n8n === undefined ? (
                 <span className="text-xs text-slate-400">…</span>
               ) : (
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="ml-auto flex shrink-0 items-center gap-2">
                   <Working on={a.on} />
                   {onToggle && a.toggle && a.id !== "wa" && (
                     <button
@@ -478,7 +479,7 @@ export function AiCommandCenter({ onOpenAi }: { onOpenAi: () => void }) {
 
   if (!data) {
     return (
-      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="rm-card h-40 animate-pulse" />
         ))}
