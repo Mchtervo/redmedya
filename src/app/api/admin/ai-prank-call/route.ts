@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!phone) return bad("Geçerli bir cep telefonu girin (05xx xxx xx xx)");
   const mode = (PRANK_MODES as readonly string[]).includes(String(body?.mode)) ? (body!.mode as PrankMode) : "esprili";
   const duration = (PRANK_DURATIONS as readonly string[]).includes(String(body?.duration)) ? (body!.duration as PrankDuration) : "normal";
-  const r = await startPrank({ phone, name: str(body?.name, 40), mode, duration, topic: str(body?.topic, 400) });
+  const r = await startPrank({ phone, name: str(body?.name, 40), mode, duration, topic: str(body?.topic, 800), info: str(body?.info, 1200) });
   if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 502 });
   return NextResponse.json({ ok: true, call: r.record });
 }

@@ -41,6 +41,7 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
   const [mode, setMode] = useState("esprili");
   const [duration, setDuration] = useState("normal");
   const [topic, setTopic] = useState("");
+  const [info, setInfo2] = useState("");
   const [busy, setBusy] = useState(false);
   const [info, setInfo] = useState<{ ok: boolean; text: string } | null>(null);
   const [data, setData] = useState<{ calls: Prank[]; today: number; limit: number } | null>(null);
@@ -72,7 +73,7 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
   const start = async () => {
     setBusy(true);
     setInfo({ ok: true, text: "📞 Aranıyor… telefon 20-40 saniye içinde çalar." });
-    const res = await fetch("/api/admin/ai-prank-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, name, mode, duration, topic }) }).catch(() => null);
+    const res = await fetch("/api/admin/ai-prank-call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone, name, mode, duration, topic, info }) }).catch(() => null);
     setBusy(false);
     if (!res) return setInfo({ ok: false, text: "⚠️ Bağlantı hatası — tekrar deneyin" });
     const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -125,14 +126,29 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
             </div>
           </div>
 
-          <textarea
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            rows={2}
-            maxLength={400}
-            placeholder="Konu (isteğe bağlı) — örn. “Dün halı sahaya gelmedi, ona takıl” · boş bırakırsan asistan kendi uydurur"
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-fuchsia-300"
-          />
+          <label className="block">
+            <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Senaryo — ne yapsın?</span>
+            <textarea
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              rows={2}
+              maxLength={800}
+              placeholder="örn. “Yan komşusu Ayşe Hanım adına ara, gece geç saatte yüksek sesle türkü söylediği için şikâyet et.” · Boş bırakırsan asistan kendisi uydurur."
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-fuchsia-300"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase">Kişi hakkında bilgiler — espri malzemesi</span>
+            <textarea
+              value={info}
+              onChange={(e) => setInfo2(e.target.value)}
+              rows={4}
+              maxLength={1200}
+              placeholder="örn. “Fenerbahçeli, maç kaybedince küser. Çiğ köfteye bayılır. Sabahları kalkamaz. Kedisinin adı Paşa. Komşusu Ayşe Hanım. Arabasını hep yanlış park eder.”"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-fuchsia-300"
+            />
+            <span className="mt-1 block text-[11px] text-slate-500">Asistan bu bilgileri esprilerine serpiştirir; seçtiğin moda göre tatlı, ciddi ya da gırgır kullanır.</span>
+          </label>
 
           <div className="flex flex-wrap items-center gap-3">
             <button

@@ -19,7 +19,7 @@ export const PRANK_DURATIONS = ["kısa", "normal", "uzun"] as const;
 export type PrankMode = (typeof PRANK_MODES)[number];
 export type PrankDuration = (typeof PRANK_DURATIONS)[number];
 
-export type PrankRecord = { id: string; phone: string; name: string; mode: PrankMode; duration: PrankDuration; topic?: string; at: string };
+export type PrankRecord = { id: string; phone: string; name: string; mode: PrankMode; duration: PrankDuration; topic?: string; info?: string; at: string };
 export type PrankDetail = PrankRecord & { status?: string; durationSec?: number; transcript?: { role: "agent" | "user"; text: string; at?: number }[] };
 
 export async function readPranks(): Promise<PrankRecord[]> {
@@ -38,14 +38,14 @@ export async function prankCountToday(): Promise<number> {
   return (await readPranks()).filter((r) => istDay(r.at) === today).length;
 }
 
-export async function startPrank(input: { phone: string; name?: string; mode: PrankMode; duration: PrankDuration; topic?: string }): Promise<{ ok: true; record: PrankRecord } | { ok: false; error: string }> {
+export async function startPrank(input: { phone: string; name?: string; mode: PrankMode; duration: PrankDuration; topic?: string; info?: string }): Promise<{ ok: true; record: PrankRecord } | { ok: false; error: string }> {
   // Müşteri (gerçek çift) kaydı olan numaraya şaka araması YAPILMAZ
   const couple = await findCoupleByPhone(input.phone);
   if (couple && couple.sourceRef !== "test") return { ok: false, error: "Bu numara müşteri kaydında — şaka araması yapılamaz." };
   if ((await prankCountToday()) >= PRANK_DAILY_LIMIT) return { ok: false, error: `Günlük şaka araması sınırı doldu (${PRANK_DAILY_LIMIT}). Yarın tekrar deneyin.` };
 
   const name = (input.name ?? "").trim().slice(0, 40);
-  const r = await callPanelHook("prank", { phone: input.phone, name, selam: name ? selamFor(name) : "", mode: input.mode, duration: input.duration, topic: (input.topic ?? "").trim().slice(0, 400), from: "Mücahit" });
+  const r = await callPanelHook("prank", { phone: input.phone, name, selam: name ? selamFor(name) : "", mode: input.mode, duration: input.duration, topic: (input.topic ?? "").trim().slice(0, 800), info: (input.info ?? "").trim().slice(0, 1200), from: "Mücahit" });
   const conv = typeof r.data.conversationId === "string" ? r.data.conversationId : "";
   if (!r.ok || !conv) {
     const why = typeof r.data.error === "string" ? r.data.error : `otomasyon cevabı ${r.status}`;
@@ -53,7 +53,7 @@ export async function startPrank(input: { phone: string; name?: string; mode: Pr
     if (/\b(486|600|603)\b|busy|declin/i.test(why)) return { ok: false, error: "Hat meşgul ya da arama reddedildi." };
     return { ok: false, error: `Arama başlatılamadı: ${why}` };
   }
-  const record: PrankRecord = { id: conv, phone: input.phone, name: name || "—", mode: input.mode, duration: input.duration, topic: (input.topic ?? "").trim().slice(0, 400) || undefined, at: new Date().toISOString() };
+  const record: PrankRecord = { id: conv, phone: input.phone, name: name || "—", mode: input.mode, duration: input.duration, topic: (input.topic ?? "").trim().slice(0, 800) || undefined, info: (input.info ?? "").trim().slice(0, 1200) || undefined, at: new Date().toISOString() };
   await mkdir(path.dirname(FILE), { recursive: true });
   await writeFile(FILE, JSON.stringify([record, ...(await readPranks())].slice(0, 60), null, 2), "utf-8");
   return { ok: true, record };
