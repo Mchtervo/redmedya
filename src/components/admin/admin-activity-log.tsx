@@ -131,6 +131,8 @@ const SYSTEM_TYPES: Record<string, { title: string; tone: Ev["tone"] }> = {
   created: { title: "Yeni talep geldi", tone: "blue" },
   duplicate: { title: "Tekrar başvurdu", tone: "blue" },
   busy: { title: "Hat meşgul", tone: "orange" },
+  inbound: { title: "📞 Müşteri geri aradı — görüşüldü", tone: "green" },
+  inbound_missed: { title: "📵 Müşteri geri aradı — açılmadı", tone: "rose" },
   callback: { title: "Tekrar arama zamanı ayarlandı", tone: "blue" },
   thinking: { title: "Düşünüyor olarak işaretlendi", tone: "orange" },
   follow_up: { title: "Takip", tone: "blue" },

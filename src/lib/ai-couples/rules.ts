@@ -402,6 +402,7 @@ export function isSecondCallDue(c: AiCouple, now: Date): boolean {
   if (c.contactLocked || c.status === "won" || c.status === "lost") return false;
   if (c.calls.length !== 1 || c.calls[0].outcome !== "no_answer") return false;
   const first = new Date(c.calls[0].at).getTime();
+  if (c.inboundAt && Date.parse(c.inboundAt) > first) return false; // geri aradı, sahibi konuştu → tekrar arama yok
   if (now.getTime() - first < SECOND_CALL_GAP_MS) return false;
   const after = c.messages.filter((m) => new Date(m.at).getTime() >= first);
   if (after.some((m) => m.direction === "in")) return false;                 // WhatsApp'tan döndü → arama yok

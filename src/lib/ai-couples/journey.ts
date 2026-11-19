@@ -87,6 +87,10 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
       ? { text: `1. arama ${when(nextCallSlot(now), now)}. Ardından WhatsApp.`, tone: "action" }
       : { text: "Aranmayı bekliyor — otomatik arama KAPALI (panelden başlatın). Aramadan WhatsApp gitmez.", tone: "you" };
   }
+  const inAns = [...c.timeline].reverse().find((e) => e.type === "inbound");
+  if (inAns && inAns.at > lastCall.at && lastCall.outcome === "no_answer") {
+    return { text: "Bizi geri aradı, telefonda görüşüldü — otomatik tekrar arama yok. Gerekirse siz yazın / arayın.", tone: "you" };
+  }
   const lastAt = Date.parse(lastCall.at);
   if (!waOut(lastAt)) {
     if (lastCall.outcome === "no_answer") {
@@ -101,6 +105,11 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
     return { text: `WhatsApp'a dönmezse 2. (son) arama ${when(due, now)}${offNote}. Dönerse aranmayacak.`, tone: "wait" };
   }
   if (lastCall.outcome === "no_answer") return { text: "2 arama + son mesaj tamam — bir daha aranmayacak. Cevap bekleniyor.", tone: "done" };
+  const inb = [...c.timeline].reverse().find((e) => e.type === "inbound" || e.type === "inbound_missed");
+  if (inb?.type === "inbound_missed" && c.callbackRequested && inb.at > lastCall.at) {
+    const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));
+    return { text: `Bizi geri aradı, açılmadı — asistan ${when(at, now)} geri arayacak${offNote}.`, tone: "action" };
+  }
   if (lastCall.outcome === "callback_requested" || c.callbackRequested) {
     const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));
     return { text: `Sonra arayın dedi — tekrar arama ${when(at, now)}${offNote}.`, tone: "action" };
@@ -144,8 +153,12 @@ export function historyForAgent(c: AiCouple): string {
   }
   const busy = c.timeline.filter((e) => e.type === "busy").length;
   if (busy) parts.push(`Daha önce ${busy} kez aradığımızda hat meşguldü.`);
+  const lastIn = [...c.timeline].reverse().find((e) => e.type === "inbound" || e.type === "inbound_missed");
+  if (lastIn?.type === "inbound") parts.push("Çift bizi geri aradı ve ekibimizle telefonda görüştü.");
+  const missedIn = lastIn?.type === "inbound_missed" && c.callbackRequested && !c.calls.some((x) => x.at > lastIn.at);
+  if (missedIn) parts.push('Çift az önce bizi GERİ ARADI ama açılamadı; kimlik teyidinden sonra "bizi aramışsınız, hemen dönüyorum" diye başla.');
   const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
-  if (cb && c.callbackRequested) parts.push(`Çift bu saatte aranmak istemişti — ${cb.text.replace(/^Tekrar arama zamanı: /, "")}; "istediğiniz saatte arıyorum" diye başla.`);
+  if (cb && c.callbackRequested && !missedIn) parts.push(`Çift bu saatte aranmak istemişti — ${cb.text.replace(/^Tekrar arama zamanı: /, "")}; "istediğiniz saatte arıyorum" diye başla.`);
   // WhatsApp'tan teklif zaten gittiyse (ve ondan sonra telefonda konuşulmadıysa) asistan teklifi baştan anlatmasın
   const offer = c.messages.find((m) => m.direction === "out" && m.channel === "whatsapp" && /TL/.test(m.text) && !m.text.startsWith("["));
   if (offer && !c.calls.some((x) => x.outcome !== "no_answer" && x.at > offer.at)) {
