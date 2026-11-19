@@ -7,6 +7,7 @@ import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { normalizePhone } from "@/lib/ai-couples/rules";
 import { ingestCouple, readCouples } from "@/lib/ai-couples/store";
+import { readAutomation } from "@/lib/ai-couples/automation";
 import type { AiCoupleGrade, AiCoupleSource } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,8 @@ export async function GET(request: Request) {
   if (grade && GRADES.includes(grade)) list = list.filter((c) => c.grade === grade);
   if (phone) list = list.filter((c) => c.phone === phone);
   if (q) list = list.filter((c) => c.name.toLocaleLowerCase("tr-TR").includes(q) || c.phone.includes(q.replace(/\D/g, "") || "§"));
-  return NextResponse.json({ ok: true, couples: list.slice(0, 200) });
+  // automation: WhatsApp kampanyası (n8n K) günlük sınır ve bekleme süresini buradan okur
+  return NextResponse.json({ ok: true, couples: list.slice(0, 200), automation: await readAutomation() });
 }
 
 export async function POST(request: Request) {

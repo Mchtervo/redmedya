@@ -11,6 +11,7 @@ import type { AiCapacityInfo, AiCouple } from "@/types/ai-couples";
 import { cn } from "@/lib/utils";
 import { useAiSystemStatus, type AiSystemStatus } from "@/hooks/use-ai-system-status";
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
+import { useAutomation } from "@/components/admin/admin-automation-settings";
 
 const TZ = "Europe/Istanbul";
 const dayKey = (d: Date | string) => new Date(d).toLocaleDateString("sv-SE", { timeZone: TZ });
@@ -407,10 +408,11 @@ export function AiAgentsCard({ status, onToggle, onOpen, horizontal }: {
   onToggle?: (target: "kampanya" | "arama", on: boolean) => void;
   onOpen?: () => void;
 }) {
+  const auto = useAutomation();
   const agents = [
-    { id: "arama" as const, name: "Sesli Asistan", desc: `Otomatik arama · bugün ${status.bugunArama ?? 0} arama`, icon: Mic, tone: "bg-indigo-50 text-indigo-600", on: !!status.arama, toggle: true },
+    { id: "arama" as const, name: "Sesli Asistan", desc: `Otomatik arama · bugün ${status.bugunArama ?? 0}/${auto?.callsPerDay ?? 40} arama`, icon: Mic, tone: "bg-indigo-50 text-indigo-600", on: !!status.arama, toggle: true },
     { id: "wa" as const, name: "WhatsApp Hattı", desc: status.whatsapp === undefined ? "Durum bilinmiyor" : status.whatsapp ? "0540 hattı bağlı" : "Hat kopuk — QR gerekli olabilir", icon: MessageCircle, tone: "bg-emerald-50 text-emerald-600", on: !!status.whatsapp, toggle: false },
-    { id: "kampanya" as const, name: "Kampanya Kuyruğu", desc: `2027 kampanyası · bugün ${status.bugunWhatsapp ?? 0}/25`, icon: Send, tone: "bg-rose-50 text-rose-600", on: !!status.kampanya, toggle: true },
+    { id: "kampanya" as const, name: "Kampanya Kuyruğu", desc: `2027 kampanyası · bugün ${status.bugunWhatsapp ?? 0}/${auto?.waPerDay ?? 25}`, icon: Send, tone: "bg-rose-50 text-rose-600", on: !!status.kampanya, toggle: true },
   ];
   return (
     <section className="rm-card p-4 sm:p-5">
