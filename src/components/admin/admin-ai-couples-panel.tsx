@@ -377,7 +377,7 @@ export function AdminAiCouplesPanel() {
               <label className="relative block sm:w-72">
                 <span className="sr-only">Çift ara</span>
                 <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="İsim veya telefon ara" className={cn(field, "pl-10")} />
+                <input type="search" name="rm-ara" autoComplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="İsim veya telefon ara" className={cn(field, "pl-10")} />
               </label>
               <AddCoupleForm onDone={load} />
             </div>
@@ -968,8 +968,8 @@ function AddCoupleForm({ onDone }: { onDone: () => void }) {
         onDone();
       }}
     >
-      <input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="İsim" className={cn(field, "w-36 flex-1")} />
-      <input required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-32 flex-1")} />
+      <input required name="rm-cift-isim" autoComplete="off" data-lpignore="true" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="İsim" className={cn(field, "w-36 flex-1")} />
+      <input required name="rm-cift-tel" autoComplete="off" data-lpignore="true" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="05xx" className={cn(field, "w-32 flex-1")} />
       <input type="date" value={f.weddingDate} onChange={(e) => setF({ ...f, weddingDate: e.target.value })} className={cn(field, "w-40")} />
       <button type="submit" className={btnPrimary}>Ekle</button>
       <button type="button" onClick={() => setShow(false)} className={btn}>Vazgeç</button>
@@ -1140,7 +1140,13 @@ function IntegrationBox({ integration }: { integration: Payload["integration"] }
       </details>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <input
-          type="password"
+          type="text"
+          name="rm-telegram-bot-anahtari"
+          data-lpignore="true"
+          data-1p-ignore
+          data-form-type="other"
+          spellCheck={false}
+          style={{ WebkitTextSecurity: "disc" } as React.CSSProperties}
           value={botToken}
           onChange={(e) => setBotToken(e.target.value)}
           placeholder={integration.telegramReady ? "Bot ayarlı — değiştirmek için yeni anahtar" : "BotFather'dan aldığın bot anahtarı (123456:AA…)"}

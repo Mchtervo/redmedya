@@ -41,7 +41,7 @@ function fmt(iso: string) {
 }
 
 export function AdminTestCallBox() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false); // kapalı gelir; kullanıcı açar
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,6 +79,7 @@ export function AdminTestCallBox() {
 
   const start = async () => {
     setBusy(true);
+    setOpen(true);
     setInfo({ ok: true, text: "📞 Arama başlatılıyor… telefon 20-40 saniye içinde çalar, bu sayfada bekleyin." });
     const res = await fetch("/api/admin/ai-test-call", {
       method: "POST",
@@ -113,8 +114,8 @@ export function AdminTestCallBox() {
       {open && (
         <div className="space-y-4 border-t border-slate-100 p-4 sm:p-5">
           <div className="flex flex-wrap gap-2">
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={cn(field, "max-w-[13rem]")} onKeyDown={(e) => { if (e.key === "Enter" && !busy && phone.replace(/\D/g, "").length >= 10) start(); }} />
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="İsim (ops.) — örn. Ramazan" className={cn(field, "max-w-[13rem]")} />
+            <input name="rm-test-tel" autoComplete="off" data-lpignore="true" value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={cn(field, "max-w-[13rem]")} onKeyDown={(e) => { if (e.key === "Enter" && !busy && phone.replace(/\D/g, "").length >= 10) start(); }} />
+            <input name="rm-test-isim" autoComplete="off" data-lpignore="true" value={name} onChange={(e) => setName(e.target.value)} placeholder="İsim (ops.) — örn. Ramazan" className={cn(field, "max-w-[13rem]")} />
             <button
               type="button"
               disabled={busy || phone.replace(/\D/g, "").length < 10}
@@ -146,7 +147,8 @@ export function AdminTestCallBox() {
                 const key = c.status === "done" && !userSpoke ? "noanswer" : c.status ?? "initiated";
                 const st = STATUS[key] ?? { text: c.status ?? "—", cls: "bg-slate-100 text-slate-600" };
                 // En yeni arama kendiliğinden açık; tıklayınca aç/kapa
-                const isOpen = toggled[c.id] ?? c.id === calls[0]?.id;
+                const liveNow = loadedAt - Date.parse(c.at) < 15 * 60_000 && (!c.status || ["initiated", "in-progress", "processing"].includes(c.status));
+                const isOpen = toggled[c.id] ?? liveNow; // sadece süren arama kendiliğinden açık
                 const flip = () => setToggled((t) => ({ ...t, [c.id]: !isOpen }));
                 return (
                   <li key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5">

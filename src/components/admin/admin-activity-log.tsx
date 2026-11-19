@@ -260,7 +260,7 @@ export function AdminActivityLog() {
           </div>
           <label className="relative block sm:w-72">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="İsim, telefon ya da kelime ara" className="h-10 w-full rounded-xl border border-slate-200 bg-white pr-3 pl-10 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300" />
+            <input type="search" name="rm-ara" autoComplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" value={q} onChange={(e) => setQ(e.target.value)} placeholder="İsim, telefon ya da kelime ara" className="h-10 w-full rounded-xl border border-slate-200 bg-white pr-3 pl-10 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300" />
           </label>
         </div>
       </div>
