@@ -34,6 +34,9 @@ const STATUS: Record<string, { text: string; cls: string }> = {
   failed: { text: "Bağlanamadı", cls: "bg-rose-50 text-rose-700" },
 };
 
+/** Test sonucunun Türkçesi (asistanın sınıflaması + "açtı ama tamamlanmadı") */
+const SONUC_LABEL = { ...OUTCOME_LABEL, hung_up: "Açtı, görüşme tamamlanmadı", wrong_number: "Yanlış numara" } as Record<string, string>;
+
 const field =
   "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300";
 
@@ -158,7 +161,7 @@ export function AdminTestCallBox() {
                       <span className="text-xs text-slate-500">{c.name} · {fmt(c.at)}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", st.cls)}>{st.text}</span>
                       {c.durationSec ? <span className="text-xs text-slate-500">{Math.floor(c.durationSec / 60)} dk {c.durationSec % 60} sn</span> : null}
-                      {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {OUTCOME_LABEL[c.sonuc as keyof typeof OUTCOME_LABEL] ?? c.sonuc}</span>}
+                      {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {SONUC_LABEL[c.sonuc] ?? c.sonuc}</span>}
                       <span className="ml-auto inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50">
                         {isOpen ? "Kapat" : "Detay"}
                         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />

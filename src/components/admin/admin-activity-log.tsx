@@ -41,6 +41,7 @@ type Ev = {
   next?: string;
 };
 
+const SONUC_LABEL = { ...OUTCOME_LABEL, hung_up: "Açtı, görüşme tamamlanmadı", wrong_number: "Yanlış numara" } as Record<string, string>;
 const SRC: Record<string, string> = { dugun_com: "Düğün.com", meta_form: "Instagram/Facebook", web: "Web", manual: "Elle" };
 const CH: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram" };
 const TONE: Record<Ev["tone"], string> = {
@@ -433,8 +434,8 @@ function DetailModal({ e, onClose, callsEnabled }: { e: Ev | null; onClose: () =
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className={cn("rounded-full px-2.5 py-1 font-semibold", spoke ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-700")}>{spoke ? "Açtı — görüşüldü" : "Açmadı / konuşma olmadı"}</span>
                     {(call?.durationSec || test?.durationSec) && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{dur(call?.durationSec ?? test?.durationSec)}</span>}
-                    {call && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {OUTCOME_LABEL[call.outcome]}</span>}
-                    {test?.sonuc && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {OUTCOME_LABEL[test.sonuc as keyof typeof OUTCOME_LABEL] ?? test.sonuc}</span>}
+                    {call && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {call.outcome === "no_answer" && (call.durationSec ?? 0) > 0 && lines.some((l) => l.role === "user") ? SONUC_LABEL.hung_up : OUTCOME_LABEL[call.outcome]}</span>}
+                    {test?.sonuc && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">Sonuç: {SONUC_LABEL[test.sonuc] ?? test.sonuc}</span>}
                   </div>
                   {(call?.summary || test?.summary) && (
                     <div className="rounded-2xl border border-slate-200 p-3.5">

@@ -153,13 +153,16 @@ async function baseDetail(rec: TestCallRecord): Promise<TestCallDetail> {
         transcript?: { role: string; message?: string | null; time_in_call_secs?: number }[];
       };
       const dc = c.analysis?.data_collection_results ?? {};
+      const spoke = (c.transcript ?? []).some((t) => t.role === "user" && (t.message ?? "").replace(/[.\s]/g, ""));
       const ozet = dc.ozet?.value;
       return {
         ...rec,
         status: c.status,
         durationSec: c.metadata?.call_duration_secs,
-        summary: typeof ozet === "string" && ozet.trim() ? ozet : c.analysis?.transcript_summary,
-        sonuc: typeof dc.sonuc?.value === "string" ? (dc.sonuc.value as string) : undefined,
+        // Özet her zaman Türkçe: asistanın kendi özeti yoksa (kısa görüşme) İngilizce otomatik özet yerine sade açıklama
+        summary: typeof ozet === "string" && ozet.trim() ? ozet : c.status === "done" ? (spoke ? `Telefonu açtı ama görüşme tamamlanmadı (${c.metadata?.call_duration_secs ?? 0} sn) — karşı taraf kapattı ya da yarıda kaldı.` : "Açılmadı / konuşma olmadı.") : undefined,
+        // "no_answer" ama karşı taraf konuştuysa: açtı, görüşme tamamlanmadı
+        sonuc: typeof dc.sonuc?.value === "string" ? (dc.sonuc.value === "no_answer" && spoke ? "hung_up" : (dc.sonuc.value as string)) : undefined,
         transcript: (c.transcript ?? [])
           .filter((t) => (t.message ?? "").trim())
           .map((t) => ({ role: t.role === "agent" ? "agent" : "user", text: String(t.message), at: t.time_in_call_secs })),
