@@ -461,11 +461,155 @@ export function AiAgentsCard({ status, onToggle, onOpen, horizontal }: {
   );
 }
 
+/* ───────────────────────── Görüşme istatistikleri (bugün / hafta / ay / yıl) ───────────────────────── */
+
+type Period = "today" | "week" | "month" | "year";
+const PERIOD_LABEL: Record<Period, string> = { today: "Bugün", week: "Bu hafta", month: "Bu ay", year: "Bu yıl" };
+
+function periodStart(p: Period, now = new Date()): string {
+  const today = dayKey(now);
+  if (p === "today") return today;
+  if (p === "month") return `${today.slice(0, 7)}-01`;
+  if (p === "year") return `${today.slice(0, 4)}-01-01`;
+  const local = new Date(now.toLocaleString("en-US", { timeZone: TZ }));
+  const sinceMonday = (local.getDay() + 6) % 7;
+  return dayKey(new Date(now.getTime() - sinceMonday * 86_400_000));
+}
+
+/** Çiftin rezervasyona döndüğü an: zaman çizelgesindeki "won" kaydı; yoksa (eski kayıtlar) son güncelleme */
+function wonAt(c: AiCouple): string | null {
+  if (c.status !== "won") return null;
+  const t = [...c.timeline].reverse().find((e) => e.type === "won");
+  return t?.at ?? c.updatedAt;
+}
+
+export function computeStats(couples: AiCouple[], reservations: { approvedAt?: string; createdAt?: string }[], p: Period) {
+  const start = periodStart(p);
+  const inP = (iso?: string) => Boolean(iso) && dayKey(iso!) >= start;
+  let calls = 0, answeredCalls = 0, seconds = 0;
+  let calledCouples = 0, reachedCouples = 0, waCouples = 0, waRepliedCouples = 0, touched = 0, won = 0;
+  for (const c of couples) {
+    const pc = c.calls.filter((x) => inP(x.at));
+    const answered = pc.filter((x) => x.outcome !== "no_answer");
+    calls += pc.length;
+    answeredCalls += answered.length;
+    seconds += answered.reduce((s, x) => s + (x.durationSec ?? 0), 0);
+    if (pc.length) calledCouples++;
+    if (answered.length) reachedCouples++;
+    const pm = c.messages.filter((m) => m.channel === "whatsapp" && inP(m.at));
+    if (pm.length) waCouples++;
+    if (pm.some((m) => m.direction === "in")) waRepliedCouples++;
+    if (pc.length || pm.some((m) => m.direction === "out")) touched++;
+    if (inP(wonAt(c) ?? undefined)) won++;
+  }
+  const newReservations = reservations.filter((r) => inP(r.approvedAt || r.createdAt)).length;
+  return {
+    calls, answeredCalls, calledCouples, reachedCouples, waCouples, waRepliedCouples, touched, won, newReservations,
+    minutes: Math.round(seconds / 60),
+    avgMinutes: answeredCalls ? Math.round((seconds / answeredCalls / 60) * 10) / 10 : 0,
+    conversion: touched ? Math.round((won / touched) * 1000) / 10 : 0,
+    reachRate: calledCouples ? Math.round((reachedCouples / calledCouples) * 100) : 0,
+  };
+}
+
+export function AiStatsCard({ couples, reservations }: { couples: AiCouple[]; reservations: { approvedAt?: string; createdAt?: string }[] }) {
+  const [p, setP] = useState<Period>("week");
+  const s = useMemo(() => computeStats(couples, reservations, p), [couples, reservations, p]);
+  const tiles = [
+    { label: "Aranan çift", value: s.calledCouples, sub: `${s.calls} arama yapıldı` },
+    { label: "Görüşülen çift", value: s.reachedCouples, sub: `açılma oranı %${s.reachRate}` },
+    { label: "Görüşme süresi", value: `${s.minutes} dk`, sub: s.answeredCalls ? `ortalama ${s.avgMinutes} dk / görüşme` : "henüz görüşme yok" },
+    { label: "WhatsApp'ta yazışılan", value: s.waCouples, sub: `${s.waRepliedCouples} çift cevap yazdı` },
+  ];
+  const funnel = [
+    { label: "Ulaşılan çift (arama veya WhatsApp)", value: s.touched, color: "bg-indigo-500" },
+    { label: "Telefonda görüşülen", value: s.reachedCouples, color: "bg-blue-500" },
+    { label: "WhatsApp'ta cevap veren", value: s.waRepliedCouples, color: "bg-emerald-500" },
+    { label: "Rezervasyona dönen", value: s.won, color: "bg-rose-500" },
+  ];
+  const max = Math.max(1, s.touched);
+  return (
+    <section className="rm-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="font-editorial text-lg text-slate-900">Görüşme istatistikleri</h3>
+          <p className="text-xs text-slate-500">Sesli asistan + WhatsApp · {PERIOD_LABEL[p].toLocaleLowerCase("tr-TR")}</p>
+        </div>
+        <div className="flex rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Dönem">
+          {(Object.keys(PERIOD_LABEL) as Period[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={p === k}
+              onClick={() => setP(k)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all",
+                p === k ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
+              )}
+            >
+              {PERIOD_LABEL[k]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5 transition-colors hover:border-indigo-100 hover:bg-white">
+            <p className="text-xs font-medium text-slate-500">{t.label}</p>
+            <p className="mt-1 font-editorial text-2xl leading-none text-slate-900 tabular-nums">{t.value}</p>
+            <p className="mt-1.5 text-[11px] text-slate-500">{t.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-2.5">
+          {funnel.map((f) => {
+            const pct = s.touched ? Math.round((f.value / s.touched) * 100) : 0;
+            return (
+              <div key={f.label}>
+                <div className="flex items-baseline justify-between gap-2 text-xs">
+                  <span className="text-slate-600">{f.label}</span>
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    {f.value} <span className="font-normal text-slate-400">· %{pct}</span>
+                  </span>
+                </div>
+                <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className={cn("h-full rounded-full transition-[width] duration-700 ease-out", f.color)} style={{ width: `${(f.value / max) * 100}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 p-4 text-white">
+          <p className="text-xs font-medium text-indigo-100">Rezervasyona dönüş oranı</p>
+          <p className="mt-1 font-editorial text-4xl leading-none tabular-nums">%{s.conversion}</p>
+          <p className="mt-2 text-xs text-indigo-100">
+            {s.touched} ulaşılan çiftten {s.won} rezervasyon
+          </p>
+          <p className="mt-3 border-t border-white/20 pt-2 text-xs text-indigo-100">
+            Takvime eklenen rezervasyon (tüm kaynaklar): <b className="text-white tabular-nums">{s.newReservations}</b>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ───────────────────────── Dashboard için hazır blok ───────────────────────── */
 
 type AiPayload = { couples: AiCouple[]; months: AiCapacityInfo[] };
 
-export function AiCommandCenter({ onOpenAi }: { onOpenAi: () => void }) {
+export function AiCommandCenter({
+  onOpenAi,
+  reservations = [],
+}: {
+  onOpenAi: () => void;
+  /** Takvimdeki rezervasyonlar (dönüşüm istatistiği için) */
+  reservations?: { approvedAt?: string; createdAt?: string }[];
+}) {
   const [data, setData] = useState<AiPayload | null>(null);
   const { status } = useAiSystemStatus();
   const load = useCallback(() => {
@@ -491,6 +635,7 @@ export function AiCommandCenter({ onOpenAi }: { onOpenAi: () => void }) {
   return (
     <div className="space-y-4">
       <AiKpiRow couples={data.couples} months={data.months} onOpenStage={onOpenAi} />
+      <AiStatsCard couples={data.couples} reservations={reservations} />
       <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
         <AiTrendChart couples={data.couples} />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">

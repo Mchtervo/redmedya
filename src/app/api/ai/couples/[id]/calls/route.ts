@@ -10,6 +10,7 @@ import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { applyCallOutcome, displayPhone, OUTCOME_LABEL } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { mutateCouple } from "@/lib/ai-couples/store";
+import { checkDate } from "@/lib/ai-couples/capacity";
 import type { AiCallOutcome, AiCallRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -80,17 +81,18 @@ export async function POST(request: Request, { params }: Ctx) {
   });
   if (!updated) return bad("Bulunamadı", 404);
 
-  // Sahibine Telegram: görüşme özeti + "bu tarih müsait mi?" (açmadıysa bildirme).
+  // Sahibine Telegram: görüşme özeti + takvime göre tarih durumu (açmadıysa bildirme).
   if (!duplicate && outcome !== "no_answer") {
     const date = updated.weddingDate
       ? new Date(`${updated.weddingDate}T12:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" })
       : "tarih öğrenilemedi";
+    const day = updated.weddingDate ? await checkDate(updated.weddingDate).catch(() => null) : null;
     const lines = [
       `📞 ${updated.name} — ${displayPhone(updated.phone)}`,
       `Sonuç: ${OUTCOME_LABEL[outcome]}${updated.contactLocked ? " (🔒 kara liste)" : ""}`,
       `Düğün tarihi: ${date}`,
       record.summary ? `Özet: ${record.summary}` : "",
-      !updated.contactLocked && updated.weddingDate ? `\n❓ ${date} müsait mi? Çifte WhatsApp'tan dönüş yapılacağı söylendi.` : "",
+      !updated.contactLocked && day ? `\n📅 Takvim: ${day.available ? "✅" : "⛔"} ${day.cevap}` : "",
     ].filter(Boolean);
     await sendTelegramMessage(lines.join("\n")).catch(() => false);
   } else if (!duplicate && outcome === "no_answer") {

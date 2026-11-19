@@ -49,7 +49,25 @@ type Payload = {
   capacityConfig: AiCapacityConfig;
   months: AiCapacityInfo[];
   integration: { baseUrl: string; apiToken: string; telegramReady: boolean };
+  /** Takvimdeki rezervasyon günleri → o gün kaç düğün */
+  bookedDays?: Record<string, number>;
 };
+
+type DayState = { tone: "ok" | "full" | "past"; text: string };
+
+/** Panel tarafı tarih durumu (sunucudaki checkDate ile aynı kurallar): kapalı gün, günlük kapasite, ay kontenjanı */
+function dayStateOf(date: string | undefined, d: Payload): DayState | null {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+  if (date < today) return { tone: "past", text: "Geçmiş tarih" };
+  if ((d.capacityConfig.blockedDates ?? []).includes(date)) return { tone: "full", text: "Bu gün kapalı (elle kapatıldı)" };
+  const booked = d.bookedDays?.[date] ?? 0;
+  const perDay = d.capacityConfig.perDay ?? 1;
+  if (booked >= perDay) return { tone: "full", text: `Bu tarih DOLU — takvimde ${booked} rezervasyon var` };
+  const m = d.months.find((x) => x.monthKey === date.slice(0, 7));
+  if (m && m.remaining <= 0) return { tone: "full", text: `${m.monthLabel} kontenjanı doldu` };
+  return { tone: "ok", text: `Tarih MÜSAİT${m ? ` · ${m.monthLabel} için ${m.remaining} yer kaldı` : ""}` };
+}
 
 type Filter = AiCoupleGrade | "all";
 
@@ -411,6 +429,7 @@ export function AdminAiCouplesPanel() {
       </details>
 
       <CoupleDrawer
+        dayState={openCouple ? dayStateOf(openCouple.weddingDate, data) : null}
         couple={openCouple}
         focusWa={open?.focusWa}
         callsEnabled={callsEnabled}
@@ -503,6 +522,7 @@ function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnab
 /* ───────────────────────── Sağdan açılan detay çekmecesi ───────────────────────── */
 
 function CoupleDrawer({
+  dayState,
   couple: c,
   focusWa,
   callsEnabled,
@@ -511,6 +531,7 @@ function CoupleDrawer({
   onPatch,
   onReload,
 }: {
+  dayState: DayState | null;
   couple: AiCouple | null;
   focusWa?: boolean;
   callsEnabled: boolean;
@@ -559,7 +580,7 @@ function CoupleDrawer({
             transition={{ type: "spring", stiffness: 380, damping: 38 }}
             className="rm-glass fixed inset-y-0 right-0 z-[61] flex w-full max-w-xl flex-col border-l border-white/60 shadow-[-30px_0_60px_-20px_rgba(15,23,42,0.25)]"
           >
-            <DrawerBody key={c.id} c={c} focusWa={focusWa} callsEnabled={callsEnabled} busy={busy} onClose={onClose} onPatch={onPatch} onReload={onReload} />
+            <DrawerBody key={c.id} dayState={dayState} c={c} focusWa={focusWa} callsEnabled={callsEnabled} busy={busy} onClose={onClose} onPatch={onPatch} onReload={onReload} />
           </motion.aside>
         </>
       )}
@@ -569,6 +590,7 @@ function CoupleDrawer({
 }
 
 function DrawerBody({
+  dayState,
   c,
   focusWa,
   callsEnabled,
@@ -577,6 +599,7 @@ function DrawerBody({
   onPatch,
   onReload,
 }: {
+  dayState: DayState | null;
   c: AiCouple;
   focusWa?: boolean;
   callsEnabled: boolean;
@@ -617,7 +640,17 @@ function DrawerBody({
           <GradeBadge g={c.grade} />
           {lastCall?.notes?.tarihTut && <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700">🔥 Tarihi 24 saat tut</span>}
         </div>
-        <p className={cn("mt-3 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>➡️ {step.text}</p>
+        {dayState && (
+          <p
+            className={cn(
+              "mt-3 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium",
+              dayState.tone === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : dayState.tone === "full" ? "border-rose-200 bg-rose-50 text-rose-800" : "border-slate-200 bg-slate-50 text-slate-600"
+            )}
+          >
+            <Calendar className="h-4 w-4 shrink-0" /> 📅 {weddingText(c)}: {dayState.text}
+          </p>
+        )}
+        <p className={cn("mt-2 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>➡️ {step.text}</p>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
@@ -949,6 +982,9 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
     Object.fromEntries(Object.entries(config.manualBooked).map(([k, v]) => [k, String(v)]))
   );
   const [saved, setSaved] = useState(false);
+  const [perDay, setPerDay] = useState(String(config.perDay ?? 1));
+  const [blocked, setBlocked] = useState<string[]>(config.blockedDates ?? []);
+  const [newBlock, setNewBlock] = useState("");
 
   const toNums = (m: Record<string, string>) =>
     Object.fromEntries(Object.entries(m).filter(([, v]) => v.trim() !== "").map(([k, v]) => [k, Number(v)]));
@@ -961,6 +997,10 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
           <input type="number" min={0} max={200} value={def} onChange={(e) => setDef(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
         <label className="text-xs font-medium text-slate-600">
+          Aynı gün en fazla kaç düğün
+          <input type="number" min={1} max={10} value={perDay} onChange={(e) => setPerDay(e.target.value)} className={cn(field, "mt-1 w-28")} />
+        </label>
+        <label className="text-xs font-medium text-slate-600">
           Drone hediyesi kalan
           <input type="number" min={0} max={100} value={gift} onChange={(e) => setGift(e.target.value)} className={cn(field, "mt-1 w-28")} />
         </label>
@@ -971,7 +1011,7 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
             await fetch("/api/admin/ai-capacity", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ defaultPerMonth: Number(def), droneGiftLeft: Number(gift), months: toNums(totals), manualBooked: toNums(manual) }),
+              body: JSON.stringify({ defaultPerMonth: Number(def), droneGiftLeft: Number(gift), perDay: Number(perDay), blockedDates: blocked, months: toNums(totals), manualBooked: toNums(manual) }),
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
@@ -980,6 +1020,30 @@ function CapacityEditor({ config, months, onSaved }: { config: AiCapacityConfig;
         >
           {saved ? "Kaydedildi ✓" : "Kaydet"}
         </button>
+      </div>
+      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-3">
+        <p className="text-xs font-semibold text-slate-700">Kapalı günler</p>
+        <p className="text-[11px] text-slate-500">Takvime girmemiş iş, izin vb. Asistan bu günlere &quot;dolu&quot; der. (Rezervasyonu olan günler zaten otomatik dolu sayılır.)</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input type="date" value={newBlock} onChange={(e) => setNewBlock(e.target.value)} className={cn(field, "h-9 w-44")} />
+          <button
+            type="button"
+            disabled={!newBlock || blocked.includes(newBlock)}
+            onClick={() => { setBlocked([...blocked, newBlock].sort()); setNewBlock(""); }}
+            className={btn}
+          >
+            <Plus className="h-3.5 w-3.5" /> Günü kapat
+          </button>
+          {blocked.map((d) => (
+            <span key={d} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700">
+              {d.split("-").reverse().join(".")}
+              <button type="button" aria-label="Kaldır" onClick={() => setBlocked(blocked.filter((x) => x !== d))} className="text-slate-400 hover:text-rose-600">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-slate-500">Değişiklikten sonra yukarıdaki <b>Kaydet</b>&apos;e basın.</p>
       </div>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100">
         <table className="w-full min-w-[560px] text-sm">

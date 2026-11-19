@@ -66,7 +66,7 @@ export function AdminOverviewPanel({
         }
       />
 
-      <AiCommandCenter onOpenAi={() => onNavigate("ai_couples")} />
+      <AiCommandCenter onOpenAi={() => onNavigate("ai_couples")} reservations={reservations} />
 
       {loading ? (
         <div className="rm-card h-40 animate-pulse" />

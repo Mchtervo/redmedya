@@ -114,7 +114,28 @@ export type AiCapacityConfig = {
   manualBooked: Record<string, number>;
   /** "İlk 10 çifte dış çekimde drone hediye" — kalan hediye hakkı (elle güncellenir) */
   droneGiftLeft: number;
+  /** Aynı gün en fazla kaç düğün çekilebilir (varsayılan 1) */
+  perDay?: number;
+  /** Elle kapatılan günler (YYYY-MM-DD) — rezervasyon sistemine girmemiş iş, izin vb. */
+  blockedDates?: string[];
   updatedAt: string;
+};
+
+/** Tek bir günün müsaitliği (sesli asistan çifte söylemeden önce bunu sorar) */
+export type AiDateCheck = {
+  date: string;
+  /** "17 Temmuz 2027 Cumartesi" */
+  dateLabel: string;
+  available: boolean;
+  /** "musait" | "dolu" | "ay_dolu" | "kapali" | "gecmis" */
+  reason: "musait" | "dolu" | "ay_dolu" | "kapali" | "gecmis";
+  bookedOnDate: number;
+  perDay: number;
+  month: AiCapacityInfo;
+  /** Yakın müsait tarihler (dolu ise öneri) */
+  alternatives: { date: string; dateLabel: string }[];
+  /** Asistanın aynen söyleyebileceği kısa Türkçe cümle */
+  cevap: string;
 };
 
 export type AiCapacityInfo = {

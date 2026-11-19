@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-api";
 import { siteConfig } from "@/config/site";
 import { getAiApiToken } from "@/lib/ai-couples/auth";
-import { readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
+import { bookedByDay, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { ingestCouple, readCouples } from "@/lib/ai-couples/store";
 import { reloadPersistentEnv } from "@/lib/data-dir";
@@ -13,15 +13,18 @@ export async function GET() {
   const auth = await requireAdminSession();
   if (!auth.ok) return auth.response;
   reloadPersistentEnv();
-  const [couples, capacityConfig, months] = await Promise.all([
+  const [couples, capacityConfig, months, byDay] = await Promise.all([
     readCouples(),
     readCapacityConfig(),
     upcomingCapacity(14),
+    bookedByDay(),
   ]);
   return NextResponse.json({
     couples,
     capacityConfig,
     months,
+    /** Takvimdeki rezervasyon günleri → o gün kaç düğün (panelde "tarih dolu mu" için) */
+    bookedDays: Object.fromEntries(byDay),
     integration: {
       baseUrl: siteConfig.url,
       apiToken: getAiApiToken(),

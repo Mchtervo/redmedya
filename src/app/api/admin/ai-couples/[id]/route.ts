@@ -44,7 +44,10 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (grade === "blacklist") next = lockCouple(next, str(body.reason, 200) ?? "Admin kara listeye aldı", now);
     else if (grade && !next.contactLocked) next.grade = grade;
     if (status === "thinking" && !next.contactLocked) next = markThinking(next, now, "Admin: düşünüyor olarak işaretledi");
-    else if (status && !next.contactLocked) next.status = status;
+    else if (status && !next.contactLocked) {
+      if (status === "won" && next.status !== "won") next.timeline = [...next.timeline, { at, type: "won", text: "Admin: rezervasyon yaptı olarak işaretledi" }];
+      next.status = status;
+    }
     if (typeof body.note === "string") next.note = body.note.trim().slice(0, 1000) || undefined;
     if (typeof body.callbackRequested === "boolean" && !next.contactLocked) next.callbackRequested = body.callbackRequested;
     if (typeof body.weddingDate === "string") {
