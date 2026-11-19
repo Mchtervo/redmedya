@@ -41,6 +41,14 @@ export type AiCallRecord = {
   outcome: AiCallOutcome;
   /** Aramada çifte söylenen gerçek kalan kontenjan */
   quotedRemaining?: number;
+  /** Sesli asistanın görüşmeden çıkardığı notlar (WhatsApp mesajını kişiselleştirmek için) */
+  notes?: {
+    paket?: string;
+    ekstralar?: string;
+    cekimTuru?: string;
+    itiraz?: string;
+    tarihTut?: boolean;
+  };
 };
 
 export type AiMessageChannel = "whatsapp" | "sms" | "dugun_com" | "telegram";

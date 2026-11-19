@@ -41,6 +41,18 @@ export async function POST(request: Request, { params }: Ctx) {
     transcript: str(body.transcript, 30000),
     outcome,
     quotedRemaining: Number.isFinite(quoted) && quoted >= 0 ? Math.round(quoted) : undefined,
+    notes: (() => {
+      const n = body.notes && typeof body.notes === "object" ? (body.notes as Record<string, unknown>) : null;
+      if (!n) return undefined;
+      const out = {
+        paket: str(n.paket, 120),
+        ekstralar: str(n.ekstralar, 400),
+        cekimTuru: str(n.cekimTuru, 200),
+        itiraz: str(n.itiraz, 400),
+        tarihTut: n.tarihTut === true || n.tarihTut === "true" ? true : undefined,
+      };
+      return Object.values(out).some((v) => v !== undefined) ? out : undefined;
+    })(),
   };
 
   // Görüşmede öğrenilen düğün tarihi (YYYY-MM-DD) — kayıtta tarih yoksa yazılır.

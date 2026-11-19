@@ -25,7 +25,11 @@ export const CATALOG_LINKS = {
 /** Görüşmede "WhatsApp ekibimiz dönecek" denen sonuçlar → fiyat listesi gider. */
 const CATALOG_OUTCOMES = new Set(["info_requested", "offer_requested", "thinking"]);
 
+/** Toplu kampanya çiftlerine katalog, kampanya akışından (aramaya göre kişiselleştirilmiş) gider. */
+export const CAMPAIGN_REFS = new Set(["kampanya-2027"]);
+
 function catalogPending(c: AiCouple): boolean {
+  if (c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef)) return false;
   const lastInfoCall = [...c.calls].reverse().find((x) => CATALOG_OUTCOMES.has(x.outcome));
   if (!lastInfoCall) return false;
   return !c.messages.some(
