@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Drama, Phone, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WaveAudio } from "@/components/admin/admin-wave-audio";
+import { RecordingShare } from "@/components/admin/admin-recording-share";
 import { AdminPanelHeader } from "@/components/admin/admin-panel-header";
 
 type Prank = {
@@ -191,7 +192,12 @@ export function AdminPrankCallBox({ defaultOpen = false }: { defaultOpen?: boole
                           {isOpen ? "Kapat" : "Dinle / oku"} <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
                         </span>
                       </div>
-                      {isOpen && c.status === "done" && spoke && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
+                      {isOpen && c.status === "done" && spoke && (
+                        <>
+                          <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />
+                          <RecordingShare conv={c.id} name={c.name} />
+                        </>
+                      )}
                       {isOpen && (c.transcript?.length ?? 0) > 0 && (
                         <ul className="mt-3 max-h-96 space-y-1.5 overflow-y-auto rounded-xl bg-slate-50 p-3">
                           {c.transcript!.map((t, i) => (
