@@ -8,7 +8,7 @@ import { dataPath } from "@/lib/data-dir";
 
 const FILE = dataPath("ai-integrations.json");
 
-export type AiIntegrations = { panelHookBase?: string; panelHookKey?: string };
+export type AiIntegrations = { panelHookBase?: string; panelHookKey?: string; elevenlabsKey?: string };
 
 export async function readIntegrations(): Promise<AiIntegrations> {
   try {

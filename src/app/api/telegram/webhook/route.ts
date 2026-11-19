@@ -8,6 +8,7 @@ import { reloadPersistentEnv } from "@/lib/data-dir";
 import { verifyAiApiRequest, verifyTelegramSecret } from "@/lib/ai-couples/auth";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { answerCommand } from "@/lib/ai-couples/telegram-commands";
+import { transcribeTelegramVoice, voiceToCommand } from "@/lib/ai-couples/voice";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +37,19 @@ export async function POST(request: Request) {
   // Telegram'a her zaman 200 dön (aksi halde aynı güncellemeyi tekrar yollar).
   if (!allowedChat || String(chatId) !== allowedChat) return NextResponse.json({ ok: true });
 
-  if (update?.message?.voice) {
-    await sendTelegramMessage("🎙️ Sesli komut henüz bağlı değil (Adım 4'te n8n ile eklenecek). Şimdilik yazarak sorabilirsin: /yardim");
+  const voice = update?.message?.voice as { file_id?: string } | undefined;
+  if (voice?.file_id) {
+    const spoken = await transcribeTelegramVoice(voice.file_id).catch(() => null);
+    if (!spoken) {
+      await sendTelegramMessage("🎙️ Sesi anlayamadım, tekrar söyler misin? Ya da yazarak sor: /yardim");
+      return NextResponse.json({ ok: true });
+    }
+    const cmd = voiceToCommand(spoken);
+    try {
+      await sendTelegramMessage(`🎙️ Anladığım: "${spoken}"\n\n${await answerCommand(cmd)}`);
+    } catch {
+      await sendTelegramMessage(`🎙️ Anladığım: "${spoken}"\n⚠️ Komut işlenemedi.`);
+    }
     return NextResponse.json({ ok: true });
   }
   const text = update?.message?.text;

@@ -9,8 +9,10 @@ const HELP = [
   "/rapor — bugünün raporu",
   "/sicak · /ilik · /soguk · /karaliste — listeler",
   "/sira — şu an sıradaki aramalar ve mesajlar",
-  "/kontenjan — haftalık kalan yerler",
+  "/bekleyen — cevap yazıp sizden dönüş bekleyen çiftler",
+  "/kontenjan — aylık kalan yerler",
   "/bul Ayşe  ya da  /bul 0532… — çift detayı",
+  "🎙️ Sesli mesajla da sorabilirsin: \"bugünün raporu\", \"sıcak çiftler\", \"Nur Aytekin ne durumda\"",
 ].join("\n");
 
 function fold(s: string) {
@@ -31,6 +33,17 @@ export async function answerCommand(input: string): Promise<string> {
   if (cmd === "soguk") return gradeListText(couples, "cold");
   if (cmd === "karaliste") return gradeListText(couples, "blacklist");
   if (cmd === "kontenjan") return capacityText();
+  if (cmd === "bekleyen") {
+    const waiting = couples.filter((c) => !c.contactLocked && c.messages[c.messages.length - 1]?.direction === "in");
+    if (!waiting.length) return "✅ Şu an dönüş bekleyen çift yok.";
+    return [
+      `💬 Dönüş bekleyen çiftler (${waiting.length})`,
+      ...waiting.slice(0, 25).map((c) => {
+        const m = c.messages[c.messages.length - 1];
+        return `• ${c.name} · ${displayPhone(c.phone)}\n   "${m.text.replace(/\s+/g, " ").slice(0, 120)}"`;
+      }),
+    ].join("\n");
+  }
   if (cmd === "sira") {
     const q = await buildQueue(new Date(), 15);
     if (!q.length) return "⏭️ Şu an sırada iş yok (saat dışı olabilir veya bekleyen çift yok).";

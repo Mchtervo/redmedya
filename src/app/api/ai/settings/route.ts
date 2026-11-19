@@ -12,7 +12,14 @@ export async function POST(request: Request) {
   const body = await readJson(request);
   const base = str(body?.panelHookBase, 300);
   const key = str(body?.panelHookKey, 200);
-  if (!base || !/^https:\/\//.test(base) || !key) return bad("panelHookBase (https) ve panelHookKey zorunlu");
-  await writeIntegrations({ ...(await readIntegrations()), panelHookBase: base, panelHookKey: key });
+  const eleven = str(body?.elevenlabsKey, 200);
+  const cur = await readIntegrations();
+  if (base && !/^https:\/\//.test(base)) return bad("panelHookBase https olmalı");
+  if (!base && !key && !eleven) return bad("En az bir ayar gönderin");
+  await writeIntegrations({
+    ...cur,
+    ...(base && key ? { panelHookBase: base, panelHookKey: key } : {}),
+    ...(eleven ? { elevenlabsKey: eleven } : {}),
+  });
   return NextResponse.json({ ok: true });
 }
