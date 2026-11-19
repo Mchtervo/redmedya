@@ -146,6 +146,12 @@ export function historyForAgent(c: AiCouple): string {
   if (busy) parts.push(`Daha önce ${busy} kez aradığımızda hat meşguldü.`);
   const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
   if (cb && c.callbackRequested) parts.push(`Çift bu saatte aranmak istemişti — ${cb.text.replace(/^Tekrar arama zamanı: /, "")}; "istediğiniz saatte arıyorum" diye başla.`);
+  // WhatsApp'tan teklif zaten gittiyse (ve ondan sonra telefonda konuşulmadıysa) asistan teklifi baştan anlatmasın
+  const offer = c.messages.find((m) => m.direction === "out" && m.channel === "whatsapp" && /TL/.test(m.text) && !m.text.startsWith("["));
+  if (offer && !c.calls.some((x) => x.outcome !== "no_answer" && x.at > offer.at)) {
+    const d = new Date(offer.at).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long" });
+    parts.push(`TEKLİF ZATEN GÖNDERİLDİ: ${d} tarihinde WhatsApp'tan 2027 fiyatlarımız ve teklifimiz gitti.`);
+  }
   const dg = (c.note ?? "").match(/Düğün.com yazışma: [^·]+/);
   if (dg) parts.push(dg[0].trim() + " — bunu bildiğini belli et, sorusu varsa cevapla.");
   if (isFollowCallDue(c, new Date())) parts.push(followCallNote(c, new Date()));
