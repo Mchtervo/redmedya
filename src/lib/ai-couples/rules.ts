@@ -25,6 +25,12 @@ export const MESSAGE_WINDOW = { startHour: 9, endHour: 21 } as const;
 export const FOLLOW_UP_DAYS = 7;
 /** "Sonra arayın" diyen çift bu kadar sonra tekrar aranır */
 export const CALLBACK_DELAY_MS = 2 * 3600_000;
+/** "Sonra arayın" deyip saat vermeyen çift: ertesi gün bu saatte aranır (İstanbul) */
+export const CALLBACK_DEFAULT_HOUR = 11;
+export function defaultCallbackAt(now: Date): Date {
+  const ist = new Date(now.getTime() + 3 * 3600_000);
+  return new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + 1, CALLBACK_DEFAULT_HOUR - 3, 0));
+}
 /** Hat meşgulse bu kadar sonra tekrar denenir (en fazla BUSY_MAX_RETRIES kez) */
 export const BUSY_RETRY_MS = 5 * 60_000;
 export const BUSY_MAX_RETRIES = 2;
@@ -255,7 +261,7 @@ export function applyCallOutcome(
       next = {
         ...next,
         callbackRequested: true,
-        callbackAt: new Date(now.getTime() + CALLBACK_DELAY_MS).toISOString(),
+        callbackAt: defaultCallbackAt(now).toISOString(),
         grade: next.grade === "hot" ? "hot" : "warm",
       };
       break;

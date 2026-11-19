@@ -29,7 +29,37 @@ export type TestCallDetail = TestCallRecord & {
   summary?: string;
   sonuc?: string;
   transcript?: { role: "agent" | "user"; text: string; at?: number }[];
+  /** Sistemin bu görüşmeden sonra yaptığı plan (ör. "Tekrar arama zamanı: …") */
+  plan?: string[];
+  /** Görüşmeden sonra giden WhatsApp mesajları */
+  whatsapp?: { at: string; text: string }[];
 };
+
+const titleCase = (n: string) =>
+  n
+    .split(/s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR"))
+    .join(" ");
+
+/** Görüşmeden sonra sistemin aldığı notlar ve giden WhatsApp'lar (çift kaydından) */
+async function afterCall(rec: TestCallRecord): Promise<Pick<TestCallDetail, "plan" | "whatsapp">> {
+  const couple = await findCoupleByPhone(rec.phone);
+  if (!couple) return {};
+  const call = couple.calls.find((x) => x.externalId === rec.id);
+  if (!call) return {};
+  // Bu görüşmeden bir sonraki aramaya kadar olanlar
+  const from = Date.parse(call.at);
+  const next = couple.calls.find((x) => Date.parse(x.at) > from);
+  const to = next ? Date.parse(next.at) : Infinity;
+  const inRange = (at: string) => Date.parse(at) >= from - 1000 && Date.parse(at) < to;
+  const plan = couple.timeline.filter((e) => inRange(e.at) && e.type !== "call" && e.type !== "message").map((e) => e.text);
+  if (!next && couple.callbackAt && Date.parse(couple.callbackAt) > Date.now() && !plan.some((p) => p.startsWith("Tekrar arama"))) {
+    plan.push(`Tekrar arama zamanı: ${new Date(couple.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`);
+  }
+  const whatsapp = couple.messages.filter((m) => m.direction === "out" && m.channel === "whatsapp" && inRange(m.at)).map((m) => ({ at: m.at, text: m.text }));
+  return { plan: plan.slice(0, 6), whatsapp: whatsapp.slice(0, 6) };
+}
 
 export async function readTestCalls(): Promise<TestCallRecord[]> {
   try {
@@ -47,7 +77,7 @@ async function writeTestCalls(list: TestCallRecord[]): Promise<void> {
 
 /** Numarayı arar; başarılıysa kaydı listeye ekler. */
 export async function startTestCall(input: { phone: string; name?: string }): Promise<{ ok: true; record: TestCallRecord } | { ok: false; error: string }> {
-  const name = (input.name ?? "").trim();
+  const name = titleCase((input.name ?? "").trim());
   let couple = await findCoupleByPhone(input.phone);
   if (!couple) {
     const r = await ingestCouple({ name: name || "Deneme", phone: input.phone, source: "manual", sourceRef: TEST_REF, note: "🧪 Panelden test araması" });
@@ -92,6 +122,12 @@ export async function startTestCall(input: { phone: string; name?: string }): Pr
 
 /** Görüşmenin durumu/süresi/özeti/metni: önce ElevenLabs, olmazsa çiftin arama kaydı (B3 yazar). */
 export async function testCallDetail(rec: TestCallRecord): Promise<TestCallDetail> {
+  const base = await baseDetail(rec);
+  if (base.status !== "done") return base;
+  return { ...base, ...(await afterCall(rec).catch(() => ({}))) };
+}
+
+async function baseDetail(rec: TestCallRecord): Promise<TestCallDetail> {
   const { elevenlabsKey } = await readIntegrations();
   if (elevenlabsKey) {
     const res = await fetch(`https://api.elevenlabs.io/v1/convai/conversations/${rec.id}`, {

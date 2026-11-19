@@ -113,7 +113,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
 
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler
   const months = await upcomingCapacity(14, cfg);
-  const callable = couples
+  const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
+  const callable = [...couples, ...testCallbacks]
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
     .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için

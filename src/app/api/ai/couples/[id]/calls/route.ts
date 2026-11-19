@@ -131,7 +131,13 @@ export async function POST(request: Request, { params }: Ctx) {
       : Number.isFinite(inMin) && inMin > 0
         ? new Date(now.getTime() + Math.min(Math.max(inMin, 5), 3 * 24 * 60) * 60_000)
         : null;
-    if (!when) return after;
+    if (!when) {
+      // Saat söylemedi → kural: ertesi gün 11:00 (applyCallOutcome ayarladı); plan notu düşsün
+      if (!after.callbackAt) return after;
+      const lbl = new Date(after.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+      const said0 = str(body.callbackText, 120);
+      return { ...after, timeline: [...after.timeline, { at: record.at, type: "callback", text: `Tekrar arama zamanı: ${lbl}${said0 ? ` (çift: "${said0}" — saat belirsiz, sistem ayarladı)` : " (saat söylemedi — sistem ayarladı)"}` }] };
+    }
     const bounded = new Date(Math.min(Math.max(when.getTime(), now.getTime() + 5 * 60_000), now.getTime() + 14 * 86_400_000));
     const label = bounded.toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
     return {

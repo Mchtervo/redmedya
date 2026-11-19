@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * 🧪 Test araması: numarayı yaz → sesli asistan hemen arar. Görüşme hiçbir çiftin kaydına
- * yazılmaz, WhatsApp gitmez. Ses kaydı, konuşma metni ve özet burada dinlenir/okunur.
+ * 🧪 Test araması: numarayı yaz → sesli asistan hemen arar; gerçek akışın aynısı (analiz → plan → WhatsApp).
+ * Ses kaydı, konuşma metni, özet, sistemin planı ve giden WhatsApp burada görünür. İstatistiğe sayılmaz.
  */
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, FlaskConical, Phone, RefreshCw } from "lucide-react";
@@ -20,6 +20,8 @@ type TestCall = {
   summary?: string;
   sonuc?: string;
   transcript?: { role: "agent" | "user"; text: string; at?: number }[];
+  plan?: string[];
+  whatsapp?: { at: string; text: string }[];
 };
 
 const STATUS: Record<string, { text: string; cls: string }> = {
@@ -84,7 +86,10 @@ export function AdminTestCallBox() {
     const j = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
     setInfo(res.ok ? { ok: true, text: "📞 Arıyor — telefonu açın. Görüşme bitince kayıt, metin ve özet aşağıda çıkar; görüşmeye göre WhatsApp teklifi de 1-2 dk içinde gider." } : { ok: false, text: `⚠️ ${j.error ?? "Arama başlatılamadı"}` });
-    if (res.ok) load();
+    if (res.ok) {
+      setExpanded(null); // yeni arama açık gelsin
+      load();
+    }
   };
 
   return (
@@ -105,7 +110,7 @@ export function AdminTestCallBox() {
       {open && (
         <div className="space-y-4 border-t border-slate-100 p-4 sm:p-5">
           <div className="flex flex-wrap gap-2">
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={cn(field, "max-w-[13rem]")} onKeyDown={(e) => { if (e.key === "Enter" && !busy && phone.replace(/D/g, "").length >= 10) start(); }} />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="Numara (05xx xxx xx xx)" className={cn(field, "max-w-[13rem]")} onKeyDown={(e) => { if (e.key === "Enter" && !busy && phone.replace(/\D/g, "").length >= 10) start(); }} />
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="İsim (ops.) — örn. Ramazan" className={cn(field, "max-w-[13rem]")} />
             <button
               type="button"
@@ -137,12 +142,11 @@ export function AdminTestCallBox() {
                 const userSpoke = (c.transcript ?? []).some((x) => x.role === "user");
                 const key = c.status === "done" && !userSpoke ? "noanswer" : c.status ?? "initiated";
                 const st = STATUS[key] ?? { text: c.status ?? "—", cls: "bg-slate-100 text-slate-600" };
-                const liveNow = !c.status || ["initiated", "in-progress", "processing"].includes(c.status);
-                // En yeni ve süren görüşmenin konuşması kendiliğinden açık
-                const isOpen = expanded === c.id || (expanded === null && liveNow && c.id === calls[0]?.id);
+                // En yeni arama kendiliğinden açık; tıklayınca aç/kapa
+                const isOpen = expanded === null ? c.id === calls[0]?.id : expanded === c.id;
                 return (
                   <li key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                    <button type="button" onClick={() => setExpanded(isOpen ? null : c.id)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left">
+                    <button type="button" aria-expanded={isOpen} onClick={() => setExpanded(isOpen ? "" : c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-left">
                       <span className="text-sm font-semibold text-slate-900 tabular-nums">{c.phone.replace(/^90(\d{3})(\d{3})(\d{2})(\d{2})$/, "0$1 $2 $3 $4")}</span>
                       <span className="text-xs text-slate-500">{c.name} · {fmt(c.at)}</span>
                       <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold", st.cls)}>{st.text}</span>
@@ -150,8 +154,34 @@ export function AdminTestCallBox() {
                       {c.sonuc && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">sonuç: {c.sonuc}</span>}
                       <ChevronDown className={cn("ml-auto h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")} />
                     </button>
-                    {c.summary && <p className="mt-2 text-sm leading-relaxed text-slate-700">{c.summary}</p>}
-                    {c.status === "done" && userSpoke && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
+                    {c.summary && <p className={cn("mt-2 text-sm leading-relaxed text-slate-700", !isOpen && "line-clamp-1")}>{c.summary}</p>}
+                    {isOpen && c.status === "done" && userSpoke && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
+                    {isOpen && (c.plan?.length ?? 0) > 0 && (
+                      <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+                        <p className="text-[11px] font-semibold text-amber-800 uppercase">📌 Sistemin planı / notları</p>
+                        <ul className="mt-1 space-y-0.5 text-sm text-amber-900">
+                          {c.plan!.map((p, i) => (
+                            <li key={i}>• {p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {isOpen && (c.whatsapp?.length ?? 0) > 0 && (
+                      <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+                        <p className="text-[11px] font-semibold text-emerald-800 uppercase">💬 Giden WhatsApp ({c.whatsapp!.length})</p>
+                        <ul className="mt-1 space-y-1.5">
+                          {c.whatsapp!.map((m, i) => (
+                            <li key={i} className="text-sm whitespace-pre-line text-emerald-950">
+                              <span className="mr-1 text-[10px] text-emerald-700">{fmt(m.at)}</span>
+                              {m.text}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {isOpen && c.status === "done" && !(c.transcript?.length ?? 0) && (
+                      <p className="mt-3 text-xs text-slate-500">Konuşma metni yok (açılmadı ya da konuşulmadı).</p>
+                    )}
                     {isOpen && (c.transcript?.length ?? 0) > 0 && (
                       <ul className="mt-3 max-h-96 space-y-1.5 overflow-y-auto rounded-xl bg-slate-50 p-3">
                         {c.transcript!.map((t, i) => (
