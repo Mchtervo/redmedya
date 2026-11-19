@@ -23,10 +23,11 @@ type TestCall = {
 };
 
 const STATUS: Record<string, { text: string; cls: string }> = {
-  initiated: { text: "Aranıyor…", cls: "bg-amber-50 text-amber-800" },
-  "in-progress": { text: "Görüşme sürüyor", cls: "bg-indigo-50 text-indigo-700" },
+  initiated: { text: "📞 Çalıyor…", cls: "bg-amber-50 text-amber-800 animate-pulse" },
+  "in-progress": { text: "🟢 Açtı — görüşme sürüyor", cls: "bg-emerald-50 text-emerald-700 animate-pulse" },
   processing: { text: "Kayıt hazırlanıyor", cls: "bg-indigo-50 text-indigo-700" },
-  done: { text: "Bitti", cls: "bg-emerald-50 text-emerald-700" },
+  done: { text: "✅ Görüşme bitti", cls: "bg-emerald-50 text-emerald-700" },
+  noanswer: { text: "📵 Açmadı / konuşma olmadı", cls: "bg-orange-50 text-orange-700" },
   failed: { text: "Bağlanamadı", cls: "bg-rose-50 text-rose-700" },
 };
 
@@ -59,11 +60,11 @@ export function AdminTestCallBox() {
     load();
   }, [open, load]);
 
-  // Devam eden görüşme varsa 10 sn'de bir yenile
+  // Devam eden görüşme varsa 4 sn'de bir yenile (durum + konuşma canlı akar)
   const live = (calls ?? []).some((c) => !c.status || ["initiated", "in-progress", "processing"].includes(c.status));
   useEffect(() => {
     if (!open || !live) return;
-    const t = setInterval(load, 10_000);
+    const t = setInterval(load, 4_000);
     return () => clearInterval(t);
   }, [open, live, load]);
 
@@ -132,8 +133,12 @@ export function AdminTestCallBox() {
           ) : (
             <ul className="space-y-2.5">
               {calls.map((c) => {
-                const st = STATUS[c.status ?? "initiated"] ?? { text: c.status ?? "—", cls: "bg-slate-100 text-slate-600" };
-                const isOpen = expanded === c.id;
+                const userSpoke = (c.transcript ?? []).some((x) => x.role === "user");
+                const key = c.status === "done" && !userSpoke ? "noanswer" : c.status ?? "initiated";
+                const st = STATUS[key] ?? { text: c.status ?? "—", cls: "bg-slate-100 text-slate-600" };
+                const liveNow = !c.status || ["initiated", "in-progress", "processing"].includes(c.status);
+                // En yeni ve süren görüşmenin konuşması kendiliğinden açık
+                const isOpen = expanded === c.id || (expanded === null && liveNow && c.id === calls[0]?.id);
                 return (
                   <li key={c.id} className="rounded-2xl border border-slate-200 bg-white p-3.5">
                     <button type="button" onClick={() => setExpanded(isOpen ? null : c.id)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-left">
@@ -145,7 +150,7 @@ export function AdminTestCallBox() {
                       <ChevronDown className={cn("ml-auto h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")} />
                     </button>
                     {c.summary && <p className="mt-2 text-sm leading-relaxed text-slate-700">{c.summary}</p>}
-                    {c.status === "done" && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
+                    {c.status === "done" && userSpoke && <WaveAudio src={`/api/admin/ai-recording/${c.id}`} seed={c.id} />}
                     {isOpen && (c.transcript?.length ?? 0) > 0 && (
                       <ul className="mt-3 max-h-96 space-y-1.5 overflow-y-auto rounded-xl bg-slate-50 p-3">
                         {c.transcript!.map((t, i) => (
