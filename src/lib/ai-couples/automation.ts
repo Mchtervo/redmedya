@@ -7,6 +7,7 @@
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { dataPath } from "@/lib/data-dir";
+import { FOLLOW_DAYS_DEFAULT, setFollowDays } from "@/lib/ai-couples/follow-days";
 
 const FILE = dataPath("ai-automation.json");
 
@@ -20,10 +21,14 @@ export type AiAutomation = {
   callsPerDay: number;
   /** İki arama arası en az kaç dakika */
   callGapMin: number;
+  /** Teklif sonrası cevap vermeyen çift: kaçıncı gün hatırlatma mesajı / takip araması / son mesaj */
+  fuMsgDay: number;
+  fuCallDay: number;
+  fuLastDay: number;
   updatedAt?: string;
 };
 
-export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2 };
+export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2, fuMsgDay: FOLLOW_DAYS_DEFAULT.msg, fuCallDay: FOLLOW_DAYS_DEFAULT.call, fuLastDay: FOLLOW_DAYS_DEFAULT.last };
 
 export const AUTOMATION_LIMITS = {
   waPerDay: [1, 100],
@@ -31,6 +36,9 @@ export const AUTOMATION_LIMITS = {
   waGapMax: [2, 180],
   callsPerDay: [1, 300],
   callGapMin: [2, 120],
+  fuMsgDay: [1, 30],
+  fuCallDay: [1, 45],
+  fuLastDay: [1, 60],
 } as const;
 
 const clamp = (v: unknown, [lo, hi]: readonly [number, number], fallback: number) => {
@@ -45,15 +53,22 @@ export function cleanAutomation(input: Partial<Record<keyof AiAutomation, unknow
     waGapMax: clamp(input.waGapMax, AUTOMATION_LIMITS.waGapMax, cur.waGapMax),
     callsPerDay: clamp(input.callsPerDay, AUTOMATION_LIMITS.callsPerDay, cur.callsPerDay),
     callGapMin: clamp(input.callGapMin, AUTOMATION_LIMITS.callGapMin, cur.callGapMin),
+    fuMsgDay: clamp(input.fuMsgDay, AUTOMATION_LIMITS.fuMsgDay, cur.fuMsgDay),
+    fuCallDay: clamp(input.fuCallDay, AUTOMATION_LIMITS.fuCallDay, cur.fuCallDay),
+    fuLastDay: clamp(input.fuLastDay, AUTOMATION_LIMITS.fuLastDay, cur.fuLastDay),
   };
   if (next.waGapMax < next.waGapMin) next.waGapMax = next.waGapMin;
+  if (next.fuCallDay < next.fuMsgDay) next.fuCallDay = next.fuMsgDay;
+  if (next.fuLastDay < next.fuCallDay) next.fuLastDay = next.fuCallDay;
   return next;
 }
 
 export async function readAutomation(): Promise<AiAutomation> {
   try {
     const raw = JSON.parse(await readFile(FILE, "utf-8")) as Partial<AiAutomation>;
-    return { ...cleanAutomation(raw, AUTOMATION_DEFAULT), updatedAt: raw.updatedAt };
+    const a = { ...cleanAutomation(raw, AUTOMATION_DEFAULT), updatedAt: raw.updatedAt };
+    setFollowDays({ msg: a.fuMsgDay, call: a.fuCallDay, last: a.fuLastDay });
+    return a;
   } catch {
     return { ...AUTOMATION_DEFAULT };
   }
@@ -62,6 +77,7 @@ export async function readAutomation(): Promise<AiAutomation> {
 export async function writeAutomation(a: AiAutomation): Promise<AiAutomation> {
   await mkdir(path.dirname(FILE), { recursive: true });
   const out = { ...a, updatedAt: new Date().toISOString() };
+  setFollowDays({ msg: a.fuMsgDay, call: a.fuCallDay, last: a.fuLastDay });
   const tmp = `${FILE}.${process.pid}.tmp`;
   await writeFile(tmp, JSON.stringify(out, null, 2), "utf-8");
   await rename(tmp, FILE);

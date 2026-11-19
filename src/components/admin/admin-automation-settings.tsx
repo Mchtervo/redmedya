@@ -7,8 +7,9 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { setFollowDays } from "@/lib/ai-couples/follow-days";
 
-export type Automation = { waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; updatedAt?: string };
+export type Automation = { waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
 
 let cache: Automation | null = null;
 const listeners = new Set<(a: Automation) => void>();
@@ -24,6 +25,7 @@ export function useAutomation(): Automation | null {
         .then((j: { automation?: Automation } | null) => {
           if (j?.automation) {
             cache = j.automation;
+            setFollowDays({ msg: j.automation.fuMsgDay, call: j.automation.fuCallDay, last: j.automation.fuLastDay });
             listeners.forEach((l) => l(j.automation!));
           }
         })
@@ -60,6 +62,7 @@ export function AdminAutomationSettings() {
       const j = (await res.json().catch(() => ({}))) as { automation?: Automation; error?: string };
       if (res.ok && j.automation) {
         cache = j.automation;
+        setFollowDays({ msg: j.automation.fuMsgDay, call: j.automation.fuCallDay, last: j.automation.fuLastDay });
         listeners.forEach((l) => l(j.automation!));
         setForm(null);
         setMsg({ ok: true, text: "✅ Kaydedildi — otomasyon 1-2 dakika içinde yeni ayarla çalışır." });
@@ -133,6 +136,25 @@ export function AdminAutomationSettings() {
                 <span className="block">Ortalama 2 dk&apos;lık görüşmeyle {f.callsPerDay} arama ≈ {f.callsPerDay * 2} dk Verimor + ElevenLabs.</span>
               </p>
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+            <p className="text-sm font-semibold text-amber-900">🔁 Teklif alıp cevap vermeyen çift (otomatik takip)</p>
+            <div className="mt-3 grid gap-2.5 text-sm text-slate-700 sm:grid-cols-3">
+              <label className="flex items-center justify-between gap-3">
+                Hatırlatma mesajı (gün) <Num v={f.fuMsgDay} set={set("fuMsgDay")} min={1} max={30} />
+              </label>
+              <label className="flex items-center justify-between gap-3">
+                Takip araması (gün) <Num v={f.fuCallDay} set={set("fuCallDay")} min={1} max={45} />
+              </label>
+              <label className="flex items-center justify-between gap-3">
+                Son mesaj (gün) <Num v={f.fuLastDay} set={set("fuLastDay")} min={1} max={60} />
+              </label>
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-amber-900/80">
+              Telefonda bilgi/teklif isteyip WhatsApp&apos;tan fiyat giden ama cevap yazmayan çift için. Hatırlatmada tarih, verilen paket fiyatı, kalan yer, kampanyanın 31 Aralık&apos;ta bittiği ve %40 zam söylenir;
+              takip aramasında asistan &quot;X gün önce görüşmüştük, şu tarih için şu fiyatı vermiştik&quot; diye başlar. Çift ya da siz yazarsanız takip durur.
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

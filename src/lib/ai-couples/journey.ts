@@ -5,6 +5,7 @@
  * Saf fonksiyonlar — sunucu ve tarayıcıda çalışır.
  */
 import type { AiCouple } from "@/types/ai-couples";
+import { followCallNote, followStepText, isFollowCallDue } from "@/lib/ai-couples/followup";
 import { CALL_WINDOW, isWithinCallWindow, OUTCOME_LABEL, SECOND_CALL_GAP_MS, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
 
 const CAMPAIGN_REF = "kampanya-2027";
@@ -101,6 +102,8 @@ export function nextStep(c: AiCouple, now = new Date(), callsEnabled = true): Ne
     const at = nextCallSlot(new Date(Math.max(now.getTime(), Date.parse(c.callbackAt ?? "") || 0)));
     return { text: `Sonra arayın dedi — tekrar arama ${when(at, now)}${offNote}.`, tone: "action" };
   }
+  const fu = followStepText(c, now);
+  if (fu) return { text: `Teklif gitti, cevap bekleniyor. ${fu}`, tone: fu.includes("şimdi") ? "action" : "wait" };
   return { text: "Görüşüldü, WhatsApp gitti — çiftin cevabı bekleniyor.", tone: "done" };
 }
 
@@ -136,6 +139,7 @@ export function historyForAgent(c: AiCouple): string {
   if (busy) parts.push(`Daha önce ${busy} kez aradığımızda hat meşguldü.`);
   const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
   if (cb && c.callbackRequested) parts.push(`Çift bu saatte aranmak istemişti — ${cb.text.replace(/^Tekrar arama zamanı: /, "")}; "istediğiniz saatte arıyorum" diye başla.`);
+  if (isFollowCallDue(c, new Date())) parts.push(followCallNote(c, new Date()));
   const dedup = parts.filter((p, i) => p !== parts[i - 1]);
   return dedup.length ? dedup.join(" ") : "İlk temas — daha önce görüşülmedi.";
 }

@@ -19,6 +19,8 @@ import { readCouples } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import { selamFor } from "@/lib/ai-couples/hitap";
 import { buildDepositReminder, buildThinkingNudge, isDepositReminderDue, isThinkingNudgeDue } from "@/lib/ai-couples/nudges";
+import { buildFollowLast, buildFollowMsg, isFollowCallDue, isFollowLastDue, isFollowMsgDue } from "@/lib/ai-couples/followup";
+import { readAutomation } from "@/lib/ai-couples/automation";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
 
@@ -59,12 +61,12 @@ export function callPriority(c: AiCouple, now: Date): number {
   if (fresh) return 0;
   if ((c.busyRetries ?? 0) > 0 && isCallbackDue(c, now)) return 0; // meşgul çıkan yeni çift: hemen tekrar
   if (isSecondCallDue(c, now) || isCallbackDue(c, now)) return 1;
-  if (isFollowUpCallDue(c, now)) return 2;
+  if (isFollowUpCallDue(c, now) || isFollowCallDue(c, now)) return 2;
   return 3;
 }
 
 export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueAction[]> {
-  const [all, cfg] = await Promise.all([readCouples(), readCapacityConfig()]);
+  const [all, cfg] = await Promise.all([readCouples(), readCapacityConfig(), readAutomation()]); // readAutomation: takip günlerini yükler
   // Panelden açılan test çiftleri (sourceRef "test") otomatik aranmaz, hatırlatma almaz
   const couples = all.filter((c) => c.sourceRef !== "test");
   const actions: AiQueueAction[] = [];
@@ -108,6 +110,12 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     } else if (isThinkingNudgeDue(c, now)) {
       const cap = await getCapacityForDate(c.weddingDate, cfg);
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildThinkingNudge(c, cap), reason: "Düşünüyor — 3. gün hatırlatma" });
+    } else if (isFollowMsgDue(c, now)) {
+      const cap = await getCapacityForDate(c.weddingDate, cfg);
+      actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowMsg(c, cap, now), reason: "Teklif sonrası cevap yok — hatırlatma (tarih + fiyat + %40 zam)" });
+    } else if (isFollowLastDue(c, now)) {
+      const cap = await getCapacityForDate(c.weddingDate, cfg);
+      actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowLast(c, cap), reason: "Teklif sonrası cevap yok — son mesaj" });
     }
   }
 
@@ -117,7 +125,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
-    .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
+    .filter((c) => (c.status === "new" || isCallbackDue(c, now) || isFollowUpCallDue(c, now) || isSecondCallDue(c, now) || isFollowCallDue(c, now)) && canContact(c, "call", now).allowed)
     // Öncelik: rakiplerden önce ulaşmak için
     //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce
     //  1) 2. arama zamanı gelenler / "tekrar arayın" diyenler

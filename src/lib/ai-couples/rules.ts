@@ -8,6 +8,7 @@
  *  4. Ilık ("düşüneyim" / cevapsız) çifte tam 7 gün sonra 1 kez takip mesajı.
  *  5. Kontenjan rakamı her zaman GERÇEK sayıdır; azalmadıysa "azaldı" denmez.
  */
+import { isFollowCallDue } from "@/lib/ai-couples/followup";
 import type {
   AiCallOutcome,
   AiCapacityInfo,
@@ -159,7 +160,7 @@ export function canContact(
     if (c.callbackRequested && !isCallbackDue(c, now)) {
       return { allowed: false, reason: "Tekrar arama saati henüz gelmedi" };
     }
-    if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now) && !isSecondCallDue(c, now)) {
+    if (c.callCount >= max && !c.callbackRequested && !isFollowUpCallDue(c, now) && !isSecondCallDue(c, now) && !isFollowCallDue(c, now)) {
       return {
         allowed: false,
         reason: `Arama hakkı doldu (${c.callCount}/${max}); takip WhatsApp'tan`,
