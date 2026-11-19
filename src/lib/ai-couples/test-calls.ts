@@ -121,8 +121,16 @@ export async function startTestCall(input: { phone: string; name?: string }): Pr
 }
 
 /** Görüşmenin durumu/süresi/özeti/metni: önce ElevenLabs, olmazsa çiftin arama kaydı (B3 yazar). */
+// Bitmiş görüşmenin ElevenLabs detayı değişmez → bellekte tut (liste her yenilemede 8 ayrı istek atmasın)
+const doneCache = new Map<string, TestCallDetail>();
+
 export async function testCallDetail(rec: TestCallRecord): Promise<TestCallDetail> {
-  const base = await baseDetail(rec);
+  const hit = doneCache.get(rec.id);
+  const base = hit ?? (await baseDetail(rec));
+  if (!hit && base.status === "done" && base.transcript?.length) {
+    doneCache.set(rec.id, base);
+    if (doneCache.size > 100) doneCache.delete(doneCache.keys().next().value!);
+  }
   if (base.status !== "done") return base;
   return { ...base, ...(await afterCall(rec).catch(() => ({}))) };
 }

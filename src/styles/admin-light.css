@@ -85,10 +85,9 @@ body.rm-admin .bg-rm-champagne.rounded-full.uppercase {
   transform: translateY(-2px);
   box-shadow: var(--rm-card-shadow-hover);
 }
+/* Cam görünüm — bulanıklık (backdrop-filter) kaydırmada ekran kartını yoruyordu (panel kasması); düz, hafif saydam zemin */
 .rm-glass {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  background: rgba(255, 255, 255, 0.97);
 }
 
 /* Açılışta kartların sırayla yukarı süzülmesi */
@@ -348,4 +347,10 @@ body.rm-admin .bg-rm-champagne.rounded-full.uppercase {
   :where(body.rm-admin) .hover\:text-\[\#25D366\]\/90:hover { color:#15803D; }
   :where(body.rm-admin) .divide-white\/5 > :not(:last-child) { border-color:#EEF2F6; }
   :where(body.rm-admin) .placeholder\:text-rm-gray-600::placeholder, :where(body.rm-admin) .placeholder\:text-rm-gray-500::placeholder { color:#94A3B8; }
+}
+
+/* Performans: kart içi bulanıklıklar kapalı (sadece açılır pencere arka planlarında kalır) */
+body.rm-admin [class*="backdrop-blur"]:not(.fixed) {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }

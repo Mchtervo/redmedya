@@ -97,6 +97,8 @@ export type AiCouple = {
   busyRetries?: number;
   /** Admin planlanan/otomatik aramaları iptal etti — otomatik aranmaz (WhatsApp ve elle arama devam) */
   callsPaused?: boolean;
+  /** Admin otomatik WhatsApp mesajlarını iptal etti (kampanya, takip, hatırlatma) — elle cevap devam */
+  messagesPaused?: boolean;
   calls: AiCallRecord[];
   messages: AiMessageRecord[];
 

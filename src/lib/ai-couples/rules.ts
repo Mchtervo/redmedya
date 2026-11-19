@@ -142,6 +142,9 @@ export function canContact(
   if (c.status === "lost") {
     return { allowed: false, reason: "İlgilenmediğini söyledi — otomatik iletişim yok" };
   }
+  if (channel !== "call" && c.messagesPaused) {
+    return { allowed: false, reason: "Otomatik mesaj iptal edildi (panelden)" };
+  }
   if (channel !== "call") {
     const { hour } = istanbulParts(now);
     if (hour < MESSAGE_WINDOW.startHour || hour >= MESSAGE_WINDOW.endHour) {

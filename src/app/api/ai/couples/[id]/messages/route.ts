@@ -39,8 +39,10 @@ export async function POST(request: Request, { params }: Ctx) {
   const channel = (str(body.channel) ?? "whatsapp") as AiMessageChannel;
   if (!CHANNELS.includes(channel)) return bad("Geçersiz channel");
   const direction = str(body.direction) === "in" ? "in" : "out";
+  // Sahibinin TELEFONDAN yazdığı mesaj (n8n C, WhatsApp "fromMe"): zaten gitti → izin sorulmaz, sadece kayda düşer
+  const fromPhone = body.fromPhone === true && direction === "out";
   const kindRaw = str(body.kind);
-  const kind = (KINDS as readonly string[]).includes(kindRaw ?? "") ? (kindRaw as AiMessageRecord["kind"]) : "other";
+  const kind = fromPhone ? "reply" : (KINDS as readonly string[]).includes(kindRaw ?? "") ? (kindRaw as AiMessageRecord["kind"]) : "other";
   const text = str(body.text, 4000);
   if (!text) return bad("text zorunlu");
   const now = new Date();
@@ -61,11 +63,13 @@ export async function POST(request: Request, { params }: Ctx) {
     if (kind === "follow_up" && c.followUpSentAt) return { allowed: false, reason: "Takip mesajı zaten gönderildi" };
     return { allowed: true };
   };
-  if (direction === "out") {
+  if (direction === "out" && !fromPhone) {
     const pre = decide(existing);
     if (!pre.allowed) return NextResponse.json({ ok: false, allowed: false, reason: pre.reason }, { status: 423 });
   }
   let blockedReason: string | null = null;
+  let duplicate = false;
+  const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLocaleLowerCase("tr-TR");
 
   const msg: AiMessageRecord = { id: randomUUID(), at: now.toISOString(), channel, direction, kind, text };
   const intentRaw = str(body.intent) as InboundIntent | undefined;
@@ -73,7 +77,16 @@ export async function POST(request: Request, { params }: Ctx) {
     direction === "in" ? (intentRaw && INTENTS.includes(intentRaw) ? intentRaw : detectInboundIntent(text)) : "unknown";
 
   const updated = await mutateCouple(id, (c) => {
-    if (direction === "out") {
+    if (fromPhone) {
+      // Otomasyonun kendi gönderdiği mesaj da WhatsApp'tan "fromMe" döner → aynısı son 30 dk'da kayıtlıysa tekrar yazma
+      const recent = c.messages.filter((m) => m.direction === "out" && now.getTime() - Date.parse(m.at) < 30 * 60_000);
+      const media = text.startsWith("[");
+      const t = norm(text);
+      if (recent.some((m) => norm(m.text) === t || (media && m.text.startsWith("[")) || (t.length >= 40 && norm(m.text).includes(t.slice(0, 80))))) {
+        duplicate = true;
+        return c;
+      }
+    } else if (direction === "out") {
       // Son karar kilit altında, en güncel kayıtla (o arada "aramayın" gelmiş olabilir)
       const d = decide(c);
       if (!d.allowed) {
@@ -104,6 +117,7 @@ export async function POST(request: Request, { params }: Ctx) {
     return next;
   });
 
+  if (duplicate) return NextResponse.json({ ok: true, duplicate: true });
   if (blockedReason) return NextResponse.json({ ok: false, allowed: false, reason: blockedReason }, { status: 423 });
 
   // Gelen her cevap Telegram'a (otomatik cevap YOK; sahibi/ekip cevaplar)

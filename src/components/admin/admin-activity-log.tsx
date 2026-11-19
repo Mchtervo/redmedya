@@ -110,6 +110,7 @@ function describeCall(call: AiCallRecord, c: AiCouple, no: number): { title: str
 function describeMsg(m: AiMessageRecord): string {
   const ch = CH[m.channel] ?? m.channel;
   if (m.direction === "in") return `📩 Çift yazdı (${ch})`;
+  if (m.kind === "reply") return `✍️ Siz cevap verdiniz (${ch})`;
   const t = m.text;
   if (t.startsWith("[PDF]")) return `📎 ${ch}'tan fiyat listesi (PDF) iletildi`;
   if (m.kind === "welcome" || m.channel === "sms" || m.channel === "dugun_com") return `👋 Karşılama mesajı gönderildi (${ch})`;
@@ -169,7 +170,12 @@ export function AdminActivityLog() {
   useAdminDataSync(load);
 
   // Planlanan / otomatik aramayı iptal et ya da geri aç
-  const togglePause = async (c: AiCouple) => {
+  const togglePause = async (c: AiCouple, what: "callsPaused" | "messagesPaused" = "callsPaused") => {
+    if (what === "messagesPaused") {
+      if (!c.messagesPaused && !confirm(`${c.name} için otomatik WhatsApp mesajları iptal edilsin mi?\n(Sizin elle yazdıklarınız gider.)`)) return;
+      await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messagesPaused: !c.messagesPaused }) }).catch(() => null);
+      return load();
+    }
     if (!c.callsPaused && !confirm(`${c.name} için planlanan / otomatik aramalar iptal edilsin mi?
 (WhatsApp ve elle arama devam eder; istediğinizde geri açabilirsiniz.)`)) return;
     await fetch(`/api/admin/ai-couples/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ callsPaused: !c.callsPaused }) }).catch(() => null);
@@ -280,7 +286,7 @@ export function AdminActivityLog() {
   );
 }
 
-function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onTogglePause: (c: AiCouple) => void }) {
+function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onTogglePause: (c: AiCouple, what?: "callsPaused" | "messagesPaused") => void }) {
   const Icon = e.icon === "noanswer" ? PhoneOff : e.icon === "call" ? Phone : e.icon === "test" ? FlaskConical : e.icon === "system" ? Activity : MessageCircle;
   const who = e.couple ? `${e.couple.name} · ${displayPhone(e.couple.phone)}` : e.test ? `${e.test.name} · ${displayPhone(e.test.phone)}` : "";
   const hasDetail = Boolean(e.call || e.test || e.msg);
@@ -308,6 +314,15 @@ function EventRow({ e, onOpen, onTogglePause }: { e: Ev; onOpen: () => void; onT
                 className={cn("rounded-lg border px-2 py-1 text-xs font-semibold", e.couple.callsPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
               >
                 {e.couple.callsPaused ? "✅ Aramayı geri aç" : "🚫 Aramayı iptal et"}
+              </button>
+            )}
+            {e.couple && !e.couple.contactLocked && e.couple.status !== "won" && e.couple.status !== "lost" && (
+              <button
+                type="button"
+                onClick={() => onTogglePause(e.couple!, "messagesPaused")}
+                className={cn("rounded-lg border px-2 py-1 text-xs font-semibold", e.couple.messagesPaused ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : "border-rose-300 text-rose-700 hover:bg-rose-50")}
+              >
+                {e.couple.messagesPaused ? "✅ Mesajı geri aç" : "🚫 Mesajı iptal et"}
               </button>
             )}
           </div>

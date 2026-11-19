@@ -680,6 +680,22 @@ function DrawerBody({
               {c.callsPaused ? "✅ Aramayı geri aç" : "🚫 Aramayı iptal et"}
             </button>
           )}
+          {!c.contactLocked && c.status !== "won" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (c.messagesPaused) return onPatch({ messagesPaused: false });
+                if (confirm(`${c.name} için planlanan otomatik WhatsApp mesajları (kampanya, takip, hatırlatma) iptal edilsin mi?\n(Sizin elle yazdıklarınız gider.)`)) onPatch({ messagesPaused: true });
+              }}
+              className={cn(
+                "shrink-0 rounded-lg border px-2.5 py-1 text-xs font-semibold disabled:opacity-40",
+                c.messagesPaused ? "border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50" : "border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
+              )}
+            >
+              {c.messagesPaused ? "✅ Mesajı geri aç" : "🚫 Mesajı iptal et"}
+            </button>
+          )}
         </div>
       </div>
 
