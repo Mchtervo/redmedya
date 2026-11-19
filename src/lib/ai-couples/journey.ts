@@ -115,7 +115,7 @@ export function historyForAgent(c: AiCouple): string {
       parts.push(
         e.x.outcome === "no_answer"
           ? `${callNo}. arama açılmadı.`
-          : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}.`
+          : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}${e.x.summary ? ` — özet: ${e.x.summary.split("\n")[0].replace(/\s+/g, " ").slice(0, 220)}` : ""}.`
       );
     } else if (e.m.direction === "out") {
       parts.push(

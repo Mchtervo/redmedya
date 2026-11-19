@@ -8,6 +8,8 @@ import path from "path";
 import { dataPath } from "@/lib/data-dir";
 import { readIntegrations } from "@/lib/ai-couples/integrations";
 import { selamFor } from "@/lib/ai-couples/hitap";
+import { findCoupleByPhone } from "@/lib/ai-couples/store";
+import { historyForAgent } from "@/lib/ai-couples/journey";
 import { capacitySpeech, dayLabel, monthKeyOf, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
 
 const FILE = dataPath("ai-test-calls.json");
@@ -51,10 +53,14 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
   const { elevenlabsKey } = await readIntegrations();
   if (!elevenlabsKey) return { ok: false, error: "Ses anahtarı (ElevenLabs) ayarlı değil" };
 
+  // Numara kayıtlı bir çiftse asistan o çiftin geçmişiyle konuşur (hafıza testi) — kayda yine YAZILMAZ
+  const known = await findCoupleByPhone(input.phone);
+  const name = (input.name ?? "").trim() || known?.name || "";
   const cfg = await readCapacityConfig();
   const months = await upcomingCapacity(14, cfg);
-  const wd = input.weddingDate && /^\d{4}-\d{2}-\d{2}$/.test(input.weddingDate) ? input.weddingDate : undefined;
-  const isim = (input.name ?? "").trim().split(/\s+/)[0] || "bilinmiyor";
+  const wdIn = input.weddingDate || known?.weddingDate;
+  const wd = wdIn && /^\d{4}-\d{2}-\d{2}$/.test(wdIn) ? wdIn : undefined;
+  const isim = name.split(/\s+/)[0] || "bilinmiyor";
 
   const res = await fetch("https://api.elevenlabs.io/v1/convai/sip-trunk/outbound-call", {
     method: "POST",
@@ -65,7 +71,7 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
       to_number: input.phone,
       conversation_initiation_client_data: {
         dynamic_variables: {
-          selam: selamFor(input.name),
+          selam: selamFor(name),
           couple_id: "TEST",
           isim,
           kaynak: "Düğün.com",
@@ -73,7 +79,7 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
           kontenjan_tablo: capacitySpeech(months, monthKeyOf(wd)) || "yok",
           drone_kalan: String(cfg.droneGiftLeft ?? 0),
           tekrar_arama: "hayır",
-          gecmis: "İlk temas — daha önce görüşülmedi.",
+          gecmis: known ? historyForAgent(known) : "İlk temas — daha önce görüşülmedi.",
         },
       },
     }),
@@ -85,7 +91,7 @@ export async function startTestCall(input: { phone: string; name?: string; weddi
     const why = typeof j.detail === "string" ? j.detail : j.message ?? JSON.stringify(j.detail ?? j).slice(0, 200);
     return { ok: false, error: `Arama başlatılamadı: ${why}` };
   }
-  const record: TestCallRecord = { id: j.conversation_id, phone: input.phone, name: (input.name ?? "").trim() || "Test", weddingDate: wd, at: new Date().toISOString() };
+  const record: TestCallRecord = { id: j.conversation_id, phone: input.phone, name: name ? name + (known ? " (kayıtlı çift — geçmişiyle)" : "") : "Test", weddingDate: wd, at: new Date().toISOString() };
   await writeTestCalls([record, ...(await readTestCalls())]);
   return { ok: true, record };
 }
