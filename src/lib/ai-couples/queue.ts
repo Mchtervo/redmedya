@@ -49,6 +49,17 @@ function catalogPending(c: AiCouple): boolean {
   );
 }
 
+/** Yeni talebin "taze" sayıldığı süre: bu süre içinde gelenler en önce aranır */
+export const FRESH_LEAD_MS = 48 * 3600 * 1000;
+
+export function callPriority(c: AiCouple, now: Date): number {
+  const fresh = !c.calls.length && c.status === "new" && now.getTime() - Date.parse(c.createdAt) < FRESH_LEAD_MS;
+  if (fresh) return 0;
+  if (isSecondCallDue(c, now) || c.callbackRequested) return 1;
+  if (isFollowUpCallDue(c, now)) return 2;
+  return 3;
+}
+
 export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueAction[]> {
   const [couples, cfg] = await Promise.all([readCouples(), readCapacityConfig()]);
   const actions: AiQueueAction[] = [];
@@ -89,7 +100,12 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const callable = couples
     .filter((c) => !(c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef) && !CAMPAIGN_CALLS_ENABLED))
     .filter((c) => (c.status === "new" || c.callbackRequested || isFollowUpCallDue(c, now) || isSecondCallDue(c, now)) && canContact(c, "call", now).allowed)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    // Öncelik: rakiplerden önce ulaşmak için
+    //  0) Son 48 saatte gelen, hiç aranmamış YENİ talepler — en uzun bekleyen önce
+    //  1) 2. arama zamanı gelenler / "tekrar arayın" diyenler
+    //  2) "Düşüneyim" dedi, 1 hafta doldu
+    //  3) Daha eski, hiç aranmamış talepler
+    .sort((a, b) => callPriority(a, now) - callPriority(b, now) || a.createdAt.localeCompare(b.createdAt));
   for (const c of callable) {
     actions.push({
       type: "call",
