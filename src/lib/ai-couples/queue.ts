@@ -28,7 +28,14 @@ const CATALOG_OUTCOMES = new Set(["info_requested", "offer_requested", "thinking
 /** Toplu kampanya çiftlerine katalog, kampanya akışından (aramaya göre kişiselleştirilmiş) gider. */
 export const CAMPAIGN_REFS = new Set(["kampanya-2027"]);
 
+/**
+ * Arama sonrası WhatsApp artık n8n "RM K" akışından, aramanın notlarına göre kişisel gidiyor.
+ * Eski genel katalog mesajı kapalı (aynı çifte iki mesaj gitmesin).
+ */
+export const CATALOG_VIA_PERSONAL_FLOW = true;
+
 function catalogPending(c: AiCouple): boolean {
+  if (CATALOG_VIA_PERSONAL_FLOW) return false;
   if (c.sourceRef && CAMPAIGN_REFS.has(c.sourceRef)) return false;
   const lastInfoCall = [...c.calls].reverse().find((x) => CATALOG_OUTCOMES.has(x.outcome));
   if (!lastInfoCall) return false;
