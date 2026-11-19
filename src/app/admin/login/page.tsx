@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react";
@@ -13,6 +13,12 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Panelle aynı açık tema
+  useEffect(() => {
+    document.body.classList.add("rm-admin");
+    return () => document.body.classList.remove("rm-admin");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +39,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-rm-black px-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-40 left-1/2 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-rm-champagne/[0.06] blur-3xl"
@@ -52,9 +58,9 @@ export default function AdminLoginPage() {
           Siteye dön
         </Link>
 
-        <div className="rounded-2xl border border-white/8 bg-rm-black-elevated/85 p-8 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl md:p-10">
+        <div className="rm-card rm-rise p-8 md:p-10">
           <div className="flex flex-col items-center text-center">
-            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rm-champagne/30 bg-rm-champagne/10 text-rm-champagne shadow-[0_8px_30px_rgba(196,160,82,0.15)]">
+            <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-[0_12px_24px_-10px_rgba(79,70,229,0.8)]">
               <ShieldCheck className="h-6 w-6" strokeWidth={1.5} />
             </span>
             <p className="text-[10px] font-semibold tracking-[0.4em] text-rm-champagne uppercase">
@@ -100,7 +106,7 @@ export default function AdminLoginPage() {
             )}
             <Button
               type="submit"
-              className="h-12 w-full rounded-full shadow-[0_8px_30px_rgba(196,160,82,0.3)]"
+              className="h-12 w-full rounded-xl shadow-[0_10px_24px_-10px_rgba(79,70,229,0.8)]"
               disabled={loading}
             >
               {loading ? "Giriş yapılıyor…" : "Giriş yap"}
@@ -108,17 +114,6 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-[10px] text-rm-gray-600">
-            Üretimde{" "}
-            <code className="rounded bg-white/[0.04] px-1 py-0.5 text-rm-gray-500">
-              ADMIN_USERNAME
-            </code>{" "}
-            ve{" "}
-            <code className="rounded bg-white/[0.04] px-1 py-0.5 text-rm-gray-500">
-              ADMIN_PASSWORD
-            </code>{" "}
-            tanımlayın.
-          </p>
         </div>
       </div>
     </div>
