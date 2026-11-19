@@ -2,6 +2,7 @@
  * Admin: çift güncelle. Kara liste kilidini AÇMAK yalnızca buradan mümkündür
  * ve { unlock: true, confirm: "KILIDI AC" } ister.
  */
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin-api";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
@@ -54,6 +55,14 @@ export async function PATCH(request: Request, { params }: Ctx) {
     }
     if (typeof body.note === "string") next.note = body.note.trim().slice(0, 1000) || undefined;
     if (typeof body.callbackRequested === "boolean" && !next.contactLocked) next.callbackRequested = body.callbackRequested;
+    // "Cevap verdim": telefondan / başka yerden dönüldü → çift "cevap bekliyor"dan çıkar (mesaj gönderilmez, sadece kayıt)
+    if (body.markReplied === true && next.messages.at(-1)?.direction === "in") {
+      next = {
+        ...next,
+        messages: [...next.messages, { id: randomUUID(), at, channel: "whatsapp", direction: "out", kind: "reply", text: "✓ Cevap verildi (telefondan / elle — panelden işaretlendi)" }],
+        updatedAt: at,
+      };
+    }
     if (typeof body.messagesPaused === "boolean" && Boolean(next.messagesPaused) !== body.messagesPaused) {
       next = body.messagesPaused
         ? { ...next, messagesPaused: true, timeline: [...next.timeline, { at, type: "edit", text: "🚫 Otomatik WhatsApp mesajları İPTAL edildi (panelden) — kampanya / takip / hatırlatma gitmez" }] }

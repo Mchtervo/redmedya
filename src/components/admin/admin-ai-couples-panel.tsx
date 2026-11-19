@@ -662,6 +662,19 @@ function DrawerBody({
             <Calendar className="h-4 w-4 shrink-0" /> 📅 {weddingText(c)}: {dayState.text}
           </p>
         )}
+        {st === "needsReply" && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            <span className="min-w-0 flex-1">Çift yazdı, cevap bekliyor. Telefondan cevap verdiyseniz işaretleyin.</span>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPatch({ markReplied: true })}
+              className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+            >
+              ✓ Cevap verdim
+            </button>
+          </div>
+        )}
         <div className={cn("mt-2 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm", STEP_STYLE[step.tone])}>
           <span className="min-w-0 flex-1">➡️ {step.text}</span>
           {!c.contactLocked && c.status !== "won" && (
