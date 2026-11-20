@@ -71,7 +71,7 @@ function systemPrompt(c: AiCouple, kontenjan: string, drone: number): string {
 # BİLGİLER (SADECE bunlar; bilmediğin hiçbir fiyat/özellik/indirim uydurma)
 ${FACTS}
 2027 KALAN YER (ay bazında): ${kontenjan}
-Drone hediyesinden kalan: ${drone}
+Drone hediyesinden kalan: ${drone} (müşteriye kalan sayıyı söyleme; 'ilk 10 çifte hediye, şu an hâlâ hakkınız var' de)
 
 # NASIL YAZARSIN (gerçek bir insan gibi)
 - Gerçek bir personelin telefondan yazdığı gibi: kısa, doğal, akıcı cümleler. UZUNLUK: en fazla 2-3 kısa cümle; müşteri tek kelime/kısa yazdıysa 1-2 cümle. Sorulmayan bilgiyi yığma. Madde işareti, başlık, kalın yazı KULLANMA. Emoji çoğu mesajda hiç olmasın; arada bir en fazla 1 tane (🙂 ya da 🤍).
@@ -83,7 +83,9 @@ Drone hediyesinden kalan: ${drone}
 - Müşterinin SON mesajına cevap ver; önceki yazışmayı dikkate al, aynı bilgiyi tekrar etme. Müşteri kısa yazıyorsa sen de kısa yaz.
 - Müşteri tek mesajda BİRDEN FAZLA şey sorduysa HEPSİNE cevap ver (birini atlama). Arka arkaya birkaç mesaj attıysa son cevaplanmamış mesajların hepsini birlikte cevapla.
 - Müşteri düğün tarihinin değiştiğini söyleyip yeni tarihi yazdıysa tarih_kontrol ile bak; yazmadıysa yeni tarihi sor.
-- Fiyat sorulursa ilgilendiği pakete göre net rakam ver; toplam istenirse topla.
+- Fiyat sorulursa ilgilendiği pakete göre net rakam ver. Birden fazla kalemin toplamını ya da indirimli tutarı söyleyeceksen ÖNCE hesapla aracını kullan, kafadan toplama. Toplamı yazarken kalemleri kısaca say, sonra tek bir net toplam ver (ara toplamları karıştırma).
+- TARİH TUTMA: Tarihi kendin tutamazsın, takvime yazamazsın. "Tarihinizi tuttum / sizin adınıza ayırdım" DEME. Müşteri "tutun" derse "Tamam, tarihinizi not aldım, 24 saat içinde 1.000 TL kapora ile kesinleşiyor" de ve sahibine_not'a "Müşteri X tarihini 24 saat tutmamızı istedi" yaz.
+- Müşteri bir paket/kalem seçtiğinde ya da önemli bir karar söylediğinde sahibine_not'a 1 cümle yaz.
 - Tarih sorulursa ya da tarih söylerse MUTLAKA tarih_kontrol aracını kullan ve sonucuna göre söyle (müsait / dolu + alternatif). Tahmin etme.
 - Örnek iş isterse Instagram/galeri linkini ver.
 - Telefonla görüşmek isterse: "Tabii, uygun saatinizi yazın, 0312 963 23 47'den arayalım" de.
@@ -147,6 +149,18 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       input_schema: { type: "object", properties: { date: { type: "string", description: "YYYY-AA-GG" } }, required: ["date"] },
     },
     {
+      name: "hesapla",
+      description: "Fiyat toplamını hatasız hesaplar. Müşteriye birden fazla kalemin toplamını ya da indirimli tutarı söyleyeceksen MUTLAKA önce bunu kullan.",
+      input_schema: {
+        type: "object",
+        properties: {
+          kalemler: { type: "array", items: { type: "object", properties: { ad: { type: "string" }, tutar: { type: "number" } }, required: ["ad", "tutar"] } },
+          indirim_yuzde: { type: "number", description: "Toplamdan düşülecek ekstra indirim yüzdesi (sadece tam gün için 10)" },
+        },
+        required: ["kalemler"],
+      },
+    },
+    {
       name: "yanit_ver",
       description: "Son kararını ver: send (müşteriye gönderilecek metin), handoff (sahibine devret), skip (cevap gerekmiyor).",
       input_schema: {
@@ -157,6 +171,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
           reason: { type: "string", description: "handoff/skip ise kısa sebep (sahibine not)" },
           draft: { type: "string", description: "handoff ise sahibine önerilen cevap taslağı (isteğe bağlı)" },
           bekletme: { type: "string", description: "handoff ise müşteriye gidecek kısa bekletme mesajı" },
+          sahibine_not: { type: "string", description: "send ise sahibinin MUTLAKA bilmesi gereken bir şey olduysa (ör. müşteri tarihi 24 saat tutmamızı kabul etti, paket seçti) 1 cümle" },
         },
         required: ["action"],
       },
@@ -164,7 +179,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
   ];
 
   const messages: Msg[] = [{ role: "user", content: `WhatsApp yazışması (eskiden yeniye):\n${convo}\n\nMüşterinin son mesajına cevabını yanit_ver ile ver.` }];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -179,7 +194,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       const inp = final.input ?? {};
       const action = String(inp.action);
       const text = typeof inp.text === "string" ? inp.text.trim() : "";
-      if (action === "send" && text) return { action: "send", text: text.slice(0, 1500) };
+      if (action === "send" && text) return { action: "send", text: text.slice(0, 1500), note: typeof inp.sahibine_not === "string" && inp.sahibine_not.trim() ? inp.sahibine_not.trim().slice(0, 400) : undefined };
       // "Cevap gerekmiyor" sadece kısa kapanış mesajlarında kabul edilir; soru/itiraz cevapsız kalmaz → sahibine devret
       const lastIn = [...c.messages].reverse().find((m) => m.direction === "in")?.text ?? "";
       const closing = lastIn.length <= 40 && !lastIn.includes("?") && /(teşekkür|tesekkur|sağ ?ol|sag ?ol|tamam|tmm|eyv|👍|🙏|iyi günler|iyi akşamlar|görüşürüz|ok\b|peki)/i.test(lastIn);
@@ -187,11 +202,21 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       if (action !== "handoff" && !(action === "send" && text)) return { action: "handoff", reason: "Yapay zekâ bu mesaja cevap üretemedi — lütfen siz dönün." };
       return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? inp.draft.slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? inp.bekletme.trim().slice(0, 400) : undefined };
     }
-    const calls = blocks.filter((b) => b.type === "tool_use" && b.name === "tarih_kontrol");
+    const calls = blocks.filter((b) => b.type === "tool_use" && (b.name === "tarih_kontrol" || b.name === "hesapla"));
     if (!calls.length) return { action: "handoff", reason: "Yapay zekâ net bir cevap vermedi — lütfen siz dönün." };
     messages.push({ role: "assistant", content: blocks });
     const results = [];
     for (const call of calls) {
+      if (call.name === "hesapla") {
+        const items = Array.isArray(call.input?.kalemler) ? (call.input.kalemler as { ad?: unknown; tutar?: unknown }[]) : [];
+        const lines = items.map((k) => ({ ad: String(k.ad ?? ""), tutar: Math.round(Number(k.tutar) || 0) }));
+        const ara = lines.reduce((a, k) => a + k.tutar, 0);
+        const pct = Math.min(20, Math.max(0, Number(call.input?.indirim_yuzde) || 0));
+        const ind = Math.round((ara * pct) / 100);
+        const tl = (n: number) => n.toLocaleString("tr-TR") + " TL";
+        results.push({ type: "tool_result", tool_use_id: call.id, content: JSON.stringify({ kalemler: lines.map((k) => k.ad + ": " + tl(k.tutar)), ara_toplam: tl(ara), indirim: pct ? "%" + pct + " = " + tl(ind) : "yok", toplam: tl(ara - ind) }) });
+        continue;
+      }
       const d = String(call.input?.date ?? "");
       const r = /^\d{4}-\d{2}-\d{2}$/.test(d) ? await checkDate(d, cfg).catch(() => null) : null;
       results.push({ type: "tool_result", tool_use_id: call.id, content: r ? JSON.stringify({ tarih: r.dateLabel, musait: r.available, sebep: r.reason, ay_kalan: r.month.remaining, alternatifler: r.alternatives.map((a) => a.dateLabel), cumle: r.cevap }) : "Tarih anlaşılamadı" });
