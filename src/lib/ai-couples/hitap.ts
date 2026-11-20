@@ -54,6 +54,10 @@ const ERKEK = new Set(
 /** İkisi de olabilen isimler: sadece isimle hitap */
 const IKISI = new Set(`deniz umut barış evren ümit özgür aytaç ilkay derin yağmur ekin sevgi bilge doğa ırmak çağla`.split(/\s+/));
 
+// Konuşma kayıtlarında Bey/Hanım'sız kalan isimler
+for (const n of ["kamile", "delal", "hava", "halima", "nazar", "beritan", "rojda", "dilan", "berivan", "zozan", "medine", "hacer", "şennur", "mehtap", "nazlı", "sıla", "ilayda"]) KADIN.add(n);
+for (const n of ["berkcan", "erencan", "mertcan", "samed", "samet", "rıza", "riza", "eyyüp", "eyüp", "berat", "enis", "okan"]) ERKEK.add(n);
+
 function firstName(full: string): string {
   return (full ?? "").trim().split(/[\s&,/+-]+/)[0] ?? "";
 }
@@ -83,6 +87,11 @@ export function hitapFor(full: string | undefined | null): Hitap {
  *  "Merhabalar, Ayşe Hanım ile mi görüşüyorum?" / isim yoksa "Merhabalar, iyi günler. Sizi RED MEDIA'dan arıyorum, uygun musunuz?"
  */
 export function selamFor(full: string | undefined | null): string {
-  const h = hitapFor(full).hitap;
-  return h ? `Merhabalar, ${h} ile mi görüşüyorum?` : "Merhabalar, iyi günler. Sizi RED MEDIA'dan arıyorum, uygun musunuz?";
+  const hf = hitapFor(full);
+  if (!hf.hitap) return "Merhabalar, iyi günler. Sizi RED MEDIA'dan arıyorum, uygun musunuz?";
+  // Cinsiyet bilinmiyorsa sadece ad ("Deniz ile mi") kaba duruyor → ad soyad
+  const who = hf.cinsiyet === "bilinmiyor"
+    ? (full ?? "").trim().split(/\s+/).slice(0, 3).map((w) => w.charAt(0).toLocaleUpperCase("tr-TR") + w.slice(1).toLocaleLowerCase("tr-TR")).join(" ")
+    : hf.hitap;
+  return `Merhabalar, RED MEDIA'dan arıyorum, ${who} ile mi görüşüyorum?`;
 }

@@ -112,6 +112,8 @@ export async function POST(request: Request, { params }: Ctx) {
     }
     // gelen mesaj — kara listedeki çiftin kaydı bozulmaz (mesaj sadece kayda düşer)
     if (next.contactLocked) return next;
+    // Müşteri yazdıysa artık "yeni talep" değildir (ilk arama gibi aranmasın)
+    if (next.status === "new") next = { ...next, status: "contacted" };
     if (intent === "stop") return lockCouple(next, "Mesajla iletişim istemediğini söyledi", now);
     if (intent === "booked_elsewhere") return lockCouple(next, "Başka fotoğrafçıyla anlaştı (mesaj)", now);
     if (intent === "not_interested" && next.status !== "won") {

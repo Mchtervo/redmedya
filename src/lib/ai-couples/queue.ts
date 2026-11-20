@@ -175,6 +175,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
   const callable = [...couples, ...testCallbacks]
     .filter((c) => !c.callsPaused)
+    // WhatsApp'tan son 24 saatte yazan çift yazışmanın içinde: kendisi saat istemediyse ARAMA (WhatsApp'tan devam)
+    .filter((c) => isCallbackDue(c, now) || !c.messages.some((m) => m.direction === "in" && now.getTime() - Date.parse(m.at) < 24 * 3600_000))
     // Yeni gelen talep, meşgul tekrarı ve müşterinin istediği saat HEMEN; eski liste / takip / tekrar denemeler sadece "iyi saat"te (öğle 12–14, akşam 18–20:30)
     .filter((c) => callPriority(c, now) <= 0 || isCallbackDue(c, now) || isGoodCallWindow(now))
     .filter((c) => !needsPreCallNotice(c, now) || now.getTime() - Date.parse(c.createdAt) > 4 * 60_000) // önce "birazdan arıyoruz" WhatsApp'ı
@@ -216,5 +218,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     });
   }
 
-  return actions.slice(0, limit);
+  // Aramalar ve WhatsApp işleri ayrı sınırlanır: çok WhatsApp birikince aramalar (yeni talepler dahil) listeden düşmesin
+  const calls = actions.filter((a) => a.type === "call").slice(0, limit);
+  const others = actions.filter((a) => a.type !== "call").slice(0, limit);
+  return [...others, ...calls];
 }

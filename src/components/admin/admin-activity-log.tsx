@@ -5,7 +5,7 @@
  * Arama (açtı/açmadı, süre, özet), giden/gelen mesajlar, meşgul, geri arama, kara liste, rezervasyon…
  * Aramalarda "Detay" → ses kaydı + konuşma metni + notlar. 30 sn'de bir yenilenir. Sadece okuma.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Activity, FlaskConical, MessageCircle, Phone, PhoneOff, Search, X } from "lucide-react";
@@ -154,6 +154,7 @@ export function AdminActivityLog() {
   const [tests, setTests] = useState<TestCall[]>([]);
   const [kind, setKind] = useState<Kind | "all">("all");
   const [q, setQ] = useState("");
+  const dq = useDeferredValue(q); // yazarken her harfte ağır hesap yapılmasın
   const [limit, setLimit] = useState(150);
   const [now, setNow] = useState(0);
   const [offline, setOffline] = useState(false);
@@ -182,8 +183,18 @@ export function AdminActivityLog() {
   }, []);
   useEffect(() => {
     load();
-    const t = setInterval(load, 30_000);
-    return () => clearInterval(t);
+    // Sekme arka plandayken yenileme (sunucuyu ve telefonu yormasın); geri gelince hemen yenile
+    const t = setInterval(() => {
+      if (typeof document === "undefined" || !document.hidden) load();
+    }, 30_000);
+    const onVis = () => {
+      if (!document.hidden) load();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [load]);
   useAdminDataSync(load);
 
@@ -234,7 +245,7 @@ export function AdminActivityLog() {
         text: t.summary,
       });
     }
-    const term = q.toLocaleLowerCase("tr-TR").trim();
+    const term = dq.toLocaleLowerCase("tr-TR").trim();
     const digits = term.replace(/\D/g, "");
     return out
       .filter((e) => kind === "all" || e.kind === kind)
@@ -245,12 +256,19 @@ export function AdminActivityLog() {
         return name.includes(term) || (digits.length >= 3 && phone.includes(digits)) || (e.text ?? "").toLocaleLowerCase("tr-TR").includes(term);
       })
       .sort((a, b) => b.at.localeCompare(a.at))
-      .map((e, _i, arr) => {
-        // Çiftin (süzülmüş listedeki) en yeni satırına "sırada ne var" notu
-        if (!e.couple || arr.find((x) => x.couple?.id === e.couple!.id) !== e) return e;
-        return { ...e, next: nextStep(e.couple, new Date(now), callsEnabled).text };
-      });
-  }, [couples, tests, kind, q, now, callsEnabled, auto]);
+      .map(
+        (() => {
+          // Çiftin (süzülmüş listedeki) en yeni satırına "sırada ne var" notu — tek geçişte (eskiden her satırda tüm listeyi tarıyordu)
+          const seen = new Set<string>();
+          const nowD = new Date(now);
+          return (e: Ev) => {
+            if (!e.couple || seen.has(e.couple.id)) return e;
+            seen.add(e.couple.id);
+            return { ...e, next: nextStep(e.couple, nowD, callsEnabled).text };
+          };
+        })(),
+      );
+  }, [couples, tests, kind, dq, now, callsEnabled, auto]);
 
   const shown = events.slice(0, limit);
   const groups: { day: string; items: Ev[] }[] = [];
