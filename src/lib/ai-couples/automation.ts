@@ -26,7 +26,8 @@ export type AiAutomation = {
   fuCallDay: number;
   fuLastDay: number;
   /** WhatsApp yapay zekâ cevabı: kapalı / sadece test numaraları / herkese */
-  waAiMode: "off" | "test" | "all";
+  /** draft = cevabı yazar ama GÖNDERMEZ, Telegram'dan sahibine öneri olarak iletir */
+  waAiMode: "off" | "test" | "draft" | "all";
   /** Test modunda cevap verilecek numaralar (son 10 hane karşılaştırılır) */
   waAiTestPhones: string[];
   updatedAt?: string;
@@ -60,7 +61,7 @@ export function cleanAutomation(input: Partial<Record<keyof AiAutomation, unknow
     fuMsgDay: clamp(input.fuMsgDay, AUTOMATION_LIMITS.fuMsgDay, cur.fuMsgDay),
     fuCallDay: clamp(input.fuCallDay, AUTOMATION_LIMITS.fuCallDay, cur.fuCallDay),
     fuLastDay: clamp(input.fuLastDay, AUTOMATION_LIMITS.fuLastDay, cur.fuLastDay),
-    waAiMode: input.waAiMode === "off" || input.waAiMode === "test" || input.waAiMode === "all" ? input.waAiMode : cur.waAiMode,
+    waAiMode: input.waAiMode === "off" || input.waAiMode === "test" || input.waAiMode === "draft" || input.waAiMode === "all" ? input.waAiMode : cur.waAiMode,
     waAiTestPhones: Array.isArray(input.waAiTestPhones)
       ? [...new Set(input.waAiTestPhones.flatMap((p) => String(p).split(/[,;\n]/)).map((p) => p.replace(/\D/g, "").slice(-10)).filter((p) => p.length === 10))].slice(0, 10)
       : cur.waAiTestPhones,

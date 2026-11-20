@@ -9,7 +9,7 @@ import { ChevronDown, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setFollowDays } from "@/lib/ai-couples/follow-days";
 
-export type Automation = { waAiMode?: "off" | "test" | "all"; waAiTestPhones?: string[]; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
+export type Automation = { waAiMode?: "off" | "test" | "draft" | "all"; waAiTestPhones?: string[]; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
 
 let cache: Automation | null = null;
 const listeners = new Set<(a: Automation) => void>();
@@ -143,10 +143,11 @@ export function AdminAutomationSettings() {
             <p className="mt-1 text-[11px] leading-relaxed text-emerald-900/80">
               Müşteri WhatsApp&apos;tan yazınca ~1 dk içinde geçmişini ve takvimi bilerek cevap yazar. Kapora/ödeme, pazarlık, şikâyet ve emin olmadığı her soruda yazmaz, Telegram&apos;dan size devreder. Siz son 12 saatte o müşteriye yazdıysanız karışmaz.
             </p>
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {([
                 ["off", "Kapalı"],
                 ["test", "Sadece test"],
+                ["draft", "Öneri (bana sor)"],
                 ["all", "Herkese açık"],
               ] as const).map(([v, label]) => (
                 <button
@@ -155,7 +156,7 @@ export function AdminAutomationSettings() {
                   onClick={() => setForm({ ...f, waAiMode: v })}
                   className={cn(
                     "h-10 rounded-xl px-2 text-sm font-semibold",
-                    (f.waAiMode ?? "test") === v ? (v === "all" ? "bg-emerald-600 text-white" : v === "test" ? "bg-amber-500 text-white" : "bg-slate-700 text-white") : "border border-slate-300 bg-white text-slate-600",
+                    (f.waAiMode ?? "test") === v ? (v === "all" ? "bg-emerald-600 text-white" : v === "test" ? "bg-amber-500 text-white" : v === "draft" ? "bg-indigo-600 text-white" : "bg-slate-700 text-white") : "border border-slate-300 bg-white text-slate-600",
                   )}
                 >
                   {label}
@@ -174,7 +175,7 @@ export function AdminAutomationSettings() {
               />
             </label>
             <p className="mt-2 text-[11px] leading-relaxed text-emerald-900/80">
-              &quot;Sadece test&quot; seçiliyken yalnızca bu numaralara cevap verir (numara panelde kayıtlı olmalı). Test bitince &quot;Herkese açık&quot; yapıp kaydedin.
+              &quot;Sadece test&quot;: yalnızca bu numaralara cevap verir. &quot;Öneri (bana sor)&quot;: müşteriye GÖNDERMEZ; yazacağı cevabı Telegram&apos;dan size iletir, siz beğenirseniz kopyalayıp gönderirsiniz. Güvenince &quot;Herkese açık&quot; yapın.
             </p>
           </div>
 

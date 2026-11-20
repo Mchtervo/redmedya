@@ -52,7 +52,9 @@ export async function POST(request: Request, { params }: Ctx) {
     const ownerAfter = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && Date.parse(m.at) > Date.parse(lastHandoff.at));
     if (!ownerAfter) return NextResponse.json({ ok: true, action: "handoff", reason: "Devrettiğiniz müşteri tekrar yazdı — hâlâ sizi bekliyor.", quiet: true, name: c.name, phone: c.phone });
   }
-  if (ownerRecent && !testPhone) return skip("sahibi son 12 saatte bu müşteriyle yazışmış — yapay zekâ karışmıyor");
+  // Öneri modu: test numarası dışındaki müşterilere cevap GÖNDERİLMEZ, sadece sahibine Telegram'dan öneri gider
+  const draftOnly = auto.waAiMode === "draft" && !testPhone;
+  if (ownerRecent && !testPhone && !draftOnly) return skip("sahibi son 12 saatte bu müşteriyle yazışmış — yapay zekâ karışmıyor");
 
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
   const aiToday = c.messages.filter((m) => m.kind === "ai" && new Date(m.at).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }) === today).length;
@@ -63,7 +65,7 @@ export async function POST(request: Request, { params }: Ctx) {
   busy.set(id, Date.now());
   try {
     const r = await generateWaReply(c);
-    return NextResponse.json({ ok: true, ...r, name: c.name, phone: c.phone });
+    return NextResponse.json({ ok: true, ...r, draftOnly, name: c.name, phone: c.phone });
   } finally {
     setTimeout(() => busy.delete(id), 15_000);
   }
