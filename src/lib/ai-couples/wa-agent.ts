@@ -47,7 +47,7 @@ TAM GÜN EKSTRA İNDİRİM: Tam gün = dış çekim paketi + kuaför (gelin ya d
 
 NİŞAN / KIZ İSTEME / SÖZ / NİKAH: Fotoğraf 5.000 TL. Sadece klip isterlerse 5.000 TL. Fotoğraf + video (klip) birlikte 9.000 TL. Albüm istenirse albüm seti eklenir.
 NE ÇEKİYORUZ (her etkinlikte — düğün, nişan, nikah, kına, söz): Gelin ve damadı, gelin-damatla fotoğraf çektirmek isteyen yakınlarını, takı merasimini, kısacası gelin ve damadın olduğu sahneleri çekiyoruz. Davetli sayısı (50, 100, 300 kişi) fiyatı ETKİLEMEZ. Anne-baba ya da aile ile ayrıca çekim isterlerse onu da çekeriz.
-KINA: Kına fotoğraf çekimi 5.000 TL. Kınanın baştan sona sinematik klibi 7.000 TL (klip ortalama 3–4 dakika). İkisini birlikte isterlerse 12.000 TL'dir diye söyleme; "fotoğraf 5.000, klip 7.000" diye ayrı ayrı yaz, toplam sorulursa devret (net değil).
+KINA: Kına fotoğraf çekimi 5.000 TL. Kınanın baştan sona sinematik klibi 8.000 TL (klip ortalama 3–4 dakika). Bunlar AYRI ayrı: ikisi birlikte 13.000 TL.
 KINA + DÜĞÜN BİRLİKTE: Kına ile düğünü birlikte alırlarsa toplamdan %10 indirim yapabilirsin (hesapla aracıyla).
 SAVE THE DATE: Fiyatı listede yok → devret.
 
