@@ -147,7 +147,7 @@ export function historyForAgent(c: AiCouple): string {
     } else if (e.m.direction === "out" && e.m.kind === "welcome" && e.m.channel === "whatsapp") {
       parts.push(e.m.text.startsWith("Tamamdır") ? "Çift WhatsApp'tan bu saati yazdı, onay mesajı gönderildi." : "WhatsApp'tan \"sizi 0312'li numaramızdan arayacağız\" haberi gönderildi.");
     } else if (e.m.direction === "out" && e.m.kind === "ai") {
-      parts.push(`WhatsApp'ta (yapay zekâ) cevap yazdık: "${e.m.text.replace(/s+/g, " ").slice(0, 120)}".`);
+      parts.push(`WhatsApp'ta (yapay zekâ) cevap yazdık: "${e.m.text.replace(/\s+/g, " ").slice(0, 120)}".`);
     } else if (e.m.direction === "out" && e.m.text.startsWith("[✓")) {
       parts.push("Çiftin mesajına ekibimiz telefondan cevap verdi.");
     } else if (e.m.direction === "out" && e.m.kind === "reply") {

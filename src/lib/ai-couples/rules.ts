@@ -154,6 +154,7 @@ export function canContact(
     }
   }
   if (channel === "call") {
+    if (c.callsPaused) return { allowed: false, reason: "Aramalar panelden iptal edildi" };
     if (!isWithinCallWindow(now)) {
       return { allowed: false, reason: `Arama saatleri dışında (${CALL_WINDOW_TEXT})` };
     }
@@ -189,7 +190,7 @@ export function lockCouple(c: AiCouple, reason: string, now: Date): AiCouple {
 
 /** Ilık/düşünüyor durumuna al ve 7 gün sonrasına tek takip planla. */
 export function markThinking(c: AiCouple, now: Date, why: string): AiCouple {
-  if (c.contactLocked) return c;
+  if (c.contactLocked || c.status === "won") return c; // rezervasyon yapmış çift satış takibine geri düşmez
   const at = now.toISOString();
   const alreadyPlanned = Boolean(c.followUpAt) && !c.followUpSentAt;
   return {
@@ -354,14 +355,17 @@ function fold(s: string): string {
  */
 export function detectInboundIntent(text: string): InboundIntent {
   const t = fold(text);
-  if (/(aramayin|aranmak istemiyorum|rahatsiz etmeyin|mesaj atmayin|yazmayin|listeden cikar|bir daha (arama|yazma|mesaj)|iletisim istemiyorum|^istemiyorum|^istemiyoruz|yazmayiniz|numarami sil|\bstop\b|\biptal\b)/.test(t)) {
+  // Soru soran / fiyat-kapora-indirim konuşan müşteri ASLA kilitlenmez ya da "ilgilenmiyor" yapılmaz
+  // (ör. "İptal durumunda kapora iade oluyor mu?", "Çok pahalı, indirim olur mu?", "Albüme gerek yok, foto+klip istiyoruz")
+  const asking = text.includes("?") || /(fiyat|kapora|kaparo|indirim|iade|ne kadar|paket|olur mu|var mi|istiyoruz|isteriz|alalim)/.test(t);
+  if (!asking && /(aramayin|aranmak istemiyorum|rahatsiz etmeyin|mesaj atmayin|yazmayin|listeden cikar|bir daha (arama|yazma|mesaj)|iletisim istemiyorum|^istemiyorum|^istemiyoruz|yazmayiniz|numarami sil)/.test(t)) {
     return "stop";
   }
   // "Sizinle anlaştık" yanlışlıkla kilitlemesin diye yalnızca "başka" geçen kalıplar.
-  if (/(baska (bir )?(fotografci|firma|yer|ekip)|baskasiyla anlastik|baska yerle anlastik|fotografcimiz var|fotografci bulduk|fotografci ayarladik)/.test(t)) {
+  if (!asking && /(baska (bir )?(fotografci|firma|yer|ekip)|baskasiyla anlastik|baska yerle anlastik|fotografcimiz var|fotografci bulduk|fotografci ayarladik)/.test(t)) {
     return "booked_elsewhere";
   }
-  if (/(ilgilenmiyor|butce(miz)? (uymuyor|yetmiyor|uygun degil)|pahali geldi|cok pahali|vazgectik|gerek yok|dusunmuyoruz)/.test(t)) {
+  if (!asking && /(ilgilenmiyor|butce(miz)? (uymuyor|yetmiyor|uygun degil)|vazgectik|dusunmuyoruz)/.test(t)) {
     return "not_interested";
   }
   if (

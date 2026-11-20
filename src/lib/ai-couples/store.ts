@@ -24,14 +24,26 @@ export function withCouplesLock<T>(fn: () => Promise<T>): Promise<T> {
 export async function readCouples(): Promise<AiCouple[]> {
   try {
     const parsed = JSON.parse(await readFile(FILE, "utf-8")) as AiCouple[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+    if (!Array.isArray(parsed)) throw new Error("ai-couples.json bozuk (dizi değil)");
+    return parsed;
+  } catch (e) {
+    // Sadece dosya YOKSA boş liste; okuma/bozulma hatasında boş liste dönmek bir sonraki yazmada tüm veriyi silerdi
+    if ((e as NodeJS.ErrnoException)?.code === "ENOENT") return [];
+    throw e;
   }
 }
 
 async function writeCouples(list: AiCouple[]): Promise<void> {
   await mkdir(path.dirname(FILE), { recursive: true });
+  // Güvenlik: kayıt sayısı birden yarıdan fazla düşecekse yazma (hatalı okuma sonrası veri kaybını önler)
+  try {
+    const prev = JSON.parse(await readFile(FILE, "utf-8")) as unknown[];
+    if (Array.isArray(prev) && prev.length >= 10 && list.length < prev.length / 2) {
+      throw new Error(`Güvenlik: çift sayısı ${prev.length} → ${list.length} düşecekti, yazma iptal`);
+    }
+  } catch (e) {
+    if ((e as Error)?.message?.startsWith("Güvenlik:")) throw e;
+  }
   try {
     await copyFile(FILE, `${FILE}.bak`);
   } catch {

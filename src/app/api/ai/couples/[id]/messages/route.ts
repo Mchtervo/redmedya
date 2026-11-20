@@ -114,7 +114,7 @@ export async function POST(request: Request, { params }: Ctx) {
     if (next.contactLocked) return next;
     if (intent === "stop") return lockCouple(next, "Mesajla iletişim istemediğini söyledi", now);
     if (intent === "booked_elsewhere") return lockCouple(next, "Başka fotoğrafçıyla anlaştı (mesaj)", now);
-    if (intent === "not_interested") {
+    if (intent === "not_interested" && next.status !== "won") {
       return { ...next, grade: "cold", status: "lost", followUpAt: undefined,
         timeline: [...next.timeline, { at: msg.at, type: "lost", text: "WhatsApp: ilgilenmediğini / bütçenin uymadığını söyledi" }] };
     }
