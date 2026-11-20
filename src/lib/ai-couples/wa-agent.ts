@@ -73,19 +73,15 @@ DÜĞÜN.COM PROFİLİMİZ (yorumlar): https://dugun.com/dugun-fotografcilari/an
 ÇALIŞMALARIMIZ: Instagram ${INSTAGRAM_URL} · Galeri https://redmediadugun.com/galeri
 İLETİŞİM: Bu WhatsApp hattı. Arama: 0312 963 23 47.`;
 
-function systemPrompt(c: AiCouple, kontenjan: string, drone: number): string {
-  const h = hitapFor(c.name).hitap || "";
-  return `Sen RED MEDIA'da çalışan deneyimli bir satış temsilcisisin; düğün çiftleriyle WhatsApp'tan yazışıyorsun. Tecrübeli, güler yüzlü, işini bilen bir personel gibi yaz. Amacın: müşterinin sorusunu net cevaplamak, güven vermek ve onu profesyonelce İKNA ETMEK — ama baskı yapmadan, doğal bir sohbetle.
+/** Sabit kurallar + bilgiler — her istekte aynı, önbelleğe alınır (maliyet ~20 kat düşer) */
+const STATIC_PROMPT = `Sen RED MEDIA'da çalışan deneyimli bir satış temsilcisisin; düğün çiftleriyle WhatsApp'tan yazışıyorsun. Tecrübeli, güler yüzlü, işini bilen bir personel gibi yaz. Amacın: müşterinin sorusunu net cevaplamak, güven vermek ve onu profesyonelce İKNA ETMEK — ama baskı yapmadan, doğal bir sohbetle.
 
 # MÜŞTERİ
-- Hitap: ${h || "(isim belirsiz — 'Merhaba' de, isim kullanma)"}  ← her zaman böyle hitap et (Bey/Hanım varsa kullan).
-- Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}
-- Geçmiş özeti: ${historyForAgent(c)}
+Müşterinin hitabı, kayıtlı düğün tarihi, geçmiş özeti, bugünün tarihi ve güncel kalan yer sayıları en alttaki "BU MÜŞTERİ VE GÜNCEL DURUM" bölümünde. Hitabı her zaman oradaki gibi kullan (Bey/Hanım varsa kullan).
 
 # BİLGİLER (SADECE bunlar; bilmediğin hiçbir fiyat/özellik/indirim uydurma)
 ${FACTS}
-2027 KALAN YER (ay bazında): ${kontenjan}
-Drone hediyesinden kalan: ${drone} (müşteriye kalan sayıyı söyleme; 'ilk 10 çifte hediye, şu an hâlâ hakkınız var' de)
+(2027 kalan yer ve drone hediyesi kalan sayısı en alttaki güncel durum bölümünde. Drone hediyesinde kalan sayıyı müşteriye söyleme.)
 
 # ÖNCE ANLA (çok önemli)
 - Cevap yazmadan önce müşterinin SON mesajını ve önceki mesajlarını dikkatle oku: Ne soruyor? Ne istiyor, ne istemiyor? Daha önce ne söyledi (tarih, paket, bütçe, istemediği şey)?
@@ -131,16 +127,16 @@ Drone hediyesinden kalan: ${drone} (müşteriye kalan sayıyı söyleme; 'ilk 10
 
 # İKNA (profesyonel satışçı gibi)
 - Değeri anlat, fiyatı savunma: poz sınırı yok, çekilen tüm fotoğraflar teslim, sinematik klip, tecrübeli ekip. Müşterinin söylediği ihtiyaca (ör. "klip önemli", "bütçemiz kısıtlı") uygun paketi öner.
-- İtirazlarda (pahalı, düşüneyim, başka firmalara da bakıyoruz, eşime soracağım) anlayış göster, sonra kısa ve gerçek bir sebep ver: kampanya 31 Aralık'ta bitiyor ve sonra %40 zam geliyor; o ay için kalan yer sayısı (gerçek veriden); tarih 24 saat ücretsiz tutulabiliyor; kapora sadece 1.000 TL (15 bin üstü 2.000), kalanı çekimden sonra. KURAL: Bir mesajda EN FAZLA BİR ikna unsuru (kalan yer VEYA kampanya bitişi VEYA 24 saat tutma VEYA kapora kolaylığı) — ikisini aynı mesajda kullanma. Müşteri sadece bilgi/fiyat sorduysa ilk cevapta ikna unsuru ekleme; bir unsuru yazışmada zaten söylediysen tekrar etme.
-- Rakip fiyatı / "pahalı" itirazı: ASLA cevapsız bırakma. Kibarca değeri anlat (ör. poz sınırı yok, tüm kareler teslim, sinematik kurgu farkı; "ucuz olanla aradaki fark çekim günü belli olur" gibi) ve uygun alternatif öner (bütçe kısıtlıysa 5.000 TL'lik fotoğraf paketi). Rakibi kötüleme. Müşteri tam gün paketi alıyorsa EKSTRA %10 indirimi ikna için kullanabilirsin. Bunun dışında müşteri yine de açıkça indirim/pazarlık isterse devret.
+- İtirazlarda (pahalı, düşüneyim, başka firmalara da bakıyoruz, eşime soracağım) anlayış göster, sonra kısa ve gerçek bir sebep ver: kampanya 31 Aralık'ta bitiyor ve sonra %40 zam geliyor; o ay için kalan yer sayısı (gerçek veriden); tarih 24 saat ücretsiz tutulabiliyor; kapora sadece 1.000 TL (toplam 15 bin ve üzeriyse 2.000), kalanı çekimden sonra. KURAL: Bir mesajda EN FAZLA BİR ikna unsuru (kalan yer VEYA kampanya bitişi VEYA 24 saat tutma VEYA kapora kolaylığı) — ikisini aynı mesajda kullanma. Müşteri sadece bilgi/fiyat sorduysa ilk cevapta ikna unsuru ekleme; bir unsuru yazışmada zaten söylediysen tekrar etme.
+- Rakip fiyatı / "pahalı" itirazı: ASLA cevapsız bırakma. Kibarca değeri anlat (ör. poz sınırı yok, tüm kareler teslim, sinematik kurgu farkı; "ucuz olanla aradaki fark çekim günü belli olur" gibi) ve uygun alternatif öner (bütçe kısıtlıysa 5.000 TL'lik fotoğraf paketi). Rakibi kötüleme. Müşteri tam gün paketi alıyorsa EKSTRA %10 indirimi ikna için kullanabilirsin. Bunun dışında ek indirim yok (aşağıdaki İNDİRİM POLİTİKASI'na göre kendin cevapla).
 - Sohbeti sürdürmek için yeri gelince tek bir doğal soru sor (ör. "Kına/gelin alma da düşünüyor musunuz?", "Klip sizin için önemli mi?"). AYNI SORUYU İKİNCİ KEZ SORMA; müşteri bir soruna cevap vermediyse tekrar etme. Her mesaj soruyla bitmek zorunda değil.
 - Müşteri sormadıysa ve karar aşamasında değilse "%40 zam / kampanya bitiyor / kalan yer" hatırlatması yapma; sadece bilgi sorana cevap ver. Kampanya bitişini anlatırken doğru söyle: "31 Aralık 2026'ya kadar, ama bir ayın kampanya yerleri dolarsa o ay için daha önce biter."
 - Bilgilerde olmayan süre/zaman sözü verme (ör. "kına klibi düğünden önce elinizde olur" deme; teslim ortalama 7 gün, kına genelde düğüne çok yakın).
 - Önce hesaplayıp sonra "şunu mu istersiniz" diye sorma; seçenek belirsizse ya önce sor ya da iki seçeneğin toplamını birlikte ver.
 - Rezervasyon teklifini ("tarihinizi kapora ile ayıralım mı?" ya da "24 saat ücretsiz tutayım mı?") sadece müşteri ilgili/sıcak olduğunda, doğru anda yap; yazışmada az önce teklif ettiysen tekrarlama. Her mesajı satış cümlesiyle bitirme.
-- Müşteri "düşüneyim / eşime soracağım / sonra dönerim" derse bir kez nazikçe "isterseniz tarihinizi 24 saat ücretsiz tutayım, haber vermeniz yeterli" de — bu aşamada kapora şartından BAHSETME. Müşteri telaş/baskı hissettiğini söylerse kaporayı bir daha açma, rahatlat ("Hiç acele yok"). Sonra saygı göster ve kapat; ısrar etme.
+- Müşteri "düşüneyim / eşime soracağım / sonra dönerim" derse bir kez nazikçe "isterseniz tarihinizi 24 saat ücretsiz tutayım, haber vermeniz yeterli" de — bu aşamada kaporayı vurgulama; müşteri sorarsa söyle. Müşteri telaş/baskı hissettiğini söylerse kaporayı bir daha açma, rahatlat ("Hiç acele yok"). Sonra saygı göster ve kapat; ısrar etme.
 - Konuşmada olmayan bir şeyi olmuş gibi anlatma (ör. göndermediğin teklif için "size gönderdiğimiz paketler" deme; geçmiş özetinde/yazışmada yoksa).
-- Müşteri geçmiş bir tarih söylerse (bugün ${new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long", year: "numeric" })}; bundan önceki bir tarih, ör. geçmiş bir yaz) ya da kayıttaki tarihle çelişen bir tarih verirse kibarca teyit et.
+- Müşteri geçmiş bir tarih söylerse (bugünün tarihi en alttaki güncel durum bölümünde; ondan önceki bir tarih, ör. geçmiş bir yaz) ya da kayıttaki tarihle çelişen bir tarih verirse kibarca teyit et.
 - Plato sorulursa sadece "2027 için anlaşmalı platomuz yok" de (ücreti ayrıca sorarsa: plato ücreti pakete dahil değil, platoya ödeniyor).
 - Asla yalan söyleme, olmayan kampanya/indirim/yer sayısı uydurma.
 
@@ -168,11 +164,34 @@ KISMİ DEVİR (ZORUNLU): Bilinen kuralları (kapora iade edilmez, taksit yok, ş
 - Müşteri sadece "teşekkürler / tamam / 👍" gibi kapanış yazdıysa ve sorusu yoksa — cevap gerekmez (ya da çok kısa "Rica ederiz, iyi günler 🤍" yazabilirsin; tercihen kısa cevap ver).
 
 Cevabını MUTLAKA yanit_ver aracıyla ver.`;
+
+/** Müşteriye özel, her istekte değişen kısım (önbelleğin ARKASINDA) */
+function dynamicPrompt(c: AiCouple, kontenjan: string, drone: number): string {
+  const h = hitapFor(c.name).hitap || "";
+  const today = new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return `# BU MÜŞTERİ VE GÜNCEL DURUM
+- Bugün: ${today}
+- Hitap: ${h || "(isim belirsiz — 'Merhaba' de, isim kullanma)"}
+- Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}
+- Geçmiş özeti: ${historyForAgent(c)}
+- 2027 KALAN YER (ay bazında): ${kontenjan}
+- Drone hediyesinden kalan: ${drone}`;
 }
 
 type Msg = { role: "user" | "assistant"; content: unknown };
 
-export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
+/** Son cevabın token kullanımı (maliyet takibi için; önbellekten okunanlar ayrı) */
+export type WaUsage = { input: number; cacheRead: number; cacheWrite: number; output: number; calls: number; usd: number };
+
+export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { usage?: WaUsage }> {
+  const usage: WaUsage = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0, calls: 0, usd: 0 };
+  const r = await generateInner(c, usage);
+  // Sonnet 5.5: girdi $2/M, önbellek okuma $0.10/M, önbellek yazma ~$2.5/M, çıktı $10/M
+  usage.usd = Math.round(((usage.input * 2 + usage.cacheRead * 0.1 + usage.cacheWrite * 2.5 + usage.output * 10) / 1e6) * 10000) / 10000;
+  return { ...r, usage };
+}
+
+async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult> {
   const { anthropicKey } = await readIntegrations();
   if (!anthropicKey) return { action: "skip", reason: "Yapay zekâ anahtarı ayarlı değil" };
 
@@ -226,19 +245,52 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
     },
   ];
 
+  // Önbellek: tools + sabit kurallar (aynı kaldıkça ucuz okunur); müşteriye özel kısım sonda
+  const system = [
+    { type: "text", text: STATIC_PROMPT, cache_control: { type: "ephemeral" } },
+    { type: "text", text: dynamicPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0) },
+  ];
   const messages: Msg[] = [{ role: "user", content: `WhatsApp yazışması (eskiden yeniye):\n${convo}\n\nMüşterinin son mesajına cevabını yanit_ver ile ver.` }];
+  const started = Date.now();
+  const DEADLINE_MS = 95_000; // route maxDuration 120 sn — öncesinde bitir
+  // Anthropic meşgul/aşırı yük (429, 5xx, 529) ya da bağlantı hatasında 2 kez daha dene
+  const callClaude = async () => {
+    let last: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const left = DEADLINE_MS - (Date.now() - started);
+      if (left < 8_000) break;
+      last = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        // effort medium: kısa WhatsApp cevapları için yeterli, düşünme maliyeti düşük
+        body: JSON.stringify({ model: MODEL, max_tokens: 6000, output_config: { effort: "medium" }, system, tools, messages }),
+        signal: AbortSignal.timeout(Math.min(45_000, left)),
+      }).catch(() => null);
+      if (last?.ok) return last;
+      const st = last?.status ?? 0;
+      if (st && st !== 429 && st < 500) return last; // 4xx: tekrar denemenin anlamı yok
+      const ra = Number(last?.headers.get("retry-after"));
+      await new Promise((r) => setTimeout(r, Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000, 10_000) : 2_000 * (attempt + 1)));
+    }
+    return last;
+  };
   for (let i = 0; i < 6; i++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: MODEL, max_tokens: 2500, system: systemPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0), tools, messages }),
-      signal: AbortSignal.timeout(45_000),
-    }).catch(() => null);
+    if (Date.now() - started > DEADLINE_MS) break;
+    const res = await callClaude();
     if (!res?.ok) return { action: "handoff", reason: `Yapay zekâ cevap üretemedi (${res?.status ?? "bağlantı"}) — lütfen siz dönün.` };
     const j = (await res.json()) as { content?: { type: string; id?: string; name?: string; input?: Record<string, unknown>; text?: string }[]; stop_reason?: string };
+    const u = (j as { usage?: { input_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number; output_tokens?: number } }).usage;
+    usage.calls++;
+    usage.input += u?.input_tokens ?? 0;
+    usage.cacheRead += u?.cache_read_input_tokens ?? 0;
+    usage.cacheWrite += u?.cache_creation_input_tokens ?? 0;
+    usage.output += u?.output_tokens ?? 0;
     const blocks = j.content ?? [];
+    if (j.stop_reason === "refusal") return { action: "handoff", reason: "Yapay zekâ bu mesaja cevap vermeyi reddetti — lütfen siz bakın." };
     const final = blocks.find((b) => b.type === "tool_use" && b.name === "yanit_ver");
-    if (final) {
+    const otherTools = blocks.some((b) => b.type === "tool_use" && b.name !== "yanit_ver");
+    // yanit_ver diğer araçlarla AYNI anda geldiyse (ör. takvime bakmadan "müsait" yazdıysa) kabul etme: önce araçları çalıştır
+    if (final && !otherTools) {
       const inp = final.input ?? {};
       const action = String(inp.action);
       const text = typeof inp.text === "string" ? inp.text.trim() : "";
@@ -269,6 +321,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       const r = /^\d{4}-\d{2}-\d{2}$/.test(d) ? await checkDate(d, cfg).catch(() => null) : null;
       results.push({ type: "tool_result", tool_use_id: call.id, content: r ? JSON.stringify({ tarih: r.dateLabel, musait: r.available, sebep: r.reason, ay_kalan: r.month.remaining, alternatifler: r.alternatives.map((a) => a.dateLabel), cumle: r.cevap }) : "Tarih anlaşılamadı" });
     }
+    if (final) results.push({ type: "tool_result", tool_use_id: final.id, content: "Önce yukarıdaki araç sonuçlarına bak, sonra cevabını yanit_ver ile yeniden ver." });
     messages.push({ role: "user", content: results });
   }
   return { action: "handoff", reason: "Yapay zekâ cevabı tamamlayamadı — lütfen siz dönün." };
