@@ -15,16 +15,18 @@ export async function POST(request: Request) {
   const eleven = str(body?.elevenlabsKey, 200);
   const metaToken = str(body?.metaAdsToken, 600);
   const metaAccount = str(body?.metaAdAccountId, 40);
+  const anthropic = str(body?.anthropicKey, 300);
   const cur = await readIntegrations();
   if (base && !/^https:\/\//.test(base)) return bad("panelHookBase https olmalı");
   if (metaAccount && !/^act_\d+$/.test(metaAccount)) return bad("metaAdAccountId act_… olmalı");
-  if (!base && !key && !eleven && !metaToken && !metaAccount) return bad("En az bir ayar gönderin");
+  if (!base && !key && !eleven && !metaToken && !metaAccount && !anthropic) return bad("En az bir ayar gönderin");
   await writeIntegrations({
     ...cur,
     ...(base && key ? { panelHookBase: base, panelHookKey: key } : {}),
     ...(eleven ? { elevenlabsKey: eleven } : {}),
     ...(metaToken ? { metaAdsToken: metaToken } : {}),
     ...(metaAccount ? { metaAdAccountId: metaAccount } : {}),
+    ...(anthropic ? { anthropicKey: anthropic } : {}),
   });
   return NextResponse.json({ ok: true });
 }

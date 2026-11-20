@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 const CHANNELS: AiMessageChannel[] = ["whatsapp", "sms", "dugun_com", "telegram"];
-const KINDS = ["welcome", "catalog", "follow_up", "reply", "other"] as const;
+const KINDS = ["welcome", "catalog", "follow_up", "reply", "other", "ai"] as const;
 const INTENTS: InboundIntent[] = ["stop", "booked_elsewhere", "not_interested", "thinking", "interested", "unknown"];
 
 export async function POST(request: Request, { params }: Ctx) {
@@ -56,6 +56,8 @@ export async function POST(request: Request, { params }: Ctx) {
   const decide = (c: AiCouple): { allowed: true } | { allowed: false; reason: string } => {
     const d =
       kind === "reply" || (kind === "welcome" && (channel === "dugun_com" || channel === "sms")) ||
+      // Yapay zekânın müşteriye cevabı (müşteri yazdı → her saatte cevap verilebilir; iptal/kayıp/rezervasyon hariç)
+      (kind === "ai" && !c.messagesPaused && !c.contactLocked && c.status !== "won" && c.status !== "lost") ||
       // Yeni talebe ilk karşılama WhatsApp'ı (gece gelen form): henüz aranmamış ve hiç yazılmamışsa saat kuralı yok
       (kind === "welcome" && channel === "whatsapp" && !c.messagesPaused && !c.contactLocked && c.status !== "won" && c.status !== "lost")
         ? c.contactLocked

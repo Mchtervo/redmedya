@@ -9,7 +9,7 @@ import { ChevronDown, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setFollowDays } from "@/lib/ai-couples/follow-days";
 
-export type Automation = { waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
+export type Automation = { waAiReply?: boolean; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
 
 let cache: Automation | null = null;
 const listeners = new Set<(a: Automation) => void>();
@@ -136,6 +136,20 @@ export function AdminAutomationSettings() {
                 <span className="block">Ortalama 2 dk&apos;lık görüşmeyle {f.callsPerDay} arama ≈ {f.callsPerDay * 2} dk Verimor + ElevenLabs.</span>
               </p>
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-emerald-900">🤖 WhatsApp&apos;ta yapay zekâ cevap versin</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-emerald-900/80">Müşteri WhatsApp&apos;tan yazınca ~1 dk içinde geçmişini ve takvimi bilerek cevap yazar. Kapora/ödeme, pazarlık, şikâyet ve emin olmadığı sorularda yazmaz, Telegram&apos;dan size devreder. Siz son 12 saatte o müşteriye yazdıysanız karışmaz.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm({ ...f, waAiReply: !(f.waAiReply ?? true) })}
+              className={cn("h-10 shrink-0 rounded-xl px-4 text-sm font-semibold", (f.waAiReply ?? true) ? "bg-emerald-600 text-white" : "border border-slate-300 bg-white text-slate-600")}
+            >
+              {(f.waAiReply ?? true) ? "Açık" : "Kapalı"}
+            </button>
           </div>
 
           <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">

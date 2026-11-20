@@ -117,6 +117,7 @@ function describeMsg(m: AiMessageRecord): string {
   const ch = CH[m.channel] ?? m.channel;
   if (m.direction === "in") return `📩 Çift yazdı (${ch})`;
   if (m.kind === "reply") return `✍️ Siz cevap verdiniz (${ch})`;
+  if (m.kind === "ai") return `🤖 Yapay zekâ cevap verdi (${ch})`;
   const t = m.text;
   if (t.startsWith("[PDF]")) return `📎 ${ch}'tan fiyat listesi (PDF) iletildi`;
   if (m.kind === "welcome" || m.channel === "sms" || m.channel === "dugun_com") return `👋 Karşılama mesajı gönderildi (${ch})`;

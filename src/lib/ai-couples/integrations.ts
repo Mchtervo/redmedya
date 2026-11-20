@@ -15,6 +15,8 @@ export type AiIntegrations = {
   /** Meta reklam hesabı okuma (ads_read) — reklam harcaması için */
   metaAdsToken?: string;
   metaAdAccountId?: string;
+  /** WhatsApp yapay zekâ cevabı (Anthropic) */
+  anthropicKey?: string;
 };
 
 export async function readIntegrations(): Promise<AiIntegrations> {

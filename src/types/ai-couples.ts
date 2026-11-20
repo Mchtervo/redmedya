@@ -58,7 +58,8 @@ export type AiMessageRecord = {
   at: string;
   channel: AiMessageChannel;
   direction: "out" | "in";
-  kind?: "welcome" | "catalog" | "follow_up" | "reply" | "other";
+  /** ai = WhatsApp'ta yapay zekânın verdiği otomatik cevap */
+  kind?: "welcome" | "catalog" | "follow_up" | "reply" | "other" | "ai";
   text: string;
 };
 
