@@ -219,6 +219,7 @@ function GradeBadge({ g, fresh }: { g: AiCoupleGrade; fresh?: boolean }) {
 
 export function AdminAiCouplesPanel() {
   const [data, setData] = useState<Payload | null>(null);
+  const [loadedAt, setLoadedAt] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
   const [stage, setStage] = useState<Stage | "all">("all");
@@ -236,7 +237,10 @@ export function AdminAiCouplesPanel() {
   const load = useCallback(() => {
     fetch("/api/admin/ai-couples")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: Payload | null) => setData(d))
+      .then((d: Payload | null) => {
+        setData(d);
+        setLoadedAt(Date.now());
+      })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, []);
@@ -264,9 +268,11 @@ export function AdminAiCouplesPanel() {
     );
   }, [couples, filter, stage, search]);
   const sorted = useMemo(() => {
-    const rank = (c: AiCouple) => (stageOf(c) === "needsReply" ? 0 : c.calls.at(-1)?.notes?.tarihTut && !c.contactLocked ? 1 : c.grade === "hot" ? 2 : 3);
+    // Son 48 saatte gelen talepler (form, Düğün.com, web) üst sıralarda — "yeni gelen ne oldu" hemen görünsün
+    const isNew = (c: AiCouple) => c.sourceRef !== "test" && loadedAt - Date.parse(c.leadAt ?? c.createdAt) < 48 * 3600_000 && !/eski talep|kampanyası/i.test(c.note ?? "");
+    const rank = (c: AiCouple) => (stageOf(c) === "needsReply" ? 0 : c.calls.at(-1)?.notes?.tarihTut && !c.contactLocked ? 1 : isNew(c) ? 2 : c.grade === "hot" ? 3 : 4);
     return [...visible].sort((a, b) => rank(a) - rank(b) || b.updatedAt.localeCompare(a.updatedAt));
-  }, [visible]);
+  }, [visible, loadedAt]);
   const PAGE = 10;
   const pgKey = `${filter}|${stage}|${search}`;
   const pages = Math.max(1, Math.ceil(sorted.length / PAGE));
