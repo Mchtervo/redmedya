@@ -9,6 +9,7 @@ import { Lightbulb, TrendingUp } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { AdminPanelHeader, AdminSection } from "@/components/admin/admin-panel-header";
 import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
+import { SourceScorecard } from "@/components/admin/admin-source-scorecard";
 import type { AiCouple, AiCoupleSource } from "@/types/ai-couples";
 import type { ReservationRecord } from "@/types/reservations";
 import {
@@ -149,6 +150,11 @@ export function AdminSalesAnalytics() {
           </div>
         ))}
       </div>
+
+      {/* Kaynak karnesi: adım adım sayı ve yüzde */}
+      <AdminSection title="Kaynak karnesi" description="Her kaynak için: kaç talep geldi, kaçı arandı, açtı, konuşuldu, WhatsApp gitti, cevap yazdı, rezervasyon yaptı · Instagram'da reklam maliyeti">
+        <SourceScorecard couples={data.list} since={sinceOf(p)} />
+      </AdminSection>
 
       {/* Öneriler */}
       <AdminSection title="Öneriler" description="Verilere göre otomatik çıkarılan yorumlar" icon={Lightbulb}>
