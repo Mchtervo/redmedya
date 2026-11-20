@@ -146,7 +146,8 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       const action = String(inp.action);
       const text = typeof inp.text === "string" ? inp.text.trim() : "";
       if (action === "send" && text) return { action: "send", text: text.slice(0, 1500) };
-      if (action === "skip") return { action: "skip", reason: String(inp.reason ?? "cevap gerekmiyor") };
+      if (action === "skip" || (action === "send" && !text)) return { action: "skip", reason: String(inp.reason ?? "cevap gerekmiyor") };
+      if (action !== "handoff") return { action: "skip", reason: "geçersiz karar" };
       return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? inp.draft.slice(0, 1500) : undefined };
     }
     const calls = blocks.filter((b) => b.type === "tool_use" && b.name === "tarih_kontrol");
