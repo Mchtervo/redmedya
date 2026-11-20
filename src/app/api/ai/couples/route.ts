@@ -8,6 +8,7 @@ import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { normalizePhone } from "@/lib/ai-couples/rules";
 import { ingestCouple, readCouples } from "@/lib/ai-couples/store";
 import { readAutomation } from "@/lib/ai-couples/automation";
+import { hitapFor } from "@/lib/ai-couples/hitap";
 import type { AiCoupleGrade, AiCoupleSource } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,8 @@ export async function GET(request: Request) {
   if (phone) list = list.filter((c) => c.phone === phone);
   if (q) list = list.filter((c) => c.name.toLocaleLowerCase("tr-TR").includes(q) || c.phone.includes(q.replace(/\D/g, "") || "§"));
   // automation: WhatsApp kampanyası (n8n K) günlük sınır ve bekleme süresini buradan okur
-  return NextResponse.json({ ok: true, couples: list.slice(0, 200), automation: await readAutomation() });
+  // hitap: "Ayşe Hanım" / "Mehmet Bey" — n8n WhatsApp mesajları bunu kullanır
+  return NextResponse.json({ ok: true, couples: list.slice(0, 200).map((c) => ({ ...c, hitap: hitapFor(c.name).hitap })), automation: await readAutomation() });
 }
 
 export async function POST(request: Request) {

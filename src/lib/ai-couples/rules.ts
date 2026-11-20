@@ -9,6 +9,7 @@
  *  5. Kontenjan rakamı her zaman GERÇEK sayıdır; azalmadıysa "azaldı" denmez.
  */
 import { isFollowCallDue } from "@/lib/ai-couples/followup";
+import { hitapFor } from "@/lib/ai-couples/hitap";
 import type {
   AiCallOutcome,
   AiCapacityInfo,
@@ -293,7 +294,7 @@ export function buildCatalogMessage(
   c: AiCouple,
   links: { packages: string; gallery: string; video?: string }
 ): string {
-  const hi = firstName(c.name) ? `Merhaba ${firstName(c.name)},` : "Merhaba,";
+  const hi = hitapFor(c.name).hitap ? `Merhaba ${hitapFor(c.name).hitap},` : "Merhaba,";
   const lines = [
     `${hi} RED MEDIA'dan yazıyoruz, görüşmemiz için teşekkür ederiz. 🤍`,
     "",
@@ -321,7 +322,7 @@ export function buildCatalogMessage(
  * Ay dolduysa kıtlık mesajı yerine dürüst bilgi.
  */
 export function buildFollowUpMessage(c: AiCouple, cap: AiCapacityInfo | null): string {
-  const hi = firstName(c.name) ? `Merhaba ${firstName(c.name)},` : "Merhaba,";
+  const hi = hitapFor(c.name).hitap ? `Merhaba ${hitapFor(c.name).hitap},` : "Merhaba,";
   if (cap && cap.remaining <= 0) {
     return `${hi} RED MEDIA'dan yazıyoruz. ${cap.monthLabel} için kontenjanımız doldu; farklı bir tarih düşünürseniz memnuniyetle yardımcı oluruz. 🤍`;
   }
