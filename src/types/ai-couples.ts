@@ -61,6 +61,8 @@ export type AiMessageRecord = {
   /** ai = WhatsApp'ta yapay zekânın verdiği otomatik cevap */
   kind?: "welcome" | "catalog" | "follow_up" | "reply" | "other" | "ai";
   text: string;
+  /** Yapay zekâ bu mesajla konuşmayı sahibine devretti (bekletme mesajı) */
+  handoff?: boolean;
 };
 
 export type AiTimelineEvent = {

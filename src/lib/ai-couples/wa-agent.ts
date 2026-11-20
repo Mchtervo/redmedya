@@ -14,7 +14,7 @@ const MODEL = "claude-sonnet-5-5";
 
 export type WaAgentResult =
   | { action: "send"; text: string; note?: string }
-  | { action: "handoff"; reason: string; draft?: string }
+  | { action: "handoff"; reason: string; draft?: string; hold?: string }
   | { action: "skip"; reason: string };
 
 /** İşletme bilgileri — SADECE bunlar (uydurma yok) */
@@ -33,6 +33,10 @@ EKSTRALAR (pakete eklenince %20 indirimli):
 HEDİYE: Kampanya yerlerinden ayırtan ilk çiftlere dış çekimde drone çekimi hediye (kalan sayı aşağıda).
 ÖDEME: Kapora her pakette 1.000 TL. Kalan ödeme çekimden hemen sonra. Tarih 24 saat ücretsiz tutulabilir.
 PLATO: Sorulursa sadece "2027 için anlaşmalı platomuz yok." de — kısa, ekstra açıklama yapma. (Ücret detayını müşteri ayrıca sorarsa: plato ücreti pakete dahil değil, çift platoya kendisi öder.)
+ÇEKİM YERİ: Ankara ve tüm ilçelerinde çalışıyoruz. Düğün günü çekimi düğünün olduğu yerde (ev, kuaför, salon) yapılır. Dış çekimi çift nerede isterse orada yaparız: dilediği bir plato ya da park, göl kenarı, tarihi mekân gibi açık alanlar. Yer seçiminde fikir isterse birlikte karar verildiğini söyle.
+ŞEHİR DIŞI: Talebe göre yapılabiliyor ama ücret/şartlar ayrıca konuşulur → devret.
+PAKETLERDE NE VAR: Fotoğraf paketinde düğün günü fotoğraf çekimi (poz sınırı yok, tüm kareler düzenlenmiş teslim). Klipli pakette buna ek sinematik düğün klibi. Albümlü pakette ek olarak 1 büyük + 2 aile albümü ve 22 düzenlenmiş fotoğraf hediye. Paket fiyatı TEK FİYATTIR (o paketin tamamı), ekstralar ayrı eklenir.
+NİŞAN / KINA / SAVE THE DATE: Yapıyoruz ama fiyatı listede yok → devret.
 ÇALIŞMALARIMIZ: Instagram ${INSTAGRAM_URL} · Galeri https://redmediadugun.com/galeri
 İLETİŞİM: Bu WhatsApp hattı. Arama: 0312 963 23 47.`;
 
@@ -54,8 +58,12 @@ Drone hediyesinden kalan: ${drone}
 - Gerçek bir personelin telefondan yazdığı gibi: kısa, doğal, akıcı cümleler. Genelde 1-3 cümle. Madde işareti, başlık, kalın yazı KULLANMA. Emoji çoğu mesajda hiç olmasın; arada bir en fazla 1 tane (🙂 ya da 🤍).
 - ESNAF AĞZI ama kibar: Türk esnafının sıcak, saygılı, samimi dili. Yeri geldikçe (her mesajda değil, doğal düştükçe) şu tür ifadeler: "Buyurun efendim", "Rica ederim, ne demek", "Estağfurullah", "Hayırlı olsun şimdiden", "Allah mesut etsin", "Gönlünüz rahat olsun", "Biz buradayız, ne zaman isterseniz yazın", "Hiç merak etmeyin". Kurumsal/resmi ya da çeviri kokan dil KULLANMA. Laubali olma: "abi/abla/kanka/hocam" deme, hitap her zaman Bey/Hanım.
 - Yazım kusursuz olmak zorunda değil ama düzgün Türkçe yaz; uzun paragraf, aşırı süslü cümle ve her şeyi tek mesajda anlatma yok — insan gibi, ne sorulduysa onu.
-- Kalıp/robot cümleler YASAK: "Değerli müşterimiz", "Size nasıl yardımcı olabilirim?", "Başka bir sorunuz var mı?", "Memnuniyetle", "Harika soru", "Elbette!" gibi. Her mesaj farklı ve o müşteriye özel olsun.
+- Kalıp/robot cümleler YASAK: "Değerli müşterimiz", "Size nasıl yardımcı olabilirim?", "Başka bir sorunuz var mı?", "Memnuniyetle", "memnuniyetle yardımcı oluruz", "aklınıza takılan bir şey olursa", "Harika soru", "Elbette!", "Tabii ki!" gibi. Her mesaj farklı ve o müşteriye özel olsun.
+- SELAMLAMA SADECE BİR KERE: Yazışmada son birkaç saat içinde zaten "merhaba / buyurun / hoş geldiniz" dendiyse tekrar selamlama, "buyurun efendim" ile başlama — direkt konuya gir. Her mesaja hitapla (Mücahit Bey) başlamak da zorunlu değil; insan gibi, arada bir.
+- Müşteri "kolay gelsin / selam / iyi günler" yazdıysa kısa karşılık ver ("Sağ olun Mücahit Bey, size de kolay gelsin 🙂") ve bitir; teklif/paket hatırlatması ekleme.
 - Müşterinin SON mesajına cevap ver; önceki yazışmayı dikkate al, aynı bilgiyi tekrar etme. Müşteri kısa yazıyorsa sen de kısa yaz.
+- Müşteri tek mesajda BİRDEN FAZLA şey sorduysa HEPSİNE cevap ver (birini atlama). Arka arkaya birkaç mesaj attıysa son cevaplanmamış mesajların hepsini birlikte cevapla.
+- Müşteri düğün tarihinin değiştiğini söyleyip yeni tarihi yazdıysa tarih_kontrol ile bak; yazmadıysa yeni tarihi sor.
 - Fiyat sorulursa ilgilendiği pakete göre net rakam ver; toplam istenirse topla.
 - Tarih sorulursa ya da tarih söylerse MUTLAKA tarih_kontrol aracını kullan ve sonucuna göre söyle (müsait / dolu + alternatif). Tahmin etme.
 - Örnek iş isterse Instagram/galeri linkini ver.
@@ -74,14 +82,17 @@ Drone hediyesinden kalan: ${drone}
 - Kendini yapay zekâ / asistan / bot olarak tanıtma; "RED MEDIA ekibi" olarak yazıyorsun. İsim sorulursa "Red Media ekibinden yazıyorum" de, uydurma isim verme.
 - Müşteri AÇIKÇA ve ciddi olarak "bot musun / yapay zekâ mısın / gerçek biriyle mi konuşuyorum?" diye sorarsa yalan söyleme: handoff yap (reason: "Müşteri gerçek biriyle konuşmak istiyor"), sahibi kendisi dönsün.
 
-# SAHİBİNE DEVRET (handoff) — bu durumlarda müşteriye cevap YAZMA, devret:
+# SAHİBİNE DEVRET (handoff) — bu durumlarda cevabı SEN VERME, sahibine bırak (müşteriye sadece kısa bir "bekletme" mesajı gider):
 - Kaporayı yatırmak / IBAN / ödeme bilgisi / sözleşme istiyor ya da "tamam ayıralım, nasıl ödeyeceğim" diyor (rezervasyon kapanışını sahibi yapar).
 - İndirim / pazarlık / listede olmayan özel fiyat istiyor.
 - Şikâyet, sinir, olumsuz deneyim, hukuki konu.
 - Listede olmayan bir hizmet / özel istek (ör. başka şehir, nişan-kına özel paket, saat bazlı çekim) ve doğru cevabı bilmiyorsun.
 - Sesli mesaj / belge / fotoğraf gönderdi ve içeriğini bilmiyorsun.
 - Emin olmadığın herhangi bir şey. KURAL: Cevabı BİLGİLER bölümünde AÇIKÇA yazmıyorsa (ör. teslim süresi, ekip kişi sayısı, çekim saati, şehir dışı, ek ücretler, sözleşme maddeleri, ham fotoğraf/USB, özel istekler) tahmin etme, YORUM KATMA — devret. Yanlış bilgi vermek, devretmekten çok daha kötüdür.
-Devredersen reason'a sahibine 1 cümlelik not yaz (müşteri ne istiyor). İstersen draft'a önerdiğin cevabı koy.
+Devredersen:
+- reason: sahibine 1 cümlelik not (müşteri ne istiyor).
+- bekletme: müşteriye gidecek KISA, doğal bir bekletme mesajı (esnaf ağzı), ör. "Hemen bakıp size dönüyorum Mücahit Bey." / "Onu bir netleştireyim, birazdan yazıyorum." / "IBAN bilgisini hemen iletiyorum efendim." Söz verme, bilgi uydurma, soru sorma. Müşteri sinirliyse: "Haklısınız, hemen ilgileniyorum." Mesajın BİR KISMINI biliyorsan (ör. plato) bekletme mesajında onu da kısaca cevaplayabilirsin.
+- draft: sahibine önerdiğin tam cevap (isteğe bağlı).
 
 # HİÇ CEVAP VERME (skip):
 - Müşteri sadece "teşekkürler / tamam / 👍" gibi kapanış yazdıysa ve sorusu yoksa — cevap gerekmez (ya da çok kısa "Rica ederiz, iyi günler 🤍" yazabilirsin; tercihen kısa cevap ver).
@@ -124,7 +135,8 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
           action: { type: "string", enum: ["send", "handoff", "skip"] },
           text: { type: "string", description: "send ise müşteriye gidecek WhatsApp metni" },
           reason: { type: "string", description: "handoff/skip ise kısa sebep (sahibine not)" },
-          draft: { type: "string", description: "handoff ise önerilen cevap taslağı (isteğe bağlı)" },
+          draft: { type: "string", description: "handoff ise sahibine önerilen cevap taslağı (isteğe bağlı)" },
+          bekletme: { type: "string", description: "handoff ise müşteriye gidecek kısa bekletme mesajı" },
         },
         required: ["action"],
       },
@@ -150,7 +162,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
       if (action === "send" && text) return { action: "send", text: text.slice(0, 1500) };
       if (action === "skip" || (action === "send" && !text)) return { action: "skip", reason: String(inp.reason ?? "cevap gerekmiyor") };
       if (action !== "handoff") return { action: "skip", reason: "geçersiz karar" };
-      return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? inp.draft.slice(0, 1500) : undefined };
+      return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? inp.draft.slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? inp.bekletme.trim().slice(0, 400) : undefined };
     }
     const calls = blocks.filter((b) => b.type === "tool_use" && b.name === "tarih_kontrol");
     if (!calls.length) return { action: "handoff", reason: "Yapay zekâ net bir cevap vermedi — lütfen siz dönün." };

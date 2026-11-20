@@ -46,6 +46,12 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const now = Date.now();
   const ownerRecent = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && !m.text.startsWith("[✓") && now - Date.parse(m.at) < 12 * 3600_000);
+  // Yapay zekâ konuşmayı sahibine devrettiyse (bekletme mesajı gitti), sahibi yazana kadar 2 saat karışma
+  const lastHandoff = [...c.messages].reverse().find((m) => m.kind === "ai" && m.handoff);
+  if (lastHandoff && now - Date.parse(lastHandoff.at) < 2 * 3600_000) {
+    const ownerAfter = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && Date.parse(m.at) > Date.parse(lastHandoff.at));
+    if (!ownerAfter) return NextResponse.json({ ok: true, action: "handoff", reason: "Devrettiğiniz müşteri tekrar yazdı — hâlâ sizi bekliyor.", quiet: true, name: c.name, phone: c.phone });
+  }
   if (ownerRecent && !testPhone) return skip("sahibi son 12 saatte bu müşteriyle yazışmış — yapay zekâ karışmıyor");
 
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });

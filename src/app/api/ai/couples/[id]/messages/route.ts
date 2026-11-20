@@ -79,7 +79,7 @@ export async function POST(request: Request, { params }: Ctx) {
   // Telefondan yazılan mesaj geriye dönük işlenirken asıl saati korunur (en fazla 7 gün geriye)
   const atMs = fromPhone && typeof body.at === "string" ? Date.parse(body.at) : NaN;
   const at = Number.isFinite(atMs) && atMs <= now.getTime() && now.getTime() - atMs < 7 * 86_400_000 ? new Date(atMs) : now;
-  const msg: AiMessageRecord = { id: randomUUID(), at: at.toISOString(), channel, direction, kind, text };
+  const msg: AiMessageRecord = { id: randomUUID(), at: at.toISOString(), channel, direction, kind, text, ...(kind === "ai" && body.handoff === true ? { handoff: true } : {}) };
   const intentRaw = str(body.intent) as InboundIntent | undefined;
   const intent: InboundIntent =
     direction === "in" ? (intentRaw && INTENTS.includes(intentRaw) ? intentRaw : detectInboundIntent(text)) : "unknown";
