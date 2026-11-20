@@ -149,7 +149,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult> {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: MODEL, max_tokens: 700, system: systemPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0), tools, messages }),
+      body: JSON.stringify({ model: MODEL, max_tokens: 2500, system: systemPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0), tools, messages }),
       signal: AbortSignal.timeout(45_000),
     }).catch(() => null);
     if (!res?.ok) return { action: "handoff", reason: `Yapay zekâ cevap üretemedi (${res?.status ?? "bağlantı"}) — lütfen siz dönün.` };
