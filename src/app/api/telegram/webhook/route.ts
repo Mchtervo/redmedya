@@ -9,12 +9,25 @@ import { verifyAiApiRequest, verifyTelegramSecret } from "@/lib/ai-couples/auth"
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { answerCommand } from "@/lib/ai-couples/telegram-commands";
 import { transcribeTelegramVoice, voiceToCommand } from "@/lib/ai-couples/voice";
+import { approveDraft, findDraftByTgMessage, tgApi } from "@/lib/ai-couples/wa-drafts";
 
 export const dynamic = "force-dynamic";
 
 type TgUpdate = {
-  message?: { chat?: { id?: number | string }; text?: string; voice?: unknown };
+  message?: { chat?: { id?: number | string }; text?: string; voice?: unknown; reply_to_message?: { message_id?: number } };
+  callback_query?: { id: string; data?: string; message?: { message_id?: number; chat?: { id?: number | string } } };
 };
+
+/** Öneri onayı: düğmeye basıldı ya da öneriye "gönder" yazıldı */
+const APPROVE_RE = /^\s*(g[öo]nder|onay|onayl[ıi]yorum|evet\s*g[öo]nder|tamam\s*g[öo]nder)(\s|[.!]|$)/i;
+async function runApproval(draftId: string, chatId: string | number, tgMessageId?: number) {
+  const r = await approveDraft(draftId);
+  if (tgMessageId && (r.ok || r.draft?.status === "sent")) {
+    // düğmeyi kaldır (ikinci kez basılmasın)
+    await tgApi("editMessageReplyMarkup", { chat_id: chatId, message_id: tgMessageId, reply_markup: { inline_keyboard: [] } });
+  }
+  await tgApi("sendMessage", { chat_id: chatId, text: r.msg, ...(tgMessageId ? { reply_to_message_id: tgMessageId } : {}) });
+}
 
 export async function POST(request: Request) {
   // 1) n8n (sesli komut yazıya çevrilmiş): Bearer AI anahtarı + { text }
@@ -33,9 +46,38 @@ export async function POST(request: Request) {
   reloadPersistentEnv();
   const allowedChat = process.env.TELEGRAM_CHAT_ID?.trim();
   const update = (await request.json().catch(() => null)) as TgUpdate | null;
-  const chatId = update?.message?.chat?.id;
   // Telegram'a her zaman 200 dön (aksi halde aynı güncellemeyi tekrar yollar).
+  const cb = update?.callback_query;
+  if (cb) {
+    const cbChat = cb.message?.chat?.id;
+    if (!allowedChat || String(cbChat) !== allowedChat) {
+      await tgApi("answerCallbackQuery", { callback_query_id: cb.id });
+      return NextResponse.json({ ok: true });
+    }
+    if (cb.data?.startsWith("wad:")) {
+      await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: "Gönderiliyor…" });
+      await runApproval(cb.data.slice(4), allowedChat, cb.message?.message_id).catch(async () => {
+        await sendTelegramMessage("⚠️ Gönderim sırasında hata oldu, lütfen kendiniz yazın.").catch(() => false);
+      });
+    } else {
+      await tgApi("answerCallbackQuery", { callback_query_id: cb.id });
+    }
+    return NextResponse.json({ ok: true });
+  }
+  const chatId = update?.message?.chat?.id;
   if (!allowedChat || String(chatId) !== allowedChat) return NextResponse.json({ ok: true });
+
+  // Öneri mesajına "gönder / onaylıyorum" diye cevap yazıldı
+  const replyTo = update?.message?.reply_to_message?.message_id;
+  if (replyTo && update?.message?.text && APPROVE_RE.test(update.message.text)) {
+    const d = await findDraftByTgMessage(replyTo);
+    if (d) {
+      await runApproval(d.id, allowedChat, replyTo).catch(async () => {
+        await sendTelegramMessage("⚠️ Gönderim sırasında hata oldu, lütfen kendiniz yazın.").catch(() => false);
+      });
+      return NextResponse.json({ ok: true });
+    }
+  }
 
   const voice = update?.message?.voice as { file_id?: string } | undefined;
   if (voice?.file_id) {

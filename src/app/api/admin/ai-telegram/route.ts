@@ -50,7 +50,7 @@ async function connectWebhook(token: string) {
   const data = await tg<boolean>(token, "setWebhook", {
     url: `${siteConfig.url}/api/telegram/webhook`,
     secret_token: getTelegramWebhookSecret(),
-    allowed_updates: ["message"],
+    allowed_updates: ["message", "callback_query"],
     drop_pending_updates: true,
   });
   return data?.ok ? null : (data?.description ?? "Telegram'a ulaşılamadı");
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     // Sohbet kimliği: bota en son yazan özel sohbet (webhook açıkken getUpdates çalışmaz).
     await tg(newToken, "deleteWebhook", { drop_pending_updates: false });
     const updates = await tg<Array<{ message?: { chat?: { id?: number; type?: string } } }>>(newToken, "getUpdates", {
-      allowed_updates: ["message"],
+      allowed_updates: ["message", "callback_query"],
     });
     const chat = [...(updates?.result ?? [])].reverse().find((u) => u.message?.chat?.type === "private")?.message?.chat;
 
