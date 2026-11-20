@@ -70,7 +70,7 @@ export function buildDepositReminder(c: AiCouple): string {
   const d = dateText(c);
   return (
     `${greet(c)} RedMedia ekibindenim. Dünkü görüşmemizde ${d ? d + " için " : ""}tarihinizi ${DEPOSIT_MARK}.` +
-    ` Tarihinizi kesinleştirmek için 1.000 TL kapora yeterli; kalan ödeme çekimden sonra yapılıyor. Ödeme bilgilerini hemen buradan iletebiliriz.` +
+    ` Tarihinizi kesinleştirmek için 1.000 TL kapora yeterli; kalan ödeme çekimden hemen sonra alınıyor. Ödeme bilgilerini hemen buradan iletebiliriz.` +
     ` Sormak istediğiniz bir şey varsa yazmanız yeterli.`
   );
 }

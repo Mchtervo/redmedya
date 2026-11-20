@@ -120,7 +120,7 @@ export function buildFollowMsg(c: AiCouple, cap: AiCapacityInfo | null, now: Dat
   return (
     `${greet(c)} RedMedia ekibindenim. ${a ? contactText(a, now) : "Geçenlerde görüşmüştük"}; ${d ? d + " tarihindeki düğününüz için " : ""}${ne}.` +
     `${yer} Tarihler hızla doluyor ve kampanyamız 31 Aralık'ta bitiyor; sonrasında fiyatlara %40 zam geliyor.` +
-    ` Tarihiniz dolmadan, ${FU_MSG_MARK} rezervasyonunuzu şimdiden yapalım mı? 1.000 TL kapora ile tarihiniz sabitleniyor, kalan ödeme çekim günü.`
+    ` Tarihiniz dolmadan, ${FU_MSG_MARK} rezervasyonunuzu şimdiden yapalım mı? 1.000 TL kapora ile tarihiniz sabitleniyor, kalan ödeme çekimden hemen sonra.`
   );
 }
 
