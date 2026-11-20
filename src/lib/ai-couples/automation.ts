@@ -25,12 +25,14 @@ export type AiAutomation = {
   fuMsgDay: number;
   fuCallDay: number;
   fuLastDay: number;
-  /** Müşteri WhatsApp'tan yazınca yapay zekâ cevap versin mi */
-  waAiReply: boolean;
+  /** WhatsApp yapay zekâ cevabı: kapalı / sadece test numaraları / herkese */
+  waAiMode: "off" | "test" | "all";
+  /** Test modunda cevap verilecek numaralar (son 10 hane karşılaştırılır) */
+  waAiTestPhones: string[];
   updatedAt?: string;
 };
 
-export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2, fuMsgDay: FOLLOW_DAYS_DEFAULT.msg, fuCallDay: FOLLOW_DAYS_DEFAULT.call, fuLastDay: FOLLOW_DAYS_DEFAULT.last, waAiReply: true };
+export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2, fuMsgDay: FOLLOW_DAYS_DEFAULT.msg, fuCallDay: FOLLOW_DAYS_DEFAULT.call, fuLastDay: FOLLOW_DAYS_DEFAULT.last, waAiMode: "test", waAiTestPhones: [] };
 
 export const AUTOMATION_LIMITS = {
   waPerDay: [1, 100],
@@ -58,7 +60,10 @@ export function cleanAutomation(input: Partial<Record<keyof AiAutomation, unknow
     fuMsgDay: clamp(input.fuMsgDay, AUTOMATION_LIMITS.fuMsgDay, cur.fuMsgDay),
     fuCallDay: clamp(input.fuCallDay, AUTOMATION_LIMITS.fuCallDay, cur.fuCallDay),
     fuLastDay: clamp(input.fuLastDay, AUTOMATION_LIMITS.fuLastDay, cur.fuLastDay),
-    waAiReply: typeof input.waAiReply === "boolean" ? input.waAiReply : cur.waAiReply,
+    waAiMode: input.waAiMode === "off" || input.waAiMode === "test" || input.waAiMode === "all" ? input.waAiMode : cur.waAiMode,
+    waAiTestPhones: Array.isArray(input.waAiTestPhones)
+      ? [...new Set(input.waAiTestPhones.flatMap((p) => String(p).split(/[,;\n]/)).map((p) => p.replace(/\D/g, "").slice(-10)).filter((p) => p.length === 10))].slice(0, 10)
+      : cur.waAiTestPhones,
   };
   if (next.waGapMax < next.waGapMin) next.waGapMax = next.waGapMin;
   if (next.fuCallDay < next.fuMsgDay) next.fuCallDay = next.fuMsgDay;

@@ -9,7 +9,7 @@ import { ChevronDown, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setFollowDays } from "@/lib/ai-couples/follow-days";
 
-export type Automation = { waAiReply?: boolean; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
+export type Automation = { waAiMode?: "off" | "test" | "all"; waAiTestPhones?: string[]; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
 
 let cache: Automation | null = null;
 const listeners = new Set<(a: Automation) => void>();
@@ -138,18 +138,44 @@ export function AdminAutomationSettings() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-emerald-900">🤖 WhatsApp&apos;ta yapay zekâ cevap versin</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-emerald-900/80">Müşteri WhatsApp&apos;tan yazınca ~1 dk içinde geçmişini ve takvimi bilerek cevap yazar. Kapora/ödeme, pazarlık, şikâyet ve emin olmadığı sorularda yazmaz, Telegram&apos;dan size devreder. Siz son 12 saatte o müşteriye yazdıysanız karışmaz.</p>
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+            <p className="text-sm font-semibold text-emerald-900">🤖 WhatsApp&apos;ta yapay zekâ cevap versin</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-emerald-900/80">
+              Müşteri WhatsApp&apos;tan yazınca ~1 dk içinde geçmişini ve takvimi bilerek cevap yazar. Kapora/ödeme, pazarlık, şikâyet ve emin olmadığı her soruda yazmaz, Telegram&apos;dan size devreder. Siz son 12 saatte o müşteriye yazdıysanız karışmaz.
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {([
+                ["off", "Kapalı"],
+                ["test", "Sadece test"],
+                ["all", "Herkese açık"],
+              ] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setForm({ ...f, waAiMode: v })}
+                  className={cn(
+                    "h-10 rounded-xl px-2 text-sm font-semibold",
+                    (f.waAiMode ?? "test") === v ? (v === "all" ? "bg-emerald-600 text-white" : v === "test" ? "bg-amber-500 text-white" : "bg-slate-700 text-white") : "border border-slate-300 bg-white text-slate-600",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setForm({ ...f, waAiReply: !(f.waAiReply ?? true) })}
-              className={cn("h-10 shrink-0 rounded-xl px-4 text-sm font-semibold", (f.waAiReply ?? true) ? "bg-emerald-600 text-white" : "border border-slate-300 bg-white text-slate-600")}
-            >
-              {(f.waAiReply ?? true) ? "Açık" : "Kapalı"}
-            </button>
+            <label className="mt-3 block text-xs font-semibold text-slate-700">
+              Test numaraları (virgülle ayırın)
+              <input
+                type="text"
+                inputMode="tel"
+                placeholder="0532 123 45 67, 0555 …"
+                value={(f.waAiTestPhones ?? []).join(", ")}
+                onChange={(e) => setForm({ ...f, waAiTestPhones: [e.target.value] })}
+                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-900 outline-none focus:border-indigo-300 sm:text-sm"
+              />
+            </label>
+            <p className="mt-2 text-[11px] leading-relaxed text-emerald-900/80">
+              &quot;Sadece test&quot; seçiliyken yalnızca bu numaralara cevap verir (numara panelde kayıtlı olmalı). Test bitince &quot;Herkese açık&quot; yapıp kaydedin.
+            </p>
           </div>
 
           <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">

@@ -30,8 +30,10 @@ export async function POST(request: Request, { params }: Ctx) {
   const skip = (reason: string) => NextResponse.json({ ok: true, action: "skip", reason });
 
   const auto = await readAutomation();
-  if (!auto.waAiReply) return skip("WhatsApp yapay zekâ cevabı kapalı");
-  if (c.sourceRef === "test" || /^TEST\s/.test(c.name)) return skip("test kaydı");
+  if (auto.waAiMode === "off") return skip("WhatsApp yapay zekâ cevabı kapalı");
+  const testPhone = auto.waAiTestPhones.includes(c.phone.replace(/\D/g, "").slice(-10));
+  if (auto.waAiMode === "test" && !testPhone) return skip("şimdilik sadece test numaralarına cevap veriliyor");
+  if ((c.sourceRef === "test" || /^TEST\s/.test(c.name)) && !testPhone) return skip("test kaydı");
   if (c.contactLocked) return skip("kara liste");
   if (c.status === "won") return NextResponse.json({ ok: true, action: "handoff", reason: "Rezervasyon yapmış müşteri yazdı — siz dönün." });
   if (c.status === "lost") return skip("ilgilenmiyor / kaybedildi");
@@ -44,7 +46,7 @@ export async function POST(request: Request, { params }: Ctx) {
 
   const now = Date.now();
   const ownerRecent = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && !m.text.startsWith("[✓") && now - Date.parse(m.at) < 12 * 3600_000);
-  if (ownerRecent) return skip("sahibi son 12 saatte bu müşteriyle yazışmış — yapay zekâ karışmıyor");
+  if (ownerRecent && !testPhone) return skip("sahibi son 12 saatte bu müşteriyle yazışmış — yapay zekâ karışmıyor");
 
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
   const aiToday = c.messages.filter((m) => m.kind === "ai" && new Date(m.at).toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" }) === today).length;
