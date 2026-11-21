@@ -22,7 +22,7 @@ import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
-import { createIgDraftAndNotify } from "@/lib/ai-couples/wa-drafts";
+import { createIgDraftAndNotify, draftTexts, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
 const MODEL = "claude-sonnet-5-5";
@@ -197,6 +197,8 @@ export async function onIgInbound(igsid: string, text: string, at: string): Prom
 export async function onIgEcho(igsid: string, text: string, at: string, appId: string | undefined): Promise<void> {
   const { appId: ours } = await metaCfg();
   if (appId && ours && String(appId) === String(ours)) return; // bizim gönderdiğimiz (zaten kayıtlı)
+  // Onaylanıp gönderilen öneri de yankı olarak döner (app_id her zaman gelmiyor) → metni bir öneriyle aynıysa SAHİBİNİN yazısı değildir
+  if ((await draftTexts().catch(() => new Set<string>())).has(normDraftText(text))) return;
   await patchThread(igsid, (x) => ({ ...x, ownerUntil: new Date(Date.now() + 12 * 3600_000).toISOString(), messages: [...x.messages, { at, dir: "out" as const, text: text.slice(0, 2000), by: "owner" as const }] }));
   await syncToCouple(igsid);
 }
@@ -476,4 +478,17 @@ export async function threadsOverview(limit = 60) {
       updatedAt: t.updatedAt,
     };
   });
+}
+
+/** Sahibi beklemesini kaldır (yanlışlıkla "sahibi yazdı" sanılan yankılar silinir) */
+export async function resumeThread(igsid: string): Promise<boolean> {
+  const drafts = await draftTexts().catch(() => new Set<string>());
+  const t = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (!t) return false;
+  await patchThread(igsid, (x) => ({
+    ...x,
+    ownerUntil: undefined,
+    messages: x.messages.filter((m, i, arr) => !(m.by === "owner" && drafts.has(normDraftText(m.text)) && arr.some((o) => o.by === "ai" && normDraftText(o.text) === normDraftText(m.text)))).map((m) => (m.by === "owner" && drafts.has(normDraftText(m.text)) ? { ...m, by: "ai" as const } : m)),
+  }));
+  return true;
 }
