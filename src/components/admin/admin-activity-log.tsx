@@ -43,7 +43,7 @@ type Ev = {
 
 const SONUC_LABEL = { ...OUTCOME_LABEL, hung_up: "Açtı, görüşme tamamlanmadı", wrong_number: "Yanlış numara" } as Record<string, string>;
 const SRC: Record<string, string> = { dugun_com: "Düğün.com", meta_form: "Instagram/Facebook", web: "Web", manual: "Elle" };
-const CH: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram" };
+const CH: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram", instagram: "Instagram" };
 const TONE: Record<Ev["tone"], string> = {
   green: "bg-emerald-50 text-emerald-600",
   orange: "bg-orange-50 text-orange-600",

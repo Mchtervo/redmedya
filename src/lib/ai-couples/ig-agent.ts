@@ -14,7 +14,10 @@ import { dataPath } from "@/lib/data-dir";
 import { readIntegrations } from "@/lib/ai-couples/integrations";
 import { readAutomation } from "@/lib/ai-couples/automation";
 import { checkDate, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
-import { ingestCouple } from "@/lib/ai-couples/store";
+import { randomUUID } from "crypto";
+import { findCoupleByPhone, getCouple, ingestCouple, mutateCouple } from "@/lib/ai-couples/store";
+import { historyForAgent } from "@/lib/ai-couples/journey";
+import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
@@ -36,9 +39,40 @@ export type IgThread = {
   coupleId?: string;
   ownerUntil?: string;
   test?: boolean;
+  /** Paneldeki çifte kaç mesaj aktarıldı (ortak geçmiş: sesli asistan + WhatsApp da görsün) */
+  synced?: number;
   createdAt: string;
   updatedAt: string;
 };
+
+/* ---------------- ortak geçmiş: Instagram ↔ paneldeki çift ---------------- */
+
+/** Sohbet bir çifte bağlıysa, henüz aktarılmamış Instagram mesajlarını çiftin geçmişine yaz */
+async function syncToCouple(igsid: string): Promise<void> {
+  const t = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (!t?.coupleId) return;
+  const from = t.synced ?? 0;
+  const fresh = t.messages.slice(from);
+  if (!fresh.length) return;
+  await mutateCouple(t.coupleId, (c) => {
+    const have = new Set(c.messages.filter((m) => m.channel === "instagram").map((m) => `${m.at}|${m.text}`));
+    const add: AiMessageRecord[] = fresh
+      .filter((m) => !have.has(`${m.at}|${m.text}`))
+      .map((m) => ({ id: randomUUID(), at: m.at, channel: "instagram" as const, direction: m.dir, kind: m.dir === "in" ? ("reply" as const) : m.by === "owner" ? ("reply" as const) : ("ai" as const), text: m.text }));
+    if (!add.length) return c;
+    return { ...c, messages: [...c.messages, ...add].sort((a, b) => a.at.localeCompare(b.at)), updatedAt: new Date().toISOString() };
+  }).catch(() => null);
+  await patchThread(igsid, (x) => ({ ...x, synced: x.messages.length }));
+}
+
+/** Numarası bilinen sohbeti paneldeki çifte bağla (varsa) */
+async function linkByPhone(igsid: string, phone: string): Promise<AiCouple | undefined> {
+  const c = await findCoupleByPhone(phone);
+  if (!c) return undefined;
+  await patchThread(igsid, (x) => ({ ...x, coupleId: c.id, weddingDate: x.weddingDate ?? c.weddingDate }));
+  await syncToCouple(igsid);
+  return c;
+}
 
 /* ---------------- kayıt ---------------- */
 
@@ -121,6 +155,7 @@ export async function onIgInbound(igsid: string, text: string, at: string): Prom
     const p = await fetchProfile(igsid);
     t = await patchThread(igsid, (x) => ({ ...x, username: p.username, name: p.name }));
   }
+  if (t.coupleId) await syncToCouple(igsid);
   const isTest = !!t.username && auto.igAiTestUsers.includes(t.username);
   if (auto.igAiMode === "test" && !isTest) return; // test modunda sadece test hesabı
   if (isTest && !t.test) await patchThread(igsid, (x) => ({ ...x, test: true }));
@@ -140,6 +175,7 @@ export async function onIgEcho(igsid: string, text: string, at: string, appId: s
   const { appId: ours } = await metaCfg();
   if (appId && ours && String(appId) === String(ours)) return; // bizim gönderdiğimiz (zaten kayıtlı)
   await patchThread(igsid, (x) => ({ ...x, ownerUntil: new Date(Date.now() + 12 * 3600_000).toISOString(), messages: [...x.messages, { at, dir: "out" as const, text: text.slice(0, 2000), by: "owner" as const }] }));
+  await syncToCouple(igsid);
 }
 
 /* ---------------- cevap ---------------- */
@@ -230,6 +266,7 @@ export async function approveIgSend(igsid: string, text: string, draftAt: string
   const s = await sendIgMessage(igsid, text);
   if (!s.ok) return { ok: false, msg: `⚠️ Gönderilemedi (${s.error}). Tekrar basabilir ya da Instagram'dan kendiniz yazabilirsiniz.` };
   await patchThread(igsid, (x) => ({ ...x, messages: [...x.messages, { at: new Date().toISOString(), dir: "out" as const, text, by: "ai" as const }] }));
+  await syncToCouple(igsid);
   return { ok: true, msg: "" };
 }
 
@@ -237,7 +274,9 @@ async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   const convo = t.messages.slice(-8).map((m) => `${m.dir === "in" ? "👤" : "🤖"} ${m.text.slice(0, 160)}`).join("\n");
   if (isTest) {
-    await sendTelegramMessage(`🧪 IG TEST — NUMARA ALINDI: ${displayPhone(phone)} ${who}${t.weddingDate ? ` · düğün ${t.weddingDate}` : ""}\n(Test modu: panele eklenmedi, aranmayacak. Gerçek modda panele eklenip sesli asistan arayacaktı.)\n\n${convo}`).catch(() => false);
+    // Test: yeni çift açılmaz, aranmaz; ama numara panelde varsa o kayda bağlanır (ortak hafıza testi)
+    const linked = await linkByPhone(t.igsid, phone);
+    await sendTelegramMessage(`🧪 IG TEST — NUMARA ALINDI: ${displayPhone(phone)} ${who}${t.weddingDate ? ` · düğün ${t.weddingDate}` : ""}\n(Test modu: yeni kayıt açılmadı, aranmayacak.${linked ? ` Bu numara panelde "${linked.name}" olarak var — Instagram yazışması onun geçmişine eklendi, asistanlar artık bunu da biliyor.` : ""})\n\n${convo}`).catch(() => false);
     return;
   }
   const r = await ingestCouple({
@@ -248,7 +287,10 @@ async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
     sourceRef: `igdm:${t.igsid}`,
     note: `Instagram DM${t.username ? ` (@${t.username})` : ""}: ${t.messages.filter((m) => m.dir === "in").map((m) => m.text).join(" / ").slice(0, 600)}`,
   });
-  if (r.ok) await patchThread(t.igsid, (x) => ({ ...x, coupleId: r.couple.id }));
+  if (r.ok) {
+    await patchThread(t.igsid, (x) => ({ ...x, coupleId: r.couple.id }));
+    await syncToCouple(t.igsid); // Instagram yazışması çiftin geçmişine → sesli asistan aradığında bunu bilir
+  }
   await sendTelegramMessage(
     r.ok
       ? `📸 INSTAGRAM DM'DEN YENİ ÇİFT: ${r.couple.name} - ${displayPhone(phone)}${t.weddingDate ? ` - Düğün: ${t.weddingDate}` : ""}\n${r.couple.contactLocked ? "🚫 Kara listede — aranmayacak." : r.created ? "➡️ Panele eklendi; sesli asistan arayacak, ardından WhatsApp." : "ℹ️ Bu numara panelde zaten vardı."}\n\n${convo}`
@@ -265,12 +307,24 @@ async function generate(t: IgThread): Promise<Gen> {
   const months = await upcomingCapacity(14, cfg);
   const kontenjan = months.map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : `${m.remaining}/${m.total}`}`).join(" | ");
   const today = new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  // Bu kişi panelde varsa: telefon görüşmeleri + WhatsApp yazışmaları (aynı müşteriyi her kanalda tanı)
+  const couple = t.coupleId ? await getCouple(t.coupleId).catch(() => undefined) : undefined;
+  const waLast = couple
+    ? couple.messages
+        .filter((m) => m.channel === "whatsapp" && !m.text.startsWith("["))
+        .slice(-6)
+        .map((m) => `${m.direction === "in" ? "Müşteri" : "Biz"}: ${m.text.replace(/\s+/g, " ").slice(0, 160)}`)
+        .join(" | ")
+    : "";
+  const known = couple
+    ? `\n- BU MÜŞTERİYİ TANIYORUZ (panelde: ${couple.name}${couple.weddingDate ? `, düğün ${couple.weddingDate}` : ""}). Telefon/WhatsApp geçmişi: ${historyForAgent(couple)}\n  Son WhatsApp yazışması: ${waLast || "yok"}\n  → Bunları bildiğini doğal şekilde belli et ("geçen gün konuşmuştuk" gibi); aynı şeyleri baştan sorma/anlatma, daha önce söylenenle çelişme.`
+    : "";
   const state = `# DURUM
 - Bugün: ${today}
 - Instagram adı: ${t.name ?? "bilinmiyor"} (kullanıcı adı @${t.username ?? "?"})
 - Düğün tarihi: ${t.weddingDate ?? "henüz öğrenilmedi"}
 - Telefon numarası: ${t.phone ? `ALINDI (${displayPhone(t.phone)}) — artık isteme, teşekkür et` : "henüz alınmadı"}
-- Kalan yer (ay: kalan/toplam): ${kontenjan}`;
+- Kalan yer (ay: kalan/toplam): ${kontenjan}${known}`;
   const convo = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : m.by === "owner" ? "EKİP (insan)" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
   const tools = [
     { name: "tarih_kontrol", description: "Bir düğün tarihinin müsaitliğini ve o ayın kalan yerini getirir.", input_schema: { type: "object", properties: { date: { type: "string", description: "YYYY-AA-GG" } }, required: ["date"] } },

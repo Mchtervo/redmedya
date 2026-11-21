@@ -51,7 +51,7 @@ export type AiCallRecord = {
   };
 };
 
-export type AiMessageChannel = "whatsapp" | "sms" | "dugun_com" | "telegram";
+export type AiMessageChannel = "whatsapp" | "sms" | "dugun_com" | "telegram" | "instagram";
 
 export type AiMessageRecord = {
   id: string;

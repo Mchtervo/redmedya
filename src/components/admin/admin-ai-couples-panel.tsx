@@ -104,7 +104,7 @@ const field =
   "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-300";
 const label = "text-[11px] font-semibold tracking-[0.08em] text-slate-500 uppercase";
 
-const CHANNEL_LABEL: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram" };
+const CHANNEL_LABEL: Record<string, string> = { whatsapp: "WhatsApp", sms: "SMS", dugun_com: "Düğün.com", telegram: "Telegram", instagram: "Instagram" };
 const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 
 /** "2027-01-17" → "17 Ocak 2027"; tarih yoksa nottaki "Düğün: Şubat 2027" bilgisini gösterir. */

@@ -431,7 +431,7 @@ export function isSecondCallDue(c: AiCouple, now: Date): boolean {
   const last = new Date(c.calls[n - 1].at).getTime();
   if (c.inboundAt && Date.parse(c.inboundAt) > first) return false; // geri aradı, sahibi konuştu → tekrar arama yok
   const after = c.messages.filter((m) => new Date(m.at).getTime() >= first);
-  if (after.some((m) => m.direction === "in")) return false;                 // WhatsApp'tan döndü → arama yok
+  if (after.some((m) => m.direction === "in" && m.channel !== "instagram")) return false;                 // WhatsApp'tan döndü → arama yok
   if (!after.some((m) => m.direction === "out" && m.channel === "whatsapp")) return false; // önce WhatsApp gitmiş olmalı
   if (!isGoodCallWindow(now)) return false;
   if (n === 1) return now.getTime() - last >= SECOND_CALL_GAP_MS;

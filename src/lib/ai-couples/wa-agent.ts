@@ -202,10 +202,10 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
   const kontenjan = months.filter((m) => m.monthKey.startsWith("2027")).map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : m.remaining}`).join(" | ") || "bilinmiyor";
 
   const convo = c.messages
-    .filter((m) => m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms")
+    .filter((m) => m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms" || m.channel === "instagram")
     .slice(-24)
     .map((m) => {
-      const who = m.direction === "in" ? "MÜŞTERİ" : m.kind === "reply" ? "EKİP (insan)" : "BİZ";
+      const who = (m.channel === "instagram" ? "[Instagram DM] " : "") + (m.direction === "in" ? "MÜŞTERİ" : m.kind === "reply" ? "EKİP (insan)" : "BİZ");
       const t = new Date(m.at).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
       return `[${t}] ${who}: ${m.text.replace(/\s+/g, " ").slice(0, 700)}`;
     })

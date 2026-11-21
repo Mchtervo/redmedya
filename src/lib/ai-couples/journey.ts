@@ -144,6 +144,9 @@ export function historyForAgent(c: AiCouple): string {
           ? `${callNo}. arama açılmadı.`
           : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}${e.x.summary ? ` — özet: ${e.x.summary.split("\n")[0].replace(/\s+/g, " ").slice(0, 220)}` : ""}.`
       );
+    } else if (e.m.channel === "instagram") {
+      const t = e.m.text.replace(/\s+/g, " ").slice(0, 140);
+      parts.push(e.m.direction === "in" ? `Çift Instagram DM'den yazdı: "${t}".` : `Instagram DM'den cevap yazdık: "${t}".`);
     } else if (e.m.direction === "out" && e.m.kind === "welcome" && e.m.channel === "whatsapp") {
       parts.push(e.m.text.startsWith("Tamamdır") ? "Çift WhatsApp'tan bu saati yazdı, onay mesajı gönderildi." : "WhatsApp'tan \"sizi 0312'li numaramızdan arayacağız\" haberi gönderildi.");
     } else if (e.m.direction === "out" && e.m.kind === "ai") {
