@@ -108,7 +108,7 @@ function cleanDate(d?: string): string | undefined {
  */
 /** Instagram süslü yazı tipleri (𝓢𝓮𝓻𝓱𝓪𝓽, 𝐀𝐲𝐬̧𝐞…) → normal harf; mesajlarda / aramada düzgün görünsün */
 export function cleanName(raw: string | undefined | null): string {
-  return (raw ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, " ").trim().slice(0, 120);
+  return (raw ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF\uFE0F]/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/[✨💫⭐🌸🦋💍❤️🤍]/gu, "").replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
 export function ingestCouple(input: IngestInput, now = new Date()): Promise<IngestResult> {

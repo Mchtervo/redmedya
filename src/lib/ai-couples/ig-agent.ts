@@ -15,7 +15,7 @@ import { readIntegrations } from "@/lib/ai-couples/integrations";
 import { readAutomation } from "@/lib/ai-couples/automation";
 import { checkDate, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
 import { randomUUID } from "crypto";
-import { findCoupleByPhone, getCouple, ingestCouple, mutateCouple } from "@/lib/ai-couples/store";
+import { cleanName, findCoupleByPhone, getCouple, ingestCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
@@ -151,7 +151,7 @@ async function fetchProfile(igsid: string): Promise<{ username?: string; name?: 
   if (!token) return {};
   const r = await fetch(`${G}/${igsid}?fields=name,username&access_token=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
   const j = (await r?.json().catch(() => null)) as { name?: string; username?: string } | null;
-  return { username: j?.username?.toLowerCase(), name: j?.name };
+  return { username: j?.username?.toLowerCase(), name: j?.name ? cleanName(j.name) || undefined : undefined };
 }
 
 export async function sendIgMessage(igsid: string, text: string): Promise<{ ok: boolean; error?: string }> {
@@ -216,7 +216,7 @@ TEK AMACIN: Çifti sıcak karşılamak ve ${CALL_NUMBER} numaralı hattımızdan
 AKIŞ — her aşamada ZORUNLU olanlar (bunları atlama):
 1) İLK CEVAP: "Merhabalar, öncelikle hayırlı olsun 🤍" + (müşteri bir şey sorduysa kısa cevap) + ÇEKİM TARİHİNİ sor ("Çekim yaptırmak istediğiniz tarihi öğrenebilir miyim?"). Fiyat sorduysa paketleri fiyat düşüşüyle kısaca ver (aşağıdaki FİYAT SÖYLEME kuralı) ve yine tarihi sor.
 2) TARİH GELİNCE (ya da "belli değil" derse) — bu mesajda ŞUNLARIN HEPSİ olacak, kısa ve akıcı 2-3 cümlede:
-   a) Tarih verdiyse tarih_kontrol ile bak; "Her ay sadece 10 çift alıyoruz, [ay] için X yer kaldı" (GERÇEK sayı). Tarih yoksa: "Her ay sadece 10 çift alıyoruz, çoğu ayda son 3-4 yer kaldı".
+   a) Tarih verdiyse tarih_kontrol ile bak; kalan yer 5 ve altındaysa "Her ay sadece 10 çift alıyoruz, [ay] için X yer kaldı" (GERÇEK sayı); daha fazlaysa sayı verme, "Her ay sadece 10 çift alıyoruz, kampanya yerleri sınırlı" de. Tarih yoksa: "Her ay sadece 10 çift alıyoruz, çoğu ayda son 3-4 yer kaldı".
    b) "Bu son yerlerden ayırtanlara dış çekimde drone çekimi hediye, üstelik fiyatlarımıza %40 zam henüz yansımadı."
    c) NUMARA iste: "Size özel fiyatı ve detayları anlatalım, WhatsApp / telefon numaranızı yazar mısınız? ${CALL_NUMBER}'den dönelim."
 3) NUMARA GELİNCE: teşekkür et; müşteri WhatsApp istediyse saat SORMA, "Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍" de; istemediyse ve arama saati bilinmiyorsa "Sizi hangi saatte aramamız uygun olur?" diye sor; biliniyorsa onayla. Numara alındıktan sonra bir daha numara isteme.
@@ -564,7 +564,7 @@ export async function importConversation(igsid: string, draft = true): Promise<{
     const have = new Set(x.messages.map((m) => `${m.dir}|${m.text}|${m.at.slice(0, 16)}`));
     const fresh = msgs.filter((m) => !have.has(`${m.dir}|${m.text}|${m.at.slice(0, 16)}`));
     added = fresh.length;
-    return { ...x, username: x.username ?? me?.username?.toLowerCase(), name: x.name ?? me?.name, messages: [...x.messages, ...fresh].sort((a, b) => a.at.localeCompare(b.at)) };
+    return { ...x, username: x.username ?? me?.username?.toLowerCase(), name: x.name ?? (me?.name ? cleanName(me.name) || undefined : undefined), messages: [...x.messages, ...fresh].sort((a, b) => a.at.localeCompare(b.at)) };
   });
   if (!t.name) {
     const p = await fetchProfile(igsid);
