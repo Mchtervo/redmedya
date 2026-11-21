@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { readIntegrations, writeIntegrations } from "@/lib/ai-couples/integrations";
+import { cleanAutomation, readAutomation, writeAutomation } from "@/lib/ai-couples/automation";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,11 @@ export async function POST(request: Request) {
   const denied = requireAiApi(request);
   if (denied) return denied;
   const body = await readJson(request);
+  // Instagram asistanı modu / test hesapları (otomasyon ayarına yazılır)
+  if (body && (body.igAiMode !== undefined || body.igAiTestUsers !== undefined) && Object.keys(body).every((k) => k === "igAiMode" || k === "igAiTestUsers")) {
+    const saved = await writeAutomation(cleanAutomation({ igAiMode: body.igAiMode, igAiTestUsers: body.igAiTestUsers }, await readAutomation()));
+    return NextResponse.json({ ok: true, igAiMode: saved.igAiMode, igAiTestUsers: saved.igAiTestUsers });
+  }
   const base = str(body?.panelHookBase, 300);
   const key = str(body?.panelHookKey, 200);
   const eleven = str(body?.elevenlabsKey, 200);
