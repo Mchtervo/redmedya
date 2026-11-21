@@ -455,7 +455,7 @@ async function generate(t: IgThread): Promise<Gen> {
           evre: { type: "string", enum: Object.keys(IG_STAGES), description: "Bu cevaptan SONRA konuşmanın geldiği aşama" },
           ozet: { type: "string", description: "Sahibi için gidişatın TEK cümlelik özeti (baştan anlatma; şu an nerede: ne istedi, ne verildi, sırada ne var). Örn: 'Temmuz 2027 için yazdı, fiyat verildi, numara vermedi, DM'den devam ediyor.'" },
         },
-        required: ["text"],
+        required: ["text", "evre", "ozet"],
       },
     },
   ];

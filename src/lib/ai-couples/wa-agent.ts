@@ -251,7 +251,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
           sahibine_not: { type: "string", description: "send ise sahibinin MUTLAKA bilmesi gereken bir şey olduysa (ör. müşteri tarihi 24 saat tutmamızı kabul etti, paket seçti) 1 cümle" },
           ozet: { type: "string", description: "Sahibi için gidişatın TEK cümlelik özeti — baştan anlatma, şu an nerede: ne istedi, ne verildi, sırada ne var. Örn: '14 Ağustos için fotoğraf+klip istedi, 9.000 TL + gelin alma önerildi, kapora bekleniyor.'" },
         },
-        required: ["action"],
+        required: ["action", "ozet"],
       },
     },
   ];
