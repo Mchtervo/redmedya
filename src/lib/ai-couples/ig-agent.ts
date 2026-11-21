@@ -19,6 +19,7 @@ import { findCoupleByPhone, getCouple, ingestCouple, mutateCouple } from "@/lib/
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
+import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
 import { createIgDraftAndNotify } from "@/lib/ai-couples/wa-drafts";
@@ -41,6 +42,8 @@ export type IgThread = {
   test?: boolean;
   /** Paneldeki çifte kaç mesaj aktarıldı (ortak geçmiş: sesli asistan + WhatsApp da görsün) */
   synced?: number;
+  /** Müşterinin aranmak istediği saat (ISO) — sesli asistan o saatte arar */
+  callAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -190,7 +193,7 @@ AKIŞ (sırayla, her mesajda sadece bir adım):
    - "2027 için kaçırılmayacak bir fırsatımız var, fiyatlarımıza henüz %40 zam yansımadı" (erken rezervasyonda bugünkü fiyattan sabitleniyor).
    - Tarih verdiyse ÖNCE tarih_kontrol aracıyla bak ve GERÇEK kontenjanı söyle: "Her ay sadece 10 çift alıyoruz, [ay] için X yerimiz kaldı". O gün doluysa dürüstçe söyle, alternatif günleri sun. Tarih yoksa rakam verme, genel söyle: "her ay sadece 10 çift alıyoruz, yerler hızlı doluyor".
    - Aynı mesajda numarayı iste: "Detaylı bilgi ve size özel fiyat için ${CALL_NUMBER} numaralı hattımızdan sizi arayalım, uygunsa numaranızı yazar mısınız?" (kendi cümlelerinle, doğal).
-3) Numara alındıysa (aşağıda yazar): teşekkür et, "en kısa sürede ${CALL_NUMBER}'ten arayacağız, numarayı kaydedebilirsiniz" de. Artık tekrar numara isteme; sorusu varsa kısaca cevapla.
+3) Numara alındıysa (aşağıda yazar): teşekkür et ve arama saati henüz bilinmiyorsa SOR: "Sizi hangi saatte aramamız uygun olur?" gibi (bir kez sor). Saat belliyse (aşağıda yazar) onayla: "Tamamdır, [o saat] civarı ${CALL_NUMBER}'ten arıyoruz, numarayı kaydedebilirsiniz 😊". "Fark etmez / hemen" derse "o zaman en kısa sürede arıyoruz" de. Artık tekrar numara isteme; sorusu varsa kısaca cevapla.
 4) Numara vermek istemezse ya da "buradan yazalım / buradan devam edelim / arama olmasın" derse: SORUN DEĞİL, DM'den devam et ve tam bir satışçı gibi ilgilen — fiyatları ve paketleri (aşağıdaki bilgilerden) net söyle, fiyat listesini at (https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf), tarihini takvimden kontrol et, kaporayla tarihi tutmayı teklif et. Bir daha numara isteme (en fazla çok sonra, doğal bir anda "isterseniz bir arayalım, 2 dakikada anlatırız" diyebilirsin).
 
 ÜSLUP — EN ÖNEMLİ KISIM (yapay zekâ olduğu ASLA belli olmayacak):
@@ -236,10 +239,22 @@ async function replyThread(igsid: string): Promise<void> {
   let t = t0;
   if (newPhone) t = await patchThread(igsid, (x) => ({ ...x, phone: newPhone }));
 
+  // Aranmak istediği saati yakala ("akşam 7 gibi", "yarın öğlen") — numara yazılan mesajdaki rakamlar saat sanılmasın
+  let newCallAt: string | null = null;
+  if (t.phone && !t.callAt) {
+    const recent = t.messages.slice(-3).filter((x) => x.dir === "in").map((x) => x.text).join(" ").replace(/(\+?90|0)?\s*5\d{2}[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}/g, " ");
+    const when = parseCallbackTime(recent, new Date());
+    if (when && when.getTime() > Date.now() + 5 * 60_000 && when.getTime() < Date.now() + 14 * 86400_000) {
+      newCallAt = when.toISOString();
+      t = await patchThread(igsid, (x) => ({ ...x, callAt: newCallAt! }));
+    }
+  }
+
   const r = await generate(t);
   if (r.date) t = await patchThread(igsid, (x) => ({ ...x, weddingDate: r.date }));
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   if (newPhone) await onPhoneCaptured(t, newPhone, isTest);
+  if (newCallAt) await applyCallTime(igsid, newCallAt, isTest);
 
   // HİÇBİR CEVAP KENDİLİĞİNDEN GİTMEZ: Telegram'a "✅ Gönder" düğmesiyle öneri olarak gider, sahibi onaylarsa gönderilir
   const lastIn = t.messages.filter((x) => x.dir === "in").slice(-3).map((x) => x.text).join(" / ");
@@ -252,6 +267,32 @@ async function replyThread(igsid: string): Promise<void> {
   } else {
     await sendTelegramMessage(`👤 INSTAGRAM — SİZ DÖNÜN: ${who}\n💬 ${lastIn.slice(0, 500)}\n(Asistan cevap öneremedi.)`).catch(() => false);
   }
+}
+
+/** Müşterinin istediği arama saatini paneldeki çifte yaz → sesli asistan o saat gelmeden aramaz, gelince arar */
+async function applyCallTime(igsid: string, callAt: string, isTest: boolean): Promise<void> {
+  const t = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (!t) return;
+  const label = new Date(callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
+  if (isTest || !t.coupleId) {
+    await sendTelegramMessage(`🧪 IG TEST — ARAMA SAATİ: ${label} ${who}\n(Test modu: arama kurulmadı. Gerçek modda sesli asistan bu saatte arayacaktı.)`).catch(() => false);
+    return;
+  }
+  const now = new Date().toISOString();
+  await mutateCouple(t.coupleId, (c) =>
+    c.contactLocked || c.status === "won" || c.status === "lost"
+      ? c
+      : {
+          ...c,
+          callbackRequested: true,
+          callbackAt: callAt,
+          busyRetries: 0,
+          timeline: [...c.timeline, { at: now, type: "callback", text: `Tekrar arama zamanı: ${label} (Instagram DM'den saat verdi)` }],
+          updatedAt: now,
+        },
+  ).catch(() => null);
+  await sendTelegramMessage(`⏰ Instagram'dan gelen ${t.name || who} ${label} civarında aranmak istedi — sesli asistan o saatte arayacak.`).catch(() => false);
 }
 
 /** Sahibi Telegram'dan "Gönder"e bastı → kontrol et ve Instagram'dan gönder */
@@ -324,6 +365,7 @@ async function generate(t: IgThread): Promise<Gen> {
 - Instagram adı: ${t.name ?? "bilinmiyor"} (kullanıcı adı @${t.username ?? "?"})
 - Düğün tarihi: ${t.weddingDate ?? "henüz öğrenilmedi"}
 - Telefon numarası: ${t.phone ? `ALINDI (${displayPhone(t.phone)}) — artık isteme, teşekkür et` : "henüz alınmadı"}
+- Arama saati: ${t.callAt ? `BELLİ — ${new Date(t.callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} (onayla, tekrar sorma)` : t.phone ? "henüz bilinmiyor — bir kez sor" : "-"}
 - Kalan yer (ay: kalan/toplam): ${kontenjan}${known}`;
   const convo = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : m.by === "owner" ? "EKİP (insan)" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
   const tools = [
