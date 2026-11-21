@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
 import { AI_EVENTS, applyEvent, lockCouple, type AiEvent } from "@/lib/ai-couples/rules";
-import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
+import { cleanName, getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import type { AiCoupleGrade } from "@/types/ai-couples";
 import { selamFor } from "@/lib/ai-couples/hitap";
 
@@ -42,6 +42,9 @@ export async function PATCH(request: Request, { params }: Ctx) {
     if (grade === "blacklist") next = lockCouple(next, str(body.reason, 200) ?? "n8n tarafından kara listeye alındı", now);
     else if (grade && !next.contactLocked) next = { ...next, grade, updatedAt: now.toISOString() };
     if (note) next = { ...next, note, updatedAt: now.toISOString() };
+    // İsim düzeltme (süslü yazı tipi / yanlış yazım)
+    const newName = cleanName(str(body.name, 120));
+    if (newName && newName !== next.name) next = { ...next, name: newName, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: `İsim düzeltildi: ${next.name} → ${newName}` }], updatedAt: now.toISOString() };
     // Test kaydı işareti: sayılara girmez, otomatik aranmaz / yazılmaz
     if (typeof body.markTest === "boolean") {
       next = body.markTest

@@ -106,12 +106,17 @@ function cleanDate(d?: string): string | undefined {
  * Yeni talebi ekler. Aynı telefon varsa yeni kayıt AÇMAZ; eksik bilgileri
  * tamamlar ve zaman çizelgesine not düşer. Kara listedeki kayıt asla açılmaz.
  */
+/** Instagram süslü yazı tipleri (𝓢𝓮𝓻𝓱𝓪𝓽, 𝐀𝐲𝐬̧𝐞…) → normal harf; mesajlarda / aramada düzgün görünsün */
+export function cleanName(raw: string | undefined | null): string {
+  return (raw ?? "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
 export function ingestCouple(input: IngestInput, now = new Date()): Promise<IngestResult> {
   const phone = normalizePhone(input.phone);
   if (!phone) return Promise.resolve({ ok: false, error: "Geçersiz telefon numarası" });
   const at = now.toISOString();
   const weddingDate = cleanDate(input.weddingDate);
-  const name = input.name?.trim().slice(0, 120) || "İsimsiz çift";
+  const name = cleanName(input.name) || "İsimsiz çift";
 
   return withCouplesLock(async () => {
     const list = await readCouples();
