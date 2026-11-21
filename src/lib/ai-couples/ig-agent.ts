@@ -515,3 +515,41 @@ export async function redoThread(igsid: string): Promise<number> {
   await replyThread(igsid);
   return n;
 }
+
+/**
+ * Meta'daki sohbet geçmişini içeri al (webhook kurulmadan önce gelen mesajlar / eski konuşma hafızası).
+ * Var olan kayıtla birleştirir (aynı saat + metin tekrar eklenmez). Son mesaj müşteriden ve 23 saatten yeniyse öneri hazırlar.
+ */
+export async function importConversation(igsid: string, draft = true): Promise<{ added: number; username?: string; drafted: boolean }> {
+  const { token, pageId } = await metaCfg();
+  if (!token || !pageId) return { added: 0, drafted: false };
+  const u = `${G}/${pageId}/conversations?platform=instagram&user_id=${igsid}&fields=participants,messages.limit(30){message,from,created_time}&access_token=${encodeURIComponent(token)}`;
+  const j = (await (await fetch(u, { signal: AbortSignal.timeout(15000) })).json().catch(() => null)) as {
+    data?: { participants?: { data?: { id: string; username?: string; name?: string }[] }; messages?: { data?: { message?: string; from?: { id?: string }; created_time?: string }[] } }[];
+  } | null;
+  const conv = j?.data?.[0];
+  if (!conv) return { added: 0, drafted: false };
+  const me = conv.participants?.data?.find((p) => p.id === igsid);
+  const msgs: IgMsg[] = (conv.messages?.data ?? [])
+    .filter((m) => m.created_time)
+    .map((m) => ({ at: new Date(m.created_time!).toISOString(), dir: m.from?.id === igsid ? ("in" as const) : ("out" as const), text: (m.message || "[görsel / ek]").slice(0, 2000), ...(m.from?.id === igsid ? {} : { by: "owner" as const }) }));
+  let added = 0;
+  const t = await patchThread(igsid, (x) => {
+    const have = new Set(x.messages.map((m) => `${m.dir}|${m.text}|${m.at.slice(0, 16)}`));
+    const fresh = msgs.filter((m) => !have.has(`${m.dir}|${m.text}|${m.at.slice(0, 16)}`));
+    added = fresh.length;
+    return { ...x, username: x.username ?? me?.username?.toLowerCase(), name: x.name ?? me?.name, messages: [...x.messages, ...fresh].sort((a, b) => a.at.localeCompare(b.at)) };
+  });
+  if (!t.name) {
+    const p = await fetchProfile(igsid);
+    if (p.name || p.username) await patchThread(igsid, (x) => ({ ...x, name: x.name ?? p.name, username: x.username ?? p.username }));
+  }
+  if (t.coupleId) await syncToCouple(igsid);
+  const last = t.messages.at(-1);
+  let drafted = false;
+  if (draft && last?.dir === "in" && Date.now() - Date.parse(last.at) < 23 * 3600_000 && !(await hasPendingDraft(`ig:${igsid}`, last.at))) {
+    await replyThread(igsid);
+    drafted = true;
+  }
+  return { added, username: t.username, drafted };
+}
