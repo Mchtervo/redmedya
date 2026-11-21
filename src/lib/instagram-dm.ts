@@ -27,7 +27,7 @@ const G = "https://graph.facebook.com/v21.0";
  * Meta incelemesi (App Review) bitmeden zaten yalnız uygulama rolü olanlara gider.
  */
 export const IG_DM_MOD: "kapali" | "test" | "herkes" = "test";
-export const IG_DM_TEST: string[] = ["_mchtervo"];
+export const IG_DM_TEST: string[] = [];
 
 export const ARAMA_HATTI = "0312 963 23 47";
 
