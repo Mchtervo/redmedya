@@ -5,8 +5,8 @@
 import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad, readJson, str } from "@/lib/ai-couples/http";
-import { normalizePhone } from "@/lib/ai-couples/rules";
-import { ingestCouple, readCouples } from "@/lib/ai-couples/store";
+import { displayPhone, normalizePhone } from "@/lib/ai-couples/rules";
+import { cleanName, ingestCouple, mutateCouple, readCouples } from "@/lib/ai-couples/store";
 import { readAutomation } from "@/lib/ai-couples/automation";
 import { hitapFor } from "@/lib/ai-couples/hitap";
 import { resolveLid, shouldAlertLid } from "@/lib/ai-couples/wa-lid";
@@ -41,6 +41,18 @@ export async function GET(request: Request) {
   if (grade && GRADES.includes(grade)) list = list.filter((c) => c.grade === grade);
   if (phone) list = list.filter((c) => c.phone === phone);
   if (q) list = list.filter((c) => c.name.toLocaleLowerCase("tr-TR").includes(q) || c.phone.includes(q.replace(/\D/g, "") || "§"));
+  // WhatsApp'tan DOĞRUDAN yazan yeni kişi (reklamdaki / sitedeki numara): panelde yoksa ekle → asistan ona da öneri hazırlar.
+  // Durum "görüşüldü" başlar: kendisi WhatsApp'ı seçti, otomatik aranmaz / karşılama mesajı gitmez.
+  if (phone && !list.length && url.searchParams.get("create") === "1") {
+    const push = cleanName(url.searchParams.get("push")).replace(/^[.\-_\s]+$/, "");
+    const text = (url.searchParams.get("text") ?? "").replace(/\s+/g, " ").slice(0, 300);
+    const r = await ingestCouple({ name: push || "WhatsApp müşterisi", phone, source: "web", sourceRef: "wa-direct", note: `WhatsApp'tan doğrudan yazdı (reklam / site numarası): "${text}"` });
+    if (r.ok) {
+      const c = r.created ? ((await mutateCouple(r.couple.id, (x) => ({ ...x, status: x.status === "new" ? "contacted" : x.status }))) ?? r.couple) : r.couple;
+      if (r.created) await sendTelegramMessage(`📩 YENİ KİŞİ WhatsApp'tan doğrudan yazdı (reklam / site): ${c.name} - ${displayPhone(phone)}\n💬 ${text}\n➡️ Panele eklendi; asistan cevap önerisi hazırlıyor.`).catch(() => false);
+      return NextResponse.json({ ok: true, couples: [{ ...c, hitap: hitapFor(c.name).hitap }], created: r.created });
+    }
+  }
   // automation: WhatsApp kampanyası (n8n K) günlük sınır ve bekleme süresini buradan okur
   // hitap: "Ayşe Hanım" / "Mehmet Bey" — n8n WhatsApp mesajları bunu kullanır
   return NextResponse.json({ ok: true, couples: list.slice(0, 200).map((c) => ({ ...c, hitap: hitapFor(c.name).hitap })), automation: await readAutomation() });
