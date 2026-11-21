@@ -185,15 +185,16 @@ type Msg = { role: "user" | "assistant"; content: unknown };
 /** Son cevabın token kullanımı (maliyet takibi için; önbellekten okunanlar ayrı) */
 export type WaUsage = { input: number; cacheRead: number; cacheWrite: number; output: number; calls: number; usd: number };
 
-export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { usage?: WaUsage }> {
+/** ekTalimat: kanal farkı vb. (ör. Instagram DM) — önbelleğin arkasına eklenir */
+export async function generateWaReply(c: AiCouple, ekTalimat?: string): Promise<WaAgentResult & { usage?: WaUsage }> {
   const usage: WaUsage = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0, calls: 0, usd: 0 };
-  const r = await generateInner(c, usage);
+  const r = await generateInner(c, usage, ekTalimat);
   // Sonnet 5.5: girdi $2/M, önbellek okuma $0.10/M, önbellek yazma ~$2.5/M, çıktı $10/M
   usage.usd = Math.round(((usage.input * 2 + usage.cacheRead * 0.1 + usage.cacheWrite * 2.5 + usage.output * 10) / 1e6) * 10000) / 10000;
   return { ...r, usage };
 }
 
-async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult> {
+async function generateInner(c: AiCouple, usage: WaUsage, ekTalimat?: string): Promise<WaAgentResult> {
   const { anthropicKey } = await readIntegrations();
   if (!anthropicKey) return { action: "skip", reason: "Yapay zekâ anahtarı ayarlı değil" };
 
@@ -255,6 +256,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
     { type: "text", text: STATIC_PROMPT, cache_control: { type: "ephemeral" } },
     { type: "text", text: dynamicPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0) },
     ...(learned ? [{ type: "text", text: learned }] : []),
+    ...(ekTalimat ? [{ type: "text", text: ekTalimat }] : []),
   ];
   const messages: Msg[] = [{ role: "user", content: `WhatsApp yazışması (eskiden yeniye):\n${convo}\n\nMüşterinin son mesajına cevabını yanit_ver ile ver.` }];
   const started = Date.now();

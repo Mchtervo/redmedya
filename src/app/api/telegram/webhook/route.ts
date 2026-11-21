@@ -62,6 +62,13 @@ export async function POST(request: Request) {
       await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: yes ? "Kural eklendi" : "Eklenmedi" });
       if (r.decided && cb.message?.message_id) await tgApi("editMessageReplyMarkup", { chat_id: allowedChat, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
       await tgApi("sendMessage", { chat_id: allowedChat, text: r.msg, ...(cb.message?.message_id ? { reply_to_message_id: cb.message.message_id } : {}) });
+    } else if (cb.data?.startsWith("igd:")) {
+      await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: "Gönderiliyor…" });
+      const [, igsid, id] = cb.data.split(":");
+      const { igTaslakOnayla } = await import("@/lib/instagram-dm");
+      const r = await igTaslakOnayla(igsid ?? "", id ?? "").catch(() => ({ ok: false, msg: "⚠️ Gönderim sırasında hata oldu, Instagram'dan kendiniz yazın." }));
+      if (r.ok && cb.message?.message_id) await tgApi("editMessageReplyMarkup", { chat_id: allowedChat, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
+      await tgApi("sendMessage", { chat_id: allowedChat, text: r.msg, ...(cb.message?.message_id ? { reply_to_message_id: cb.message.message_id } : {}) });
     } else if (cb.data?.startsWith("wad:")) {
       await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: "Gönderiliyor…" });
       await runApproval(cb.data.slice(4), allowedChat, cb.message?.message_id).catch(async () => {
@@ -90,6 +97,14 @@ export async function POST(request: Request) {
   // Öneri mesajına "gönder / onaylıyorum" diye cevap yazıldı
   const replyTo = update?.message?.reply_to_message?.message_id;
   if (replyTo && update?.message?.text && APPROVE_RE.test(update.message.text)) {
+    const { igTaslakBul, igTaslakOnayla } = await import("@/lib/instagram-dm");
+    const ig = await igTaslakBul(replyTo);
+    if (ig) {
+      const r = await igTaslakOnayla(ig.igsid, ig.id).catch(() => ({ ok: false, msg: "⚠️ Gönderim sırasında hata oldu, Instagram'dan kendiniz yazın." }));
+      if (r.ok) await tgApi("editMessageReplyMarkup", { chat_id: allowedChat, message_id: replyTo, reply_markup: { inline_keyboard: [] } });
+      await tgApi("sendMessage", { chat_id: allowedChat, text: r.msg, reply_to_message_id: replyTo });
+      return NextResponse.json({ ok: true });
+    }
     const d = await findDraftByTgMessage(replyTo);
     if (d) {
       await runApproval(d.id, allowedChat, replyTo).catch(async () => {
