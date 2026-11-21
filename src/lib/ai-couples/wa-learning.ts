@@ -274,3 +274,14 @@ export async function removeRule(n: number): Promise<string> {
     return { list: list.map((x) => (x.id === r.id ? { ...x, status: "rejected" as const, decidedAt: new Date().toISOString() } : x)), out: `🗑️ Silindi: "${r.text}"` };
   });
 }
+
+/** Durum (panel / kontrol için) */
+export async function learningStatus() {
+  const rules = await rulesDo(async (l) => ({ out: l }));
+  const examples = await examplesDo(async (l) => ({ out: l }));
+  return {
+    rules: rules.map((r) => ({ id: r.id, text: r.text, status: r.status, createdAt: r.createdAt, name: r.source?.name })),
+    examples: examples.length,
+    lastExamples: examples.slice(-3).map((e) => ({ at: e.at, name: e.name, customer: e.customer.slice(0, 80), owner: e.owner.slice(0, 80) })),
+  };
+}
