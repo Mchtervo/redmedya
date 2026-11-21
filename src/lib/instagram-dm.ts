@@ -32,17 +32,19 @@ export const IG_DM_TEST: string[] = ["_mchtervo"];
 export const ARAMA_HATTI = "0312 963 23 47";
 
 export const DM_ACILIS =
-  "Merhabalar, öncelikle hayırlı olsun! 💍\n\n" +
-  "2027 kampanyamız 31 Aralık'ta sona eriyor ve çoğu tarihte son 3-4 yerimiz kaldı; kampanya bitince fiyatlara %40 zam geliyor.\n\n" +
-  `İletişim numaranızı yazarsanız hemen ${ARAMA_HATTI} numaralı hattımızdan sizi arayıp paketler, kampanya ve fiyatlandırma hakkında detaylı bilgi verelim. 📞\n\n` +
-  "(Numaranız yalnızca sizi aramak için kullanılır.)";
+  "Merhabaa 🤍 Öncelikle çok çok hayırlı olsun! 💍✨\n\n" +
+  "Size güzel bir haberimiz var 🎉 2027 kampanyamız devam ediyor ama 31 Aralık'ta bitiyor ⏳ " +
+  "Bu fiyatlardan her ay sadece 10 çift alabiliyoruz ve çoğu ayda son 3-4 yerimiz kaldı 🙈 " +
+  "Kampanya bitince fiyatlara %40 zam geliyor 📈\n\n" +
+  `Numaranızı buraya yazarsanız hemen ${ARAMA_HATTI}'ten sizi arayıp paketleri, kampanyayı ve fiyatları tek tek anlatalım 📞😊\n\n` +
+  "(Numaranız sadece sizi aramak için kullanılır 🔒)";
 
 const DM_HATIRLATMA = [
-  "Detayları ve size özel fiyatı telefonda 2-3 dakikada anlatabiliriz 😊 " +
-    `Numaranızı buraya yazmanız yeterli, ${ARAMA_HATTI} numaralı hattımızdan hemen arayalım. ` +
-    "Kampanya 31 Aralık'ta bitiyor, tarihiniz dolmadan yerinizi ayırtalım.",
-  "Çoğu tarihte son 3-4 yerimiz kaldığı için hızlı ilerlemek istiyoruz 🙏 " +
-    `Telefon numaranızı yazarsanız ${ARAMA_HATTI}'ten sizi arayıp tüm paketleri anlatalım.`,
+  "Detayları ve size özel fiyatı telefonda 2-3 dakikada anlatabiliriz 😊📞 " +
+    `Numaranızı yazmanız yeterli, ${ARAMA_HATTI}'ten hemen arayalım! ` +
+    "Kampanya 31 Aralık'ta bitiyor, tarihiniz dolmadan yerinizi ayıralım 💍✨",
+  "Her ay sadece 10 çift alabildiğimiz için hızlı davranmak lazım 🙈💨 " +
+    `Telefon numaranızı yazarsanız ${ARAMA_HATTI}'ten arayıp tüm paketleri anlatalım 🎥📸🤍`,
 ];
 /** Numara alındıktan sonra yazmaya devam ederse en fazla bu kadar hatırlatma; sonra sessiz (insan devralır). */
 const MAX_HATIRLATMA = 2;
@@ -50,7 +52,7 @@ const MAX_HATIRLATMA = 2;
 export function dmTesekkur(simdi = new Date()): string {
   const h = Number(new Intl.DateTimeFormat("tr-TR", { hour: "numeric", hour12: false, timeZone: "Europe/Istanbul" }).format(simdi));
   const ne = h >= 9 && h < 20 ? "Birazdan" : "Yarın sabah";
-  return `Teşekkür ederiz! 🙏 ${ne} ${ARAMA_HATTI} numaralı hattımızdan sizi arayacağız. Görüşmek üzere 💍`;
+  return `Çok teşekkür ederiz 🥰🙏 ${ne} ${ARAMA_HATTI}'ten sizi arayacağız 📞 Şimdiden mutluluklar, görüşmek üzere 💍✨`;
 }
 
 /** Türk cep numarası → 05XXXXXXXXX (önündeki tarih rakamlarına yapışmaz). */
