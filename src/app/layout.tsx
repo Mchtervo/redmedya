@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, DM_Sans, Instrument_Serif } from "next/font/google";
+import "./fonts.css";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { ANKARA_SEO_KEYWORDS } from "@/config/seo-keywords";
@@ -10,27 +10,7 @@ import { WebMcpTools } from "@/components/seo/webmcp-tools";
 import { SiteChrome } from "@/components/analytics/site-chrome";
 import { KvkkBanner } from "@/components/consent/kvkk-banner";
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  display: "swap",
-});
-
-const instrument = Instrument_Serif({
-  variable: "--font-instrument",
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+// Yazı tipleri: ./fonts.css (siteden sunulur; derlemede Google'a bağlanılmaz)
 
 export const viewport: Viewport = {
   themeColor: "#060606",
@@ -83,7 +63,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className={`${cormorant.variable} ${instrument.variable} ${dmSans.variable}`}>
+    <html lang="tr">
       <body className="min-h-screen overflow-x-clip bg-rm-black pb-16 text-rm-off-white antialiased lg:pb-0">
         <JsonLd />
         <WebMcpTools />
