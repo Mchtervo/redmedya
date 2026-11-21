@@ -16,10 +16,12 @@ export async function POST(request: Request) {
   const metaToken = str(body?.metaAdsToken, 600);
   const metaAccount = str(body?.metaAdAccountId, 40);
   const anthropic = str(body?.anthropicKey, 300);
+  const meta = { metaAppId: str(body?.metaAppId, 40), metaAppSecret: str(body?.metaAppSecret, 80), metaPageId: str(body?.metaPageId, 40), metaPageToken: str(body?.metaPageToken, 600), metaVerifyToken: str(body?.metaVerifyToken, 120) };
+  const metaSet = Object.fromEntries(Object.entries(meta).filter(([, v]) => v));
   const cur = await readIntegrations();
   if (base && !/^https:\/\//.test(base)) return bad("panelHookBase https olmalı");
   if (metaAccount && !/^act_\d+$/.test(metaAccount)) return bad("metaAdAccountId act_… olmalı");
-  if (!base && !key && !eleven && !metaToken && !metaAccount && !anthropic) return bad("En az bir ayar gönderin");
+  if (!base && !key && !eleven && !metaToken && !metaAccount && !anthropic && !Object.keys(metaSet).length) return bad("En az bir ayar gönderin");
   await writeIntegrations({
     ...cur,
     ...(base && key ? { panelHookBase: base, panelHookKey: key } : {}),
@@ -27,6 +29,7 @@ export async function POST(request: Request) {
     ...(metaToken ? { metaAdsToken: metaToken } : {}),
     ...(metaAccount ? { metaAdAccountId: metaAccount } : {}),
     ...(anthropic ? { anthropicKey: anthropic } : {}),
+    ...metaSet,
   });
   return NextResponse.json({ ok: true });
 }

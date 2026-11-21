@@ -30,10 +30,14 @@ export type AiAutomation = {
   waAiMode: "off" | "test" | "draft" | "all";
   /** Test modunda cevap verilecek numaralar (son 10 hane karşılaştırılır) */
   waAiTestPhones: string[];
+  /** Instagram DM asistanı: kapalı / sadece test kullanıcı adları / herkese */
+  igAiMode: "off" | "test" | "all";
+  /** Test modunda cevap verilecek Instagram kullanıcı adları (@ olmadan, küçük harf) */
+  igAiTestUsers: string[];
   updatedAt?: string;
 };
 
-export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2, fuMsgDay: FOLLOW_DAYS_DEFAULT.msg, fuCallDay: FOLLOW_DAYS_DEFAULT.call, fuLastDay: FOLLOW_DAYS_DEFAULT.last, waAiMode: "test", waAiTestPhones: [] };
+export const AUTOMATION_DEFAULT: AiAutomation = { waPerDay: 25, waGapMin: 5, waGapMax: 9, callsPerDay: 40, callGapMin: 2, fuMsgDay: FOLLOW_DAYS_DEFAULT.msg, fuCallDay: FOLLOW_DAYS_DEFAULT.call, fuLastDay: FOLLOW_DAYS_DEFAULT.last, waAiMode: "test", waAiTestPhones: [], igAiMode: "test", igAiTestUsers: [] };
 
 export const AUTOMATION_LIMITS = {
   waPerDay: [1, 100],
@@ -65,6 +69,10 @@ export function cleanAutomation(input: Partial<Record<keyof AiAutomation, unknow
     waAiTestPhones: Array.isArray(input.waAiTestPhones)
       ? [...new Set(input.waAiTestPhones.flatMap((p) => String(p).split(/[,;\n]/)).map((p) => p.replace(/\D/g, "").slice(-10)).filter((p) => p.length === 10))].slice(0, 10)
       : cur.waAiTestPhones,
+    igAiMode: input.igAiMode === "off" || input.igAiMode === "test" || input.igAiMode === "all" ? input.igAiMode : cur.igAiMode,
+    igAiTestUsers: Array.isArray(input.igAiTestUsers)
+      ? [...new Set(input.igAiTestUsers.flatMap((u) => String(u).split(/[,; \n]/)).map((u) => u.trim().replace(/^@/, "").toLowerCase()).filter((u) => /^[a-z0-9._]{1,30}$/.test(u)))].slice(0, 10)
+      : cur.igAiTestUsers,
   };
   if (next.waGapMax < next.waGapMin) next.waGapMax = next.waGapMin;
   if (next.fuCallDay < next.fuMsgDay) next.fuCallDay = next.fuMsgDay;

@@ -17,6 +17,12 @@ export type AiIntegrations = {
   metaAdAccountId?: string;
   /** WhatsApp yapay zekâ cevabı (Anthropic) */
   anthropicKey?: string;
+  /** Instagram DM asistanı: Meta uygulaması + sayfa anahtarı (mesaj gönderme, webhook imzası) */
+  metaAppId?: string;
+  metaAppSecret?: string;
+  metaPageId?: string;
+  metaPageToken?: string;
+  metaVerifyToken?: string;
 };
 
 export async function readIntegrations(): Promise<AiIntegrations> {

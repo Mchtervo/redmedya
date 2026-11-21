@@ -19,7 +19,7 @@ export type WaAgentResult =
   | { action: "skip"; reason: string };
 
 /** İşletme bilgileri — SADECE bunlar (uydurma yok) */
-const FACTS = `RED MEDIA — Ankara, düğün fotoğrafı ve sinematik düğün videosu.
+export const FACTS = `RED MEDIA — Ankara, düğün fotoğrafı ve sinematik düğün videosu.
 7 yıllık tecrübe. Düğün.com'da 5.0 puan, 31+ mutlu çiftten yorum; 2025'te Ankara'da Düğün.com'da en çok teklif alan 3. firma. Fotoğraf + sinematik video tek ekipten. Gizli ücret yok, tüm fiyatlar açık.
 
 2027 ERKEN REZERVASYON PAKETLERİ (dış çekim / gelin-damat çekimi; 31 Aralık 2026'ya kadar geçerli; bir ayın kampanya yerleri dolunca ya da kampanya bitince fiyatlara %40 zam gelir):

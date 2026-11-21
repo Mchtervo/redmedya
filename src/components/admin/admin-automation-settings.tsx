@@ -9,7 +9,7 @@ import { ChevronDown, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setFollowDays } from "@/lib/ai-couples/follow-days";
 
-export type Automation = { waAiMode?: "off" | "test" | "draft" | "all"; waAiTestPhones?: string[]; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
+export type Automation = { waAiMode?: "off" | "test" | "draft" | "all"; waAiTestPhones?: string[]; igAiMode?: "off" | "test" | "all"; igAiTestUsers?: string[]; waPerDay: number; waGapMin: number; waGapMax: number; callsPerDay: number; callGapMin: number; fuMsgDay: number; fuCallDay: number; fuLastDay: number; updatedAt?: string };
 
 let cache: Automation | null = null;
 const listeners = new Set<(a: Automation) => void>();
@@ -177,6 +177,42 @@ export function AdminAutomationSettings() {
             <p className="mt-2 text-[11px] leading-relaxed text-emerald-900/80">
               &quot;Sadece test&quot;: yalnızca bu numaralara cevap verir. &quot;Öneri (bana sor)&quot;: müşteriye GÖNDERMEZ; yazacağı cevabı Telegram&apos;dan size iletir, siz beğenirseniz kopyalayıp gönderirsiniz. Güvenince &quot;Herkese açık&quot; yapın.
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-pink-100 bg-pink-50/50 p-4">
+            <p className="text-sm font-semibold text-pink-900">📸 Instagram DM&apos;lerine yapay zekâ cevap versin</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-pink-900/80">
+              DM atan çifti tebrik eder, düğün tarihini sorar, gerçek kontenjanı (ayda 10 çift) söyler ve 0312 963 23 47&apos;den aranmak için numarasını ister. Numara gelince çift panele düşer, sesli asistan arar. Siz Instagram&apos;dan elle yazarsanız o sohbete 12 saat karışmaz.
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {([
+                ["off", "Kapalı"],
+                ["test", "Sadece test"],
+                ["all", "Herkese açık"],
+              ] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setForm({ ...f, igAiMode: v })}
+                  className={cn(
+                    "h-10 rounded-xl px-2 text-sm font-semibold",
+                    (f.igAiMode ?? "test") === v ? (v === "all" ? "bg-emerald-600 text-white" : v === "test" ? "bg-amber-500 text-white" : "bg-slate-700 text-white") : "border border-slate-300 bg-white text-slate-600",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <label className="mt-3 block text-xs font-semibold text-slate-700">
+              Test Instagram hesapları (kullanıcı adı, virgülle)
+              <input
+                type="text"
+                placeholder="ornekhesap, baskahesap"
+                value={(f.igAiTestUsers ?? []).join(", ")}
+                onChange={(e) => setForm({ ...f, igAiTestUsers: [e.target.value] })}
+                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-900 outline-none focus:border-pink-300 sm:text-sm"
+              />
+            </label>
           </div>
 
           <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
