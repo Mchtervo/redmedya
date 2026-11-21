@@ -27,6 +27,8 @@ export type WaDraft = {
   /** Sahibi düğmeye basmadan kendisi yazdıysa: yazdığı metin (öğrenme için) */
   ownerText?: string;
   ownerAt?: string;
+  /** Instagram DM önerisi ise müşterinin Instagram kimliği (coupleId = "ig:<igsid>") */
+  igsid?: string;
 };
 
 const normText = (t: string) => t.toLocaleLowerCase("tr-TR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -151,6 +153,25 @@ export async function createDraftAndNotify(input: { coupleId: string; text: stri
   return Boolean(sent?.ok);
 }
 
+/** Instagram DM önerisi: kaydet + Telegram'a "✅ Gönder" düğmesiyle at (müşteriye hiçbir şey gitmez) */
+export async function createIgDraftAndNotify(input: { igsid: string; name: string; text: string; tg: string }): Promise<boolean> {
+  const text = input.text.trim().slice(0, 990);
+  const chatId = tgChatId();
+  if (!text || !chatId) return false;
+  await ensureTelegramWebhook().catch(() => undefined);
+  const draft: WaDraft = { id: randomUUID().replace(/-/g, "").slice(0, 16), coupleId: `ig:${input.igsid}`, igsid: input.igsid, name: input.name, text, createdAt: new Date().toISOString(), status: "pending" };
+  await locked(async (list) => ({ list: [...list, draft], out: null }));
+  const sent = await tgApi<{ message_id: number }>("sendMessage", {
+    chat_id: chatId,
+    text: `${input.tg.slice(0, 3600)}\n\n👇 Instagram'dan göndermek için düğmeye basın (ya da bu mesaja "gönder" yazın). Basmazsanız hiçbir şey gitmez.`,
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: [[{ text: "✅ Gönder", callback_data: `wad:${draft.id}` }]] },
+  });
+  const mid = sent?.result?.message_id;
+  if (mid) await locked(async (list) => ({ list: list.map((d) => (d.id === draft.id ? { ...d, tgMessageId: mid } : d)), out: null }));
+  return Boolean(sent?.ok);
+}
+
 export async function findDraftByTgMessage(messageId: number): Promise<WaDraft | null> {
   return locked(async (list) => ({ out: list.find((d) => d.tgMessageId === messageId) ?? null }));
 }
@@ -173,6 +194,14 @@ export async function approveDraft(id: string): Promise<{ ok: boolean; msg: stri
   const d = claim.draft;
   const release = (status: WaDraft["status"]) =>
     locked(async (list) => ({ list: list.map((x) => (x.id === id ? { ...x, status, ...(status === "sent" ? { sentAt: new Date().toISOString() } : {}) } : x)), out: null }));
+
+  // Instagram DM önerisi
+  if (d.igsid) {
+    const { approveIgSend } = await import("@/lib/ai-couples/ig-agent");
+    const r = await approveIgSend(d.igsid, d.text, d.createdAt);
+    await release(r.ok ? "sent" : "pending");
+    return { ok: r.ok, msg: r.ok ? `✅ Instagram'dan gönderildi — ${d.name}` : `${d.name}: ${r.msg}`, draft: d };
+  }
 
   const c = await getCouple(d.coupleId);
   let block: string | null = null;

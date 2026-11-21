@@ -18,6 +18,7 @@ import { ingestCouple } from "@/lib/ai-couples/store";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
+import { createIgDraftAndNotify } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
 const MODEL = "claude-sonnet-5-5";
@@ -154,15 +155,21 @@ AKIŞ (sırayla, her mesajda sadece bir adım):
    - Tarih verdiyse ÖNCE tarih_kontrol aracıyla bak ve GERÇEK kontenjanı söyle: "Her ay sadece 10 çift alıyoruz, [ay] için X yerimiz kaldı". O gün doluysa dürüstçe söyle, alternatif günleri sun. Tarih yoksa rakam verme, genel söyle: "her ay sadece 10 çift alıyoruz, yerler hızlı doluyor".
    - Aynı mesajda numarayı iste: "Detaylı bilgi ve size özel fiyat için ${CALL_NUMBER} numaralı hattımızdan sizi arayalım, uygunsa numaranızı yazar mısınız?" (kendi cümlelerinle, doğal).
 3) Numara alındıysa (aşağıda yazar): teşekkür et, "en kısa sürede ${CALL_NUMBER}'ten arayacağız, numarayı kaydedebilirsiniz" de. Artık tekrar numara isteme; sorusu varsa kısaca cevapla.
-4) Numara vermediyse ve sohbet sürüyorsa: sorusuna kısaca cevap ver, en fazla bir kez daha nazikçe numara iste; ısrar etme.
+4) Numara vermek istemezse ya da "buradan yazalım / buradan devam edelim / arama olmasın" derse: SORUN DEĞİL, DM'den devam et ve tam bir satışçı gibi ilgilen — fiyatları ve paketleri (aşağıdaki bilgilerden) net söyle, fiyat listesini at (https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf), tarihini takvimden kontrol et, kaporayla tarihi tutmayı teklif et. Bir daha numara isteme (en fazla çok sonra, doğal bir anda "isterseniz bir arayalım, 2 dakikada anlatırız" diyebilirsin).
+
+ÜSLUP — EN ÖNEMLİ KISIM (yapay zekâ olduğu ASLA belli olmayacak):
+- Ankara'da düğün çekimi yapan, DM'lere telefondan kendisi cevap veren samimi bir esnaf gibi yaz. Sıcak, içten, biraz da heyecanlı. Kısa: genelde 1-2 cümle, en fazla 3.
+- Yeri geldiğinde emoji kullan (🤍 😊 🙏 📸 ✨ gibi, mesajda 1-2 tane) — ama her cümleye değil.
+- ASLA yazma: "Harika bir soru", "Size yardımcı olmaktan mutluluk duyarım", "Elbette!", "Memnuniyetle", "Değerli", "tarafınıza", "bilgilendirmek isteriz", "Herhangi bir sorunuz olursa çekinmeden", madde işaretli liste, başlık, uzun açıklama. Bunlar robot gibi durur.
+- Konuşur gibi yaz: "Merhabalar hayırlı olsun 🤍", "Çok güzel, hemen bakıyorum", "Temmuz baya doldu açıkçası", "Kaçırmayın derim", "Hemen arayalım isterseniz, 2 dakikada anlatırız 😊". Bazen cümleye "Valla", "Açıkçası", "Şöyle söyleyeyim" gibi doğal girişler.
+- Aciliyet hissettir ama gerçekçi ol: zam (henüz %40 yansımadı, yakında güncellenecek), ayda 10 çift sınırı, o ayın GERÇEK kalan yeri. Uydurma "az önce 3 çift yazdı" gibi şeyler YAZMA.
+- Her mesajın sonunda müşteriyi bir sonraki adıma götür (tarih, numara ya da tarihi tutma) — ama aynı soruyu art arda tekrarlama.
 
 KURALLAR:
-- ÜSLUP: samimi, sıcak, esnaf ağzı ama kibar — çok resmi konuşma ("efendim", "tarafınıza", "bilgilendirme" gibi kurumsal laflar yok). Gerçek bir esnaf DM'den nasıl yazarsa öyle: "Merhabalar", "hayırlı olsun", "çok güzel", "hemen bakayım". Kısa yaz (1-3 cümle), en fazla 1 emoji, asla uzun paragraf.
-- Fiyat sorulursa: kısa bir başlangıç bilgisi verebilirsin (aşağıdaki bilgilerden, uydurmadan) ama "size özel fiyat ve erken rezervasyon avantajını telefonda detaylı anlatalım" diyerek numaraya yönlendir.
+- Fiyat sorulursa: net fiyatı söyle (aşağıdaki bilgilerden, uydurmadan) + "erken rezervasyonda bu fiyattan sabitliyoruz, zam gelmeden" diye harekete geçir + numara henüz alınmadıysa "detaylı anlatalım, numaranızı yazar mısınız" ekle.
 - Kontenjan rakamlarını ASLA uydurma; sadece tarih_kontrol sonucunu ya da aşağıdaki kalan yer listesini kullan.
-- Sorulmadıkça bot olduğunu söyleme; "bot musun" diye sorulursa dürüst ol: "İlk bilgileri hızlı iletebilmek için asistanımızla yazıyoruz, detayları ekibimiz telefonda anlatacak."
-- Şikâyet, iptal, ödeme sorunu, alakasız konu → kibarca "ekibimiz size hemen dönecek" de ve devret=true yap.
-- Müşteri numara vermek istemiyorsa ısrar etme; "Buradan da yardımcı olurum, fiyat listemiz: https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf" gibi yardımcı ol.
+- Sorulmadıkça bot olduğunu söyleme; "bot musun" diye açıkça sorulursa dürüst ol: "İlk bilgileri hızlı iletebilmek için asistanımızla yazıyoruz, detayları ekibimiz anlatacak 😊".
+- Şikâyet, iptal, ödeme sorunu, alakasız konu → kibarca "hemen ilgileniyoruz" de ve devret=true yap.
 
 BİLGİLER:
 ${FACTS}
@@ -195,16 +202,35 @@ async function replyThread(igsid: string): Promise<void> {
 
   const r = await generate(t);
   if (r.date) t = await patchThread(igsid, (x) => ({ ...x, weddingDate: r.date }));
-  if (r.text) {
-    const s = await sendIgMessage(igsid, r.text);
-    if (s.ok) await patchThread(igsid, (x) => ({ ...x, messages: [...x.messages, { at: new Date().toISOString(), dir: "out" as const, text: r.text!, by: "ai" as const }] }));
-    else await sendTelegramMessage(`⚠️ Instagram DM cevabı GİDEMEDİ (@${t.username ?? igsid}): ${s.error}\nMüşteri: ${lastIns.slice(0, 300)}`).catch(() => false);
-  }
-
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   if (newPhone) await onPhoneCaptured(t, newPhone, isTest);
-  else if (r.handoff) await sendTelegramMessage(`👤 INSTAGRAM — SİZ DÖNÜN: ${who}\n💬 ${lastIns.slice(0, 400)}${r.text ? `\n🤖 Giden: ${r.text}` : ""}`).catch(() => false);
-  else if (isTest) await sendTelegramMessage(`🧪 IG TEST ${who}\n💬 ${lastIns.slice(0, 300)}\n🤖 ${r.text ?? "(cevap yok)"}`).catch(() => false);
+
+  // HİÇBİR CEVAP KENDİLİĞİNDEN GİTMEZ: Telegram'a "✅ Gönder" düğmesiyle öneri olarak gider, sahibi onaylarsa gönderilir
+  const lastIn = t.messages.filter((x) => x.dir === "in").slice(-3).map((x) => x.text).join(" / ");
+  if (r.text) {
+    const tg =
+      `📸 INSTAGRAM CEVAP ÖNERİSİ${isTest ? " (TEST)" : ""} — ${who}${r.handoff ? "\n⚠️ Dikkat: bu konuya sizin bakmanız iyi olur" : ""}\n\n` +
+      `💬 Müşteri: ${lastIn.slice(0, 500)}\n\n🤖 Önerdiğim cevap:\n${r.text}`;
+    const ok = await createIgDraftAndNotify({ igsid, name: who, text: r.text, tg }).catch(() => false);
+    if (!ok) await sendTelegramMessage(`${tg}\n\n(Düğme eklenemedi — beğendiyseniz kopyalayıp Instagram'dan gönderin.)`).catch(() => false);
+  } else {
+    await sendTelegramMessage(`👤 INSTAGRAM — SİZ DÖNÜN: ${who}\n💬 ${lastIn.slice(0, 500)}\n(Asistan cevap öneremedi.)`).catch(() => false);
+  }
+}
+
+/** Sahibi Telegram'dan "Gönder"e bastı → kontrol et ve Instagram'dan gönder */
+export async function approveIgSend(igsid: string, text: string, draftAt: string): Promise<{ ok: boolean; msg: string }> {
+  const t = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (!t) return { ok: false, msg: "Sohbet bulunamadı." };
+  // Sahibi bu öneriden sonra Instagram'dan kendisi yazdıysa çift mesaj olmasın
+  if (t.messages.some((m) => m.dir === "out" && Date.parse(m.at) > Date.parse(draftAt))) return { ok: false, msg: "Bu öneriden sonra müşteriye zaten mesaj gitmiş — çift mesaj olmasın diye göndermedim." };
+  // Instagram kuralı: müşterinin son mesajından sonraki 24 saat içinde cevap verilebilir
+  const lastIn = [...t.messages].reverse().find((m) => m.dir === "in");
+  if (lastIn && Date.now() - Date.parse(lastIn.at) > 23.5 * 3600_000) return { ok: false, msg: "Müşterinin son mesajının üzerinden 24 saat geçti; Instagram artık otomatik mesaja izin vermiyor. Kendiniz yazabilirsiniz." };
+  const s = await sendIgMessage(igsid, text);
+  if (!s.ok) return { ok: false, msg: `⚠️ Gönderilemedi (${s.error}). Tekrar basabilir ya da Instagram'dan kendiniz yazabilirsiniz.` };
+  await patchThread(igsid, (x) => ({ ...x, messages: [...x.messages, { at: new Date().toISOString(), dir: "out" as const, text, by: "ai" as const }] }));
+  return { ok: true, msg: "" };
 }
 
 async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
