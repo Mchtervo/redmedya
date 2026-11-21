@@ -1,6 +1,6 @@
 /**
  * INSTAGRAM DM ASİSTANI — reklamdan / profilden DM atan çifti karşılar.
- * Amaç: tebrik et → düğün tarihini öğren → gerçek kontenjanla (ayda 10 çift) aciliyet ver →
+ * Amaç: tebrik et → düğün tarihini öğren → gerçek kontenjanla (kampanya fiyatından ayda 10 çift) aciliyet ver →
  * "detaylı bilgi ve size özel fiyat için 0312 963 23 47'den arayalım" diyerek TELEFON NUMARASINI al.
  * Numara gelince: çift panele eklenir (Instagram) → sesli asistan arar + WhatsApp karşılama (mevcut akış).
  *
@@ -216,7 +216,7 @@ TEK AMACIN: Çifti sıcak karşılamak ve ${CALL_NUMBER} numaralı hattımızdan
 AKIŞ — her aşamada ZORUNLU olanlar (bunları atlama):
 1) İLK CEVAP: "Merhabalar, öncelikle hayırlı olsun 🤍" + (müşteri bir şey sorduysa kısa cevap) + ÇEKİM TARİHİNİ sor ("Çekim yaptırmak istediğiniz tarihi öğrenebilir miyim?"). Fiyat sorduysa paketleri fiyat düşüşüyle kısaca ver (aşağıdaki FİYAT SÖYLEME kuralı) ve yine tarihi sor.
 2) TARİH GELİNCE (ya da "belli değil" derse) — bu mesajda ŞUNLARIN HEPSİ olacak, kısa ve akıcı 2-3 cümlede:
-   a) Tarih verdiyse tarih_kontrol ile bak; kalan yer 5 ve altındaysa "Her ay sadece 10 çift alıyoruz, [ay] için X yer kaldı" (GERÇEK sayı); daha fazlaysa sayı verme, "Her ay sadece 10 çift alıyoruz, kampanya yerleri sınırlı" de. Tarih yoksa: "Her ay sadece 10 çift alıyoruz, çoğu ayda son 3-4 yer kaldı".
+   a) Tarih verdiyse tarih_kontrol ile bak; kalan yer 5 ve altındaysa "Her ay bu kampanya fiyatından sadece 10 çift alıyoruz, [ay] için X yer kaldı" (GERÇEK sayı); daha fazlaysa sayı verme, "Her ay bu kampanya fiyatından sadece 10 çift alıyoruz, kampanya yerleri sınırlı" de. Tarih yoksa: "Her ay bu kampanya fiyatından sadece 10 çift alıyoruz, çoğu ayda son 3-4 yer kaldı".
    b) "Bu son yerlerden ayırtanlara dış çekimde drone çekimi hediye, üstelik fiyatlarımıza %40 zam henüz yansımadı."
    c) NUMARA iste: "Size özel fiyatı ve detayları anlatalım, WhatsApp / telefon numaranızı yazar mısınız? ${CALL_NUMBER}'den dönelim."
 3) NUMARA GELİNCE: teşekkür et; müşteri WhatsApp istediyse saat SORMA, "Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍" de; istemediyse ve arama saati bilinmiyorsa "Sizi hangi saatte aramamız uygun olur?" diye sor; biliniyorsa onayla. Numara alındıktan sonra bir daha numara isteme.
@@ -232,11 +232,13 @@ HAFIZA: Konuşmanın tamamını oku. Daha önce selamlaştıysanız müşteri te
 - Yeri geldiğinde emoji kullan (🤍 😊 🙏 📸 ✨ gibi, mesajda 1-2 tane) — ama her cümleye değil.
 - ASLA yazma: "Harika bir soru", "Size yardımcı olmaktan mutluluk duyarım", "Elbette!", "Memnuniyetle", "Değerli", "tarafınıza", "bilgilendirmek isteriz", "Herhangi bir sorunuz olursa çekinmeden", madde işaretli liste, başlık, uzun açıklama. Bunlar robot gibi durur.
 - Konuşur gibi yaz: "Merhabalar hayırlı olsun 🤍", "Çok güzel, hemen bakıyorum", "Temmuz baya doldu açıkçası", "Kaçırmayın derim", "Hemen arayalım isterseniz, 2 dakikada anlatırız 😊". Bazen cümleye "Valla", "Açıkçası", "Şöyle söyleyeyim" gibi doğal girişler.
-- Aciliyet hissettir ama gerçekçi ol: zam (henüz %40 yansımadı, yakında güncellenecek), ayda 10 çift sınırı, o ayın GERÇEK kalan yeri. Uydurma "az önce 3 çift yazdı" gibi şeyler YAZMA.
+- Aciliyet hissettir ama gerçekçi ol: zam (henüz %40 yansımadı, yakında güncellenecek), kampanya fiyatından ayda sadece 10 çift, o ayın GERÇEK kalan yeri. Uydurma "az önce 3 çift yazdı" gibi şeyler YAZMA.
 - Her mesajın sonunda müşteriyi bir sonraki adıma götür (tarih, numara ya da tarihi tutma) — ama aynı soruyu art arda tekrarlama.
 
 KURALLAR:
 - Fiyat sorulursa: net fiyatı söyle (aşağıdaki bilgilerden, uydurmadan) + "erken rezervasyonda bu fiyattan sabitliyoruz, zam gelmeden" diye harekete geçir + numara henüz alınmadıysa "detaylı anlatalım, numaranızı yazar mısınız" ekle.
+- HESAP: Birden fazla kalemin toplamını, indirimli tutarı ya da kaporayı ASLA kafadan yazma — önce hesapla aracını kullan.
+- "Her ay 10 çift alıyoruz" DEME (yanlış); doğrusu "Her ay bu kampanya fiyatından sadece 10 çift alıyoruz".
 - Kontenjan rakamlarını ASLA uydurma; sadece tarih_kontrol sonucunu ya da aşağıdaki kalan yer listesini kullan.
 - Sorulmadıkça bot olduğunu söyleme; "bot musun" diye açıkça sorulursa dürüst ol: "İlk bilgileri hızlı iletebilmek için asistanımızla yazıyoruz, detayları ekibimiz anlatacak 😊".
 - Şikâyet, iptal, ödeme sorunu, alakasız konu → kibarca "hemen ilgileniyoruz" de ve devret=true yap.
@@ -426,6 +428,18 @@ async function generate(t: IgThread): Promise<Gen> {
 - Daha önce selamlaştık mı: ${t.messages.some((m) => m.dir === "out") ? "EVET — tekrar 'merhaba/hayırlı olsun' ile baştan BAŞLAMA, kaldığın yerden devam et" : "hayır, bu ilk cevap"}`;
   const convo = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : m.by === "owner" ? "EKİP (insan)" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
   const tools = [
+    {
+      name: "hesapla",
+      description: "Fiyat toplamını ve KAPORA tutarını hatasız hesaplar. Birden fazla kalemin toplamını, indirimli tutarı ya da kaporayı söyleyeceksen MUTLAKA önce bunu kullan.",
+      input_schema: {
+        type: "object",
+        properties: {
+          kalemler: { type: "array", items: { type: "object", properties: { ad: { type: "string" }, tutar: { type: "number" } }, required: ["ad", "tutar"] } },
+          indirim_yuzde: { type: "number", description: "Toplamdan düşülecek ekstra indirim yüzdesi (sadece tam gün / kına+düğün için 10)" },
+        },
+        required: ["kalemler"],
+      },
+    },
     { name: "tarih_kontrol", description: "Bir düğün tarihinin müsaitliğini ve o ayın kalan yerini getirir.", input_schema: { type: "object", properties: { date: { type: "string", description: "YYYY-AA-GG" } }, required: ["date"] } },
     {
       name: "yanit_ver",
@@ -456,7 +470,7 @@ async function generate(t: IgThread): Promise<Gen> {
     const j = (await res.json()) as { content?: { type: string; id?: string; name?: string; input?: Record<string, unknown> }[] };
     const blocks = j.content ?? [];
     const final = blocks.find((b) => b.type === "tool_use" && b.name === "yanit_ver");
-    const checks = blocks.filter((b) => b.type === "tool_use" && b.name === "tarih_kontrol");
+    const checks = blocks.filter((b) => b.type === "tool_use" && (b.name === "tarih_kontrol" || b.name === "hesapla"));
     if (final && !checks.length) {
       const inp = final.input ?? {};
       const text = typeof inp.text === "string" ? inp.text.trim().slice(0, 900) : "";
@@ -469,11 +483,21 @@ async function generate(t: IgThread): Promise<Gen> {
     messages.push({ role: "assistant", content: blocks });
     const results: unknown[] = [];
     for (const c of checks) {
+      if (c.name === "hesapla") {
+        const items = Array.isArray(c.input?.kalemler) ? (c.input!.kalemler as { ad?: unknown; tutar?: unknown }[]) : [];
+        const lines = items.map((k) => ({ ad: String(k.ad ?? ""), tutar: Math.round(Number(k.tutar) || 0) }));
+        const ara = lines.reduce((a2, k) => a2 + k.tutar, 0);
+        const pct = Math.min(20, Math.max(0, Number(c.input?.indirim_yuzde) || 0));
+        const ind = Math.round((ara * pct) / 100);
+        const tl = (n: number) => n.toLocaleString("tr-TR") + " TL";
+        results.push({ type: "tool_result", tool_use_id: c.id, content: JSON.stringify({ kalemler: lines.map((k) => k.ad + ": " + tl(k.tutar)), ara_toplam: tl(ara), indirim: pct ? "%" + pct + " = " + tl(ind) : "yok", toplam: tl(ara - ind), kapora: tl(ara - ind >= 15000 ? 2000 : 1000) }) });
+        continue;
+      }
       const d = String(c.input?.date ?? "");
       const r = /^\d{4}-\d{2}-\d{2}$/.test(d) ? await checkDate(d, cfg).catch(() => null) : null;
       results.push({ type: "tool_result", tool_use_id: c.id, content: r ? JSON.stringify({ tarih: r.dateLabel, musait: r.available, ay_kalan: r.month.remaining, ay_toplam: r.month.total, alternatifler: r.alternatives.map((a) => a.dateLabel) }) : "Tarih anlaşılamadı — müşteriye gün/ay/yıl olarak sor" });
     }
-    if (final) results.push({ type: "tool_result", tool_use_id: final.id, content: "Önce tarih sonucuna bak, sonra yanit_ver ile yeniden cevap ver." });
+    if (final) results.push({ type: "tool_result", tool_use_id: final.id, content: "Önce araç sonuçlarına bak, sonra yanit_ver ile yeniden cevap ver." });
     messages.push({ role: "user", content: results });
   }
   return { handoff: true };
