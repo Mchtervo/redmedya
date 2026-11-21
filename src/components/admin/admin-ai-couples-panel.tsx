@@ -26,6 +26,7 @@ import { useAdminDataSync } from "@/hooks/use-admin-data-sync";
 import { WaveAudio } from "@/components/admin/admin-wave-audio";
 import { AdminTestCallBox } from "@/components/admin/admin-ai-test-call";
 import { AdminAutomationSettings, useAutomation } from "@/components/admin/admin-automation-settings";
+import { AdminIgThreads } from "@/components/admin/admin-ig-threads";
 import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 import type {
   AiCapacityConfig,
@@ -489,6 +490,8 @@ export function AdminAiCouplesPanel() {
           </nav>
         )}
       </div>
+
+      <AdminIgThreads />
 
       <AdminAutomationSettings />
 

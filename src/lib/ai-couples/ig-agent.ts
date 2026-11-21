@@ -29,6 +29,23 @@ const MODEL = "claude-sonnet-5-5";
 const G = "https://graph.facebook.com/v21.0";
 export const CALL_NUMBER = "0312 963 23 47";
 
+export const IG_STAGES = {
+  ilk_temas: "İlk mesaj geldi",
+  tarih_soruldu: "Çekim tarihi soruldu",
+  tarih_alindi: "Tarih öğrenildi",
+  firsat_anlatildi: "Fırsat anlatıldı",
+  numara_istendi: "Numara istendi",
+  numara_alindi: "Numara alındı",
+  arama_saati_alindi: "Arama saati alındı",
+  numara_vermedi: "Numara vermek istemedi — DM'den devam",
+  fiyat_istedi: "Fiyat / teklif istedi",
+  fiyat_verildi: "Fiyat / teklif verildi",
+  kapora_konusuldu: "Kapora / tarih tutma konuşuldu",
+  ilgilenmiyor: "İlgilenmiyor",
+  devredildi: "Size devredildi",
+} as const;
+export type IgStage = keyof typeof IG_STAGES;
+
 type IgMsg = { at: string; dir: "in" | "out"; text: string; by?: "ai" | "owner" };
 export type IgThread = {
   igsid: string;
@@ -44,6 +61,9 @@ export type IgThread = {
   synced?: number;
   /** Müşterinin aranmak istediği saat (ISO) — sesli asistan o saatte arar */
   callAt?: string;
+  /** Konuşmanın son aşaması + 1 cümlelik gidişat özeti (panel ve Telegram için) */
+  stage?: IgStage;
+  summary?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -196,6 +216,8 @@ AKIŞ (sırayla, her mesajda sadece bir adım):
 3) Numara alındıysa (aşağıda yazar): teşekkür et ve arama saati henüz bilinmiyorsa SOR: "Sizi hangi saatte aramamız uygun olur?" gibi (bir kez sor). Saat belliyse (aşağıda yazar) onayla: "Tamamdır, [o saat] civarı ${CALL_NUMBER}'ten arıyoruz, numarayı kaydedebilirsiniz 😊". "Fark etmez / hemen" derse "o zaman en kısa sürede arıyoruz" de. Artık tekrar numara isteme; sorusu varsa kısaca cevapla.
 4) Numara vermek istemezse ya da "buradan yazalım / buradan devam edelim / arama olmasın" derse: SORUN DEĞİL, DM'den devam et ve tam bir satışçı gibi ilgilen — fiyatları ve paketleri (aşağıdaki bilgilerden) net söyle, fiyat listesini at (https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf), tarihini takvimden kontrol et, kaporayla tarihi tutmayı teklif et. Bir daha numara isteme (en fazla çok sonra, doğal bir anda "isterseniz bir arayalım, 2 dakikada anlatırız" diyebilirsin).
 
+HAFIZA: Konuşmanın tamamını oku. Daha önce selamlaştıysanız müşteri tekrar "merhaba" yazsa bile baştan karşılama yapma, tekrar "hayırlı olsun" deme, aynı soruları tekrar sorma. Kısa "Buyrun 😊" ya da "Merhabalar tekrar" de ve KALDIĞIN YERDEN devam et (aşağıdaki aşamaya göre). Müşterinin daha önce verdiği bilgiyi (tarih, isim, numara) tekrar isteme.
+
 ÜSLUP — EN ÖNEMLİ KISIM (yapay zekâ olduğu ASLA belli olmayacak):
 - Ankara'da düğün çekimi yapan, DM'lere telefondan kendisi cevap veren samimi bir esnaf gibi yaz. Sıcak, içten, biraz da heyecanlı. Kısa: genelde 1-2 cümle, en fazla 3.
 - Yeri geldiğinde emoji kullan (🤍 😊 🙏 📸 ✨ gibi, mesajda 1-2 tane) — ama her cümleye değil.
@@ -252,6 +274,7 @@ async function replyThread(igsid: string): Promise<void> {
 
   const r = await generate(t);
   if (r.date) t = await patchThread(igsid, (x) => ({ ...x, weddingDate: r.date }));
+  if (r.stage || r.summary || r.handoff) t = await patchThread(igsid, (x) => ({ ...x, stage: r.handoff ? "devredildi" : r.stage ?? x.stage, summary: r.summary ?? x.summary }));
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   if (newPhone) await onPhoneCaptured(t, newPhone, isTest);
   if (newCallAt) await applyCallTime(igsid, newCallAt, isTest);
@@ -260,7 +283,7 @@ async function replyThread(igsid: string): Promise<void> {
   const lastIn = t.messages.filter((x) => x.dir === "in").slice(-3).map((x) => x.text).join(" / ");
   if (r.text) {
     const tg =
-      `📸 INSTAGRAM CEVAP ÖNERİSİ${isTest ? " (TEST)" : ""} — ${who}${r.handoff ? "\n⚠️ Dikkat: bu konuya sizin bakmanız iyi olur" : ""}\n\n` +
+      `📸 INSTAGRAM CEVAP ÖNERİSİ${isTest ? " (TEST)" : ""} — ${who}${r.handoff ? "\n⚠️ Dikkat: bu konuya sizin bakmanız iyi olur" : ""}${t.stage ? `\n📍 ${IG_STAGES[t.stage]}${t.summary ? ` — ${t.summary}` : ""}` : ""}\n\n` +
       `💬 Müşteri: ${lastIn.slice(0, 500)}\n\n🤖 Önerdiğim cevap:\n${r.text}`;
     const ok = await createIgDraftAndNotify({ igsid, name: who, text: r.text, tg }).catch(() => false);
     if (!ok) await sendTelegramMessage(`${tg}\n\n(Düğme eklenemedi — beğendiyseniz kopyalayıp Instagram'dan gönderin.)`).catch(() => false);
@@ -271,6 +294,7 @@ async function replyThread(igsid: string): Promise<void> {
 
 /** Müşterinin istediği arama saatini paneldeki çifte yaz → sesli asistan o saat gelmeden aramaz, gelince arar */
 async function applyCallTime(igsid: string, callAt: string, isTest: boolean): Promise<void> {
+  await patchThread(igsid, (x) => ({ ...x, stage: "arama_saati_alindi" }));
   const t = await withThreads(async (m) => ({ out: m[igsid] }));
   if (!t) return;
   const label = new Date(callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
@@ -312,6 +336,7 @@ export async function approveIgSend(igsid: string, text: string, draftAt: string
 }
 
 async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
+  await patchThread(t.igsid, (x) => ({ ...x, stage: x.callAt ? "arama_saati_alindi" : "numara_alindi" }));
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   const convo = t.messages.slice(-8).map((m) => `${m.dir === "in" ? "👤" : "🤖"} ${m.text.slice(0, 160)}`).join("\n");
   if (isTest) {
@@ -339,7 +364,7 @@ async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
   ).catch(() => false);
 }
 
-type Gen = { text?: string; date?: string; handoff?: boolean };
+type Gen = { text?: string; date?: string; handoff?: boolean; stage?: IgStage; summary?: string };
 
 async function generate(t: IgThread): Promise<Gen> {
   const { anthropicKey } = await readIntegrations();
@@ -366,7 +391,9 @@ async function generate(t: IgThread): Promise<Gen> {
 - Düğün tarihi: ${t.weddingDate ?? "henüz öğrenilmedi"}
 - Telefon numarası: ${t.phone ? `ALINDI (${displayPhone(t.phone)}) — artık isteme, teşekkür et` : "henüz alınmadı"}
 - Arama saati: ${t.callAt ? `BELLİ — ${new Date(t.callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} (onayla, tekrar sorma)` : t.phone ? "henüz bilinmiyor — bir kez sor" : "-"}
-- Kalan yer (ay: kalan/toplam): ${kontenjan}${known}`;
+- Kalan yer (ay: kalan/toplam): ${kontenjan}${known}
+- Konuşmanın şu anki aşaması: ${t.stage ? IG_STAGES[t.stage] : "yeni"}${t.summary ? ` — ${t.summary}` : ""}
+- Daha önce selamlaştık mı: ${t.messages.some((m) => m.dir === "out") ? "EVET — tekrar 'merhaba/hayırlı olsun' ile baştan BAŞLAMA, kaldığın yerden devam et" : "hayır, bu ilk cevap"}`;
   const convo = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : m.by === "owner" ? "EKİP (insan)" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
   const tools = [
     { name: "tarih_kontrol", description: "Bir düğün tarihinin müsaitliğini ve o ayın kalan yerini getirir.", input_schema: { type: "object", properties: { date: { type: "string", description: "YYYY-AA-GG" } }, required: ["date"] } },
@@ -379,6 +406,8 @@ async function generate(t: IgThread): Promise<Gen> {
           text: { type: "string", description: "Müşteriye gidecek kısa mesaj" },
           dugun_tarihi: { type: "string", description: "Müşteri tarih söylediyse YYYY-AA-GG (yıl yoksa en yakın gelecek yıl)" },
           devret: { type: "boolean", description: "Şikâyet / ödeme / alakasız konu → sahibine haber ver" },
+          evre: { type: "string", enum: Object.keys(IG_STAGES), description: "Bu cevaptan SONRA konuşmanın geldiği aşama" },
+          ozet: { type: "string", description: "Sahibi için gidişatın TEK cümlelik özeti (baştan anlatma; şu an nerede: ne istedi, ne verildi, sırada ne var). Örn: 'Temmuz 2027 için yazdı, fiyat verildi, numara vermedi, DM'den devam ediyor.'" },
         },
         required: ["text"],
       },
@@ -402,7 +431,9 @@ async function generate(t: IgThread): Promise<Gen> {
       const inp = final.input ?? {};
       const text = typeof inp.text === "string" ? inp.text.trim().slice(0, 900) : "";
       const d = typeof inp.dugun_tarihi === "string" && /^\d{4}-\d{2}-\d{2}$/.test(inp.dugun_tarihi) ? inp.dugun_tarihi : undefined;
-      return { text: text || undefined, date: d, handoff: inp.devret === true };
+      const stage = typeof inp.evre === "string" && inp.evre in IG_STAGES ? (inp.evre as IgStage) : undefined;
+      const summary = typeof inp.ozet === "string" ? inp.ozet.replace(/\s+/g, " ").trim().slice(0, 240) : undefined;
+      return { text: text || undefined, date: d, handoff: inp.devret === true, stage, summary };
     }
     if (!checks.length) return { handoff: true };
     messages.push({ role: "assistant", content: blocks });
@@ -418,3 +449,31 @@ async function generate(t: IgThread): Promise<Gen> {
   return { handoff: true };
 }
 
+
+/** Panel / kontrol: sohbetlerin kısa durumu (konuşmanın tamamı değil, gidişat) */
+export async function threadsOverview(limit = 60) {
+  const list = await listThreads();
+  return list.slice(0, limit).map((t) => {
+    const lastIn = [...t.messages].reverse().find((m) => m.dir === "in");
+    const lastOut = [...t.messages].reverse().find((m) => m.dir === "out");
+    return {
+      igsid: t.igsid,
+      name: t.name ?? null,
+      username: t.username ?? null,
+      stage: t.stage ?? (t.messages.some((m) => m.dir === "out") ? null : "ilk_temas"),
+      stageLabel: t.stage ? IG_STAGES[t.stage] : t.messages.some((m) => m.dir === "out") ? "Konuşuluyor" : IG_STAGES.ilk_temas,
+      summary: t.summary ?? null,
+      phone: t.phone ? displayPhone(t.phone) : null,
+      callAt: t.callAt ?? null,
+      weddingDate: t.weddingDate ?? null,
+      coupleId: t.coupleId ?? null,
+      test: Boolean(t.test),
+      waitingUs: t.messages.at(-1)?.dir === "in",
+      ownerPaused: Boolean(t.ownerUntil && Date.parse(t.ownerUntil) > Date.now()),
+      lastIn: lastIn ? { at: lastIn.at, text: lastIn.text.slice(0, 140) } : null,
+      lastOut: lastOut ? { at: lastOut.at, text: lastOut.text.slice(0, 140), by: lastOut.by ?? null } : null,
+      messageCount: t.messages.length,
+      updatedAt: t.updatedAt,
+    };
+  });
+}
