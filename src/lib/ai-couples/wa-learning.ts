@@ -15,7 +15,7 @@ import path from "path";
 import { dataPath } from "@/lib/data-dir";
 import { getCouple, readCouples } from "@/lib/ai-couples/store";
 import { readIntegrations } from "@/lib/ai-couples/integrations";
-import { getDraft, matchOwnerReply, tgApi, tgChatId, type WaDraft } from "@/lib/ai-couples/wa-drafts";
+import { draftTexts, getDraft, matchOwnerReply, normDraftText, tgApi, tgChatId, type WaDraft } from "@/lib/ai-couples/wa-drafts";
 import type { AiCouple } from "@/types/ai-couples";
 
 const RULES_FILE = dataPath("ai-wa-rules.json");
@@ -72,12 +72,13 @@ const isUsable = (t: string) => {
 async function seedExamples(): Promise<WaExample[]> {
   const out: WaExample[] = [];
   const couples = await readCouples().catch(() => [] as AiCouple[]);
+  const drafts = await draftTexts().catch(() => new Set<string>());
   for (const c of couples) {
     if (c.sourceRef === "test") continue;
     const msgs = [...c.messages].sort((a, b) => a.at.localeCompare(b.at));
     for (let i = 0; i < msgs.length; i++) {
       const m = msgs[i];
-      if (m.direction !== "out" || m.kind !== "reply" || !isUsable(m.text)) continue;
+      if (m.direction !== "out" || m.kind !== "reply" || !isUsable(m.text) || drafts.has(normDraftText(m.text))) continue;
       const prevIn = [...msgs.slice(0, i)].reverse().find((x) => x.direction === "in");
       if (!prevIn || !isUsable(prevIn.text) || Date.parse(m.at) - Date.parse(prevIn.at) > 2 * 86400_000) continue;
       const last = out.at(-1);
@@ -146,6 +147,8 @@ export async function onOwnerReply(coupleId: string, text: string): Promise<void
   if (!isUsable(text)) return;
   const match = await matchOwnerReply(coupleId, text);
   if (match?.kind === "approval") return; // onaylanan önerinin kendisi — sahibinin yazısı değil
+  // Asistanın önerisini kopyalayıp göndermiş → örnek değil (asistan kendini örnek almasın)
+  if (match?.kind === "copied" || (await draftTexts()).has(normDraftText(text))) return;
   const c = await getCouple(coupleId);
   if (!c || c.sourceRef === "test") {
     // test numarasında da öğrenme önerisi çalışsın (deneme yapılabilsin), ama örnek bankasına girmesin
@@ -284,4 +287,10 @@ export async function learningStatus() {
     examples: examples.length,
     lastExamples: examples.slice(-3).map((e) => ({ at: e.at, name: e.name, customer: e.customer.slice(0, 80), owner: e.owner.slice(0, 80) })),
   };
+}
+
+/** Örnek bankasını baştan kur (asistan önerilerini ayıklayarak) */
+export async function reseedExamples(): Promise<number> {
+  const fresh = await seedExamples();
+  return examplesDo(async () => ({ list: fresh, out: fresh.length }));
 }

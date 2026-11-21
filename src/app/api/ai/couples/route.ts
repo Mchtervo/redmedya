@@ -9,6 +9,8 @@ import { normalizePhone } from "@/lib/ai-couples/rules";
 import { ingestCouple, readCouples } from "@/lib/ai-couples/store";
 import { readAutomation } from "@/lib/ai-couples/automation";
 import { hitapFor } from "@/lib/ai-couples/hitap";
+import { resolveLid, shouldAlertLid } from "@/lib/ai-couples/wa-lid";
+import { sendTelegramMessage } from "@/lib/lead-notify";
 import type { AiCoupleGrade, AiCoupleSource } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,18 @@ export async function GET(request: Request) {
   const denied = requireAiApi(request);
   if (denied) return denied;
   const url = new URL(request.url);
+  // WhatsApp gizli kimlik (numara yerine "...@lid"): doğru çifti bul, bulamazsan sahibine ilet
+  const lid = url.searchParams.get("lid")?.trim();
+  if (lid && !url.searchParams.get("phone")) {
+    const push = (url.searchParams.get("push") ?? "").slice(0, 80);
+    const fromMe = url.searchParams.get("fromMe") === "true";
+    const text = (url.searchParams.get("text") ?? "").slice(0, 600);
+    const c = await resolveLid(lid, push, fromMe).catch(() => null);
+    if (!c && !fromMe && text && shouldAlertLid(`${lid}|${text}`)) {
+      await sendTelegramMessage(`📩 WhatsApp'tan NUMARASI GİZLİ bir mesaj geldi — kimin olduğunu bulamadım, lütfen telefondan bakın.\n👤 Görünen ad: ${push || "(yok)"}\n💬 Mesaj: ${text}`).catch(() => false);
+    }
+    return NextResponse.json({ ok: true, couples: c ? [{ ...c, hitap: hitapFor(c.name).hitap }] : [], lidResolved: Boolean(c) });
+  }
   const grade = url.searchParams.get("grade") as AiCoupleGrade | null;
   const phone = normalizePhone(url.searchParams.get("phone"));
   const q = url.searchParams.get("q")?.toLocaleLowerCase("tr-TR").trim();

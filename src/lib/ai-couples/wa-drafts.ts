@@ -53,6 +53,12 @@ export async function matchOwnerReply(coupleId: string, text: string): Promise<O
   });
 }
 
+/** Bu metin asistanın bir önerisi mi? (onaylanıp ya da kopyalanıp gönderilmiş → sahibinin kendi yazısı sayılmaz) */
+export async function draftTexts(): Promise<Set<string>> {
+  return locked(async (list) => ({ out: new Set(list.map((d) => normText(d.text))) }));
+}
+export const normDraftText = normText;
+
 export async function getDraft(id: string): Promise<WaDraft | null> {
   return locked(async (list) => ({ out: list.find((d) => d.id === id) ?? null }));
 }
