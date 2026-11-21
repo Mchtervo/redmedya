@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad } from "@/lib/ai-couples/http";
-import { getCouple } from "@/lib/ai-couples/store";
+import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { readAutomation } from "@/lib/ai-couples/automation";
 import { generateWaReply } from "@/lib/ai-couples/wa-agent";
 
@@ -65,6 +65,8 @@ export async function POST(request: Request, { params }: Ctx) {
   busy.set(id, Date.now());
   try {
     const r = await generateWaReply(c);
+    const summary = r.action !== "skip" ? r.summary : undefined;
+    if (summary) await mutateCouple(id, (x) => ({ ...x, aiSummary: summary, aiSummaryAt: new Date().toISOString() })).catch(() => null);
     return NextResponse.json({ ok: true, ...r, draftOnly, name: c.name, phone: c.phone });
   } finally {
     setTimeout(() => busy.delete(id), 15_000);

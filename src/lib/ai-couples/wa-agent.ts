@@ -14,8 +14,8 @@ import { learningPromptBlock } from "@/lib/ai-couples/wa-learning";
 const MODEL = "claude-sonnet-5-5";
 
 export type WaAgentResult =
-  | { action: "send"; text: string; note?: string }
-  | { action: "handoff"; reason: string; draft?: string; hold?: string }
+  | { action: "send"; text: string; note?: string; summary?: string }
+  | { action: "handoff"; reason: string; draft?: string; hold?: string; summary?: string }
   | { action: "skip"; reason: string };
 
 /** İşletme bilgileri — SADECE bunlar (uydurma yok) */
@@ -249,6 +249,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
           draft: { type: "string", description: "handoff ise sahibine önerilen cevap taslağı (isteğe bağlı)" },
           bekletme: { type: "string", description: "handoff ise müşteriye gidecek kısa bekletme mesajı" },
           sahibine_not: { type: "string", description: "send ise sahibinin MUTLAKA bilmesi gereken bir şey olduysa (ör. müşteri tarihi 24 saat tutmamızı kabul etti, paket seçti) 1 cümle" },
+          ozet: { type: "string", description: "Sahibi için gidişatın TEK cümlelik özeti — baştan anlatma, şu an nerede: ne istedi, ne verildi, sırada ne var. Örn: '14 Ağustos için fotoğraf+klip istedi, 9.000 TL + gelin alma önerildi, kapora bekleniyor.'" },
         },
         required: ["action"],
       },
@@ -308,13 +309,14 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
       const inp = final.input ?? {};
       const action = String(inp.action);
       const text = typeof inp.text === "string" ? inp.text.trim() : "";
-      if (action === "send" && text) return { action: "send", text: fixTenCouples(text).slice(0, 1500), note: typeof inp.sahibine_not === "string" && inp.sahibine_not.trim() ? inp.sahibine_not.trim().slice(0, 400) : undefined };
+      const summary = typeof inp.ozet === "string" && inp.ozet.trim() ? inp.ozet.replace(/\s+/g, " ").trim().slice(0, 240) : undefined;
+      if (action === "send" && text) return { action: "send", summary, text: fixTenCouples(text).slice(0, 1500), note: typeof inp.sahibine_not === "string" && inp.sahibine_not.trim() ? inp.sahibine_not.trim().slice(0, 400) : undefined };
       // "Cevap gerekmiyor" sadece kısa kapanış mesajlarında kabul edilir; soru/itiraz cevapsız kalmaz → sahibine devret
       const lastIn = [...c.messages].reverse().find((m) => m.direction === "in")?.text ?? "";
       const closing = lastIn.length <= 40 && !lastIn.includes("?") && /(teşekkür|tesekkur|sağ ?ol|sag ?ol|tamam|tmm|eyv|👍|🙏|iyi günler|iyi akşamlar|görüşürüz|ok\b|peki)/i.test(lastIn);
       if ((action === "skip" || (action === "send" && !text)) && closing) return { action: "skip", reason: String(inp.reason ?? "cevap gerekmiyor") };
       if (action !== "handoff" && !(action === "send" && text)) return { action: "handoff", reason: "Yapay zekâ bu mesaja cevap üretemedi — lütfen siz dönün." };
-      return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? fixTenCouples(inp.draft).slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? fixTenCouples(inp.bekletme.trim()).slice(0, 400) : undefined };
+      return { action: "handoff", summary, reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? fixTenCouples(inp.draft).slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? fixTenCouples(inp.bekletme.trim()).slice(0, 400) : undefined };
     }
     const calls = blocks.filter((b) => b.type === "tool_use" && (b.name === "tarih_kontrol" || b.name === "hesapla"));
     if (!calls.length) return { action: "handoff", reason: "Yapay zekâ net bir cevap vermedi — lütfen siz dönün." };

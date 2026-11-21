@@ -292,6 +292,7 @@ async function replyThread(igsid: string): Promise<void> {
   const r = await generate(t);
   if (r.date) t = await patchThread(igsid, (x) => ({ ...x, weddingDate: r.date }));
   if (r.stage || r.summary || r.handoff) t = await patchThread(igsid, (x) => ({ ...x, stage: r.handoff ? "devredildi" : r.stage ?? x.stage, summary: r.summary ?? x.summary }));
+  if (r.summary && t.coupleId) await mutateCouple(t.coupleId, (c) => ({ ...c, aiSummary: `Instagram: ${r.summary}`, aiSummaryAt: new Date().toISOString() })).catch(() => null);
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   if (newPhone) await onPhoneCaptured(t, newPhone, isTest);
   if (newCallAt) await applyCallTime(igsid, newCallAt, isTest);

@@ -545,7 +545,7 @@ function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnab
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <p className="truncate text-[15px] font-semibold text-slate-900">{c.name}</p>
-            <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold", SOURCE_STYLE[c.source])}>{SOURCE_LABEL[c.source]}</span>
+            <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-semibold", SOURCE_STYLE[c.source])}>{c.sourceRef === "wa-direct" ? "WhatsApp (doğrudan)" : c.sourceRef?.startsWith("igdm:") ? "Instagram DM" : SOURCE_LABEL[c.source]}</span>
             {c.sourceRef === "test" && <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">🧪 Test</span>}
             {lastCall?.notes?.tarihTut && !c.contactLocked && <span className="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">🔥 Tarih tutalım dedi</span>}
           </div>
@@ -560,6 +560,11 @@ function CoupleRow({ c, callsEnabled, onOpen, onCall }: { c: AiCouple; callsEnab
             </span>
             <span className="text-xs text-slate-500">📞 {c.callCount} arama</span>
           </p>
+          {c.aiSummary && (
+            <p className="mt-1.5 line-clamp-2 text-xs text-indigo-900">
+              <span className="font-semibold">📍 Durum:</span> {c.aiSummary}
+            </p>
+          )}
           <p className="mt-1.5 line-clamp-1 text-xs text-slate-600">
             <span className="font-semibold text-slate-700">Sonraki adım:</span> {step.text}
           </p>

@@ -74,6 +74,9 @@ export type AiTimelineEvent = {
 export type AiCouple = {
   id: string;
   name: string;
+  /** Yapay zekânın çıkardığı gidişat özeti ("şu an nerede": ne istedi, ne verildi, sırada ne var) */
+  aiSummary?: string;
+  aiSummaryAt?: string;
   /** 90XXXXXXXXXX biçiminde normalize */
   phone: string;
   weddingDate?: string; // YYYY-MM-DD
