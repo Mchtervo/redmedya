@@ -625,6 +625,7 @@ async function sendWaOpener(igsid: string, isTest: boolean): Promise<void> {
 export async function waOpenerNow(igsid: string, prefersWa: boolean): Promise<boolean> {
   const t = await patchThread(igsid, (x) => ({ ...x, prefersWa: prefersWa || x.prefersWa, waOpenerAt: undefined }));
   if (!t.phone) return false;
+  if (t.coupleId) await cancelPendingDrafts(t.coupleId); // eski öneri gönderilmesin
   if (t.coupleId && (prefersWa || t.prefersWa)) {
     const now = new Date().toISOString();
     await mutateCouple(t.coupleId, (c) => ({ ...c, status: c.status === "new" ? "contacted" : c.status, callbackRequested: false, callbackAt: undefined, updatedAt: now })).catch(() => null);
