@@ -224,3 +224,8 @@ export async function approveDraft(id: string): Promise<{ ok: boolean; msg: stri
   await release("sent");
   return { ok: true, msg: `✅ Gönderildi — ${d.name}`, draft: d };
 }
+
+/** Bu müşteri için belirtilen andan sonra oluşturulmuş, hâlâ bekleyen öneri var mı? */
+export async function hasPendingDraft(coupleKey: string, sinceIso: string): Promise<boolean> {
+  return locked(async (list) => ({ out: list.some((d) => d.coupleId === coupleKey && d.status === "pending" && d.createdAt >= sinceIso) }));
+}

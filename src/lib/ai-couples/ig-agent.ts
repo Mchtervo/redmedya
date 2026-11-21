@@ -22,7 +22,7 @@ import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
-import { createIgDraftAndNotify, draftTexts, normDraftText } from "@/lib/ai-couples/wa-drafts";
+import { createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
 const MODEL = "claude-sonnet-5-5";
@@ -230,6 +230,8 @@ HAFIZA: Konuşmanın tamamını oku. Daha önce selamlaştıysanız müşteri te
 
 KURALLAR:
 - Fiyat sorulursa: net fiyatı söyle (aşağıdaki bilgilerden, uydurmadan) + "erken rezervasyonda bu fiyattan sabitliyoruz, zam gelmeden" diye harekete geçir + numara henüz alınmadıysa "detaylı anlatalım, numaranızı yazar mısınız" ekle.
+- EK HİZMET SATIŞI (bunaltmadan): Müşteri bir paketle ilgilendiğinde ya da fiyat aldığında, ihtiyacına uyan TEK bir ek hizmeti indirimli fiyatıyla öner — "bilginiz olsun" tadında: ör. "Gelin almayı da düşünüyorsanız pakete eklenince 5.000 yerine 4.000 TL'ye düşüyor, bence değerlendirin", "Salona giriş ve ilk dansı da ekleyenler çok oluyor, 5.000 yerine 4.000 TL". Hangisini önereceğini konuşmadan seç (gelin alma, kuaför, salona giriş/ilk dans, albüm, after'a kadar çekim, omuz kamera). Yazışma boyunca EN FAZLA 2 kez ve aynı mesajda başka bir ikna unsuruyla birlikte değil; müşteri "istemiyoruz / sadece dış çekim" dediyse bir daha açma. Fiyatları SADECE bilgilerdeki listeden ver.
+- DRONE HEDİYESİ: "Her ay sadece 10 çift alıyoruz, [o ay] için X yer kaldı; bu son yerlerden ayırtanlara dış çekimde drone çekimi hediye" gibi, basit ve tek cümle. X sadece gerçek kalan yer sayısı (takvim/kalan yer listesi). Konuşmada EN FAZLA BİR kez.
 - Kontenjan rakamlarını ASLA uydurma; sadece tarih_kontrol sonucunu ya da aşağıdaki kalan yer listesini kullan.
 - Sorulmadıkça bot olduğunu söyleme; "bot musun" diye açıkça sorulursa dürüst ol: "İlk bilgileri hızlı iletebilmek için asistanımızla yazıyoruz, detayları ekibimiz anlatacak 😊".
 - Şikâyet, iptal, ödeme sorunu, alakasız konu → kibarca "hemen ilgileniyoruz" de ve devret=true yap.
@@ -491,4 +493,18 @@ export async function resumeThread(igsid: string): Promise<boolean> {
     messages: x.messages.filter((m, i, arr) => !(m.by === "owner" && drafts.has(normDraftText(m.text)) && arr.some((o) => o.by === "ai" && normDraftText(o.text) === normDraftText(m.text)))).map((m) => (m.by === "owner" && drafts.has(normDraftText(m.text)) ? { ...m, by: "ai" as const } : m)),
   }));
   return true;
+}
+
+/** Cevap bekleyen sohbetlere (son 23 saat, henüz öneri gitmemiş) öneri hazırla — Telegram'a onaya gider */
+export async function replyPending(): Promise<{ igsid: string; who: string }[]> {
+  const list = await listThreads();
+  const done: { igsid: string; who: string }[] = [];
+  for (const t of list) {
+    const last = t.messages.at(-1);
+    if (!last || last.dir !== "in" || Date.now() - Date.parse(last.at) > 23 * 3600_000) continue;
+    if (await hasPendingDraft(`ig:${t.igsid}`, last.at)) continue;
+    await replyThread(t.igsid).catch((e) => console.error("[ig-agent] replyPending", e));
+    done.push({ igsid: t.igsid, who: t.username ? `@${t.username}` : t.name ?? t.igsid });
+  }
+  return done;
 }
