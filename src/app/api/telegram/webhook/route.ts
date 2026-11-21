@@ -10,6 +10,7 @@ import { sendTelegramMessage } from "@/lib/lead-notify";
 import { answerCommand } from "@/lib/ai-couples/telegram-commands";
 import { transcribeTelegramVoice, voiceToCommand } from "@/lib/ai-couples/voice";
 import { approveDraft, findDraftByTgMessage, tgApi } from "@/lib/ai-couples/wa-drafts";
+import { decideRule, removeRule, rulesListText } from "@/lib/ai-couples/wa-learning";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,14 @@ export async function POST(request: Request) {
       await tgApi("answerCallbackQuery", { callback_query_id: cb.id });
       return NextResponse.json({ ok: true });
     }
-    if (cb.data?.startsWith("wad:")) {
+    if (cb.data?.startsWith("lr:")) {
+      // Öğrenme önerisi: lr:y:<id> = kural olsun, lr:n:<id> = hayır
+      const yes = cb.data.startsWith("lr:y:");
+      const r = await decideRule(cb.data.slice(5), yes);
+      await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: yes ? "Kural eklendi" : "Eklenmedi" });
+      if (r.decided && cb.message?.message_id) await tgApi("editMessageReplyMarkup", { chat_id: allowedChat, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
+      await tgApi("sendMessage", { chat_id: allowedChat, text: r.msg, ...(cb.message?.message_id ? { reply_to_message_id: cb.message.message_id } : {}) });
+    } else if (cb.data?.startsWith("wad:")) {
       await tgApi("answerCallbackQuery", { callback_query_id: cb.id, text: "Gönderiliyor…" });
       await runApproval(cb.data.slice(4), allowedChat, cb.message?.message_id).catch(async () => {
         await sendTelegramMessage("⚠️ Gönderim sırasında hata oldu, lütfen kendiniz yazın.").catch(() => false);
@@ -66,6 +74,18 @@ export async function POST(request: Request) {
   }
   const chatId = update?.message?.chat?.id;
   if (!allowedChat || String(chatId) !== allowedChat) return NextResponse.json({ ok: true });
+
+  // Öğrenilen kurallar: /kurallar · /kuralsil 2
+  const cmdText = update?.message?.text?.trim() ?? "";
+  if (/^\/kurallar\b/i.test(cmdText)) {
+    await sendTelegramMessage(await rulesListText()).catch(() => false);
+    return NextResponse.json({ ok: true });
+  }
+  const del = cmdText.match(/^\/kuralsil\s+(\d+)/i);
+  if (del) {
+    await sendTelegramMessage(await removeRule(Number(del[1]))).catch(() => false);
+    return NextResponse.json({ ok: true });
+  }
 
   // Öneri mesajına "gönder / onaylıyorum" diye cevap yazıldı
   const replyTo = update?.message?.reply_to_message?.message_id;

@@ -24,7 +24,38 @@ export type WaDraft = {
   status: "pending" | "sending" | "sent";
   tgMessageId?: number;
   sentAt?: string;
+  /** Sahibi düğmeye basmadan kendisi yazdıysa: yazdığı metin (öğrenme için) */
+  ownerText?: string;
+  ownerAt?: string;
 };
+
+const normText = (t: string) => t.toLocaleLowerCase("tr-TR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/**
+ * Sahibi müşteriye elle yazdı → son 12 saatteki açık öneriyle eşleştir.
+ *  approval: onaylanan önerinin kendisi gidiyor (öğrenilecek bir şey yok)
+ *  copied:   öneriyi kopyalayıp aynen göndermiş
+ *  edited:   öneriden farklı yazmış → öğrenme fırsatı
+ */
+export type OwnerMatch = { kind: "approval" | "copied" | "edited"; draft: WaDraft } | null;
+export async function matchOwnerReply(coupleId: string, text: string): Promise<OwnerMatch> {
+  return locked<OwnerMatch>(async (list) => {
+    const now = Date.now();
+    const d = [...list].reverse().find((x) => x.coupleId === coupleId && now - Date.parse(x.createdAt) < 12 * 3600_000);
+    if (!d) return { out: null };
+    const same = normText(d.text) === normText(text);
+    if (d.status !== "pending") return { out: same ? { kind: "approval" as const, draft: d } : null };
+    // Art arda birkaç mesaj yazdıysa birleştir
+    const ownerText = d.ownerText ? `${d.ownerText}\n${text}` : text;
+    const kind = !d.ownerText && same ? ("copied" as const) : ("edited" as const);
+    const next = { ...d, ownerText: ownerText.slice(0, 2000), ownerAt: new Date().toISOString() };
+    return { list: list.map((x) => (x.id === d.id ? next : x)), out: { kind, draft: next } };
+  });
+}
+
+export async function getDraft(id: string): Promise<WaDraft | null> {
+  return locked(async (list) => ({ out: list.find((d) => d.id === id) ?? null }));
+}
 
 let chain: Promise<unknown> = Promise.resolve();
 /** Dosyaya sırayla eriş (aynı anda iki düğme basımı çift gönderim yapmasın) */

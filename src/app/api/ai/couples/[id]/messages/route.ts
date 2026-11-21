@@ -22,6 +22,7 @@ import {
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
+import { onOwnerReply } from "@/lib/ai-couples/wa-learning";
 import type { AiCouple, AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -146,6 +147,11 @@ export async function POST(request: Request, { params }: Ctx) {
 
   if (duplicate) return NextResponse.json({ ok: true, duplicate: true });
   if (blockedReason) return NextResponse.json({ ok: false, allowed: false, reason: blockedReason }, { status: 423 });
+
+  // Sahibi müşteriye elle yazdı (telefondan / panelden) → asistan öğrensin (örnek bankası + öneriden farklıysa ders)
+  if (direction === "out" && kind === "reply" && updated) {
+    void onOwnerReply(id, text).catch((e) => console.error("[wa-learning]", e));
+  }
 
   // Gelen her cevap Telegram'a (otomatik cevap YOK; sahibi/ekip cevaplar)
   if (direction === "in" && updated) {

@@ -9,6 +9,7 @@ import { checkDate, upcomingCapacity, readCapacityConfig } from "@/lib/ai-couple
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import { hitapFor } from "@/lib/ai-couples/hitap";
 import { INSTAGRAM_URL } from "@/lib/ai-couples/rules";
+import { learningPromptBlock } from "@/lib/ai-couples/wa-learning";
 
 const MODEL = "claude-sonnet-5-5";
 
@@ -247,9 +248,13 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
   ];
 
   // Önbellek: tools + sabit kurallar (aynı kaldıkça ucuz okunur); müşteriye özel kısım sonda
+  // Sahibinden öğrenilenler: onaylı kurallar + konuya yakın gerçek cevapları (önbelleğin arkasında, küçük)
+  const lastInText = [...c.messages].reverse().find((m) => m.direction === "in")?.text ?? "";
+  const learned = await learningPromptBlock(lastInText).catch(() => "");
   const system = [
     { type: "text", text: STATIC_PROMPT, cache_control: { type: "ephemeral" } },
     { type: "text", text: dynamicPrompt(c, kontenjan, cfg.droneGiftLeft ?? 0) },
+    ...(learned ? [{ type: "text", text: learned }] : []),
   ];
   const messages: Msg[] = [{ role: "user", content: `WhatsApp yazışması (eskiden yeniye):\n${convo}\n\nMüşterinin son mesajına cevabını yanit_ver ile ver.` }];
   const started = Date.now();
