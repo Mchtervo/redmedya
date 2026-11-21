@@ -22,7 +22,7 @@ import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import { FACTS } from "@/lib/ai-couples/wa-agent";
-import { createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
+import { cancelPendingDrafts, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
 const MODEL = "claude-sonnet-5-5";
@@ -507,4 +507,11 @@ export async function replyPending(): Promise<{ igsid: string; who: string }[]> 
     done.push({ igsid: t.igsid, who: t.username ? `@${t.username}` : t.name ?? t.igsid });
   }
   return done;
+}
+
+/** Bekleyen öneriyi iptal edip yenisini hazırla (ör. öneri hatalıydı, kurallar düzeltildi) */
+export async function redoThread(igsid: string): Promise<number> {
+  const n = await cancelPendingDrafts(`ig:${igsid}`);
+  await replyThread(igsid);
+  return n;
 }

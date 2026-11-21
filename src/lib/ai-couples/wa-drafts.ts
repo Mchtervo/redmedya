@@ -21,7 +21,7 @@ export type WaDraft = {
   name: string;
   text: string;
   createdAt: string;
-  status: "pending" | "sending" | "sent";
+  status: "pending" | "sending" | "sent" | "cancelled";
   tgMessageId?: number;
   sentAt?: string;
   /** Sahibi düğmeye basmadan kendisi yazdıysa: yazdığı metin (öğrenme için) */
@@ -187,6 +187,7 @@ export async function approveDraft(id: string): Promise<{ ok: boolean; msg: stri
     if (!d) return { out: { ok: false, msg: "Bu öneri bulunamadı." } };
     if (d.status === "sent") return { out: { ok: false, msg: `Bu mesaj zaten gönderildi (${d.name}).`, draft: d } };
     if (d.status === "sending") return { out: { ok: false, msg: "Bu mesaj şu an gönderiliyor, bekleyin.", draft: d } };
+    if (d.status === "cancelled") return { out: { ok: false, msg: "Bu öneri iptal edildi — yerine yeni öneri gönderildi, onu kullanın.", draft: d } };
     if (Date.now() - Date.parse(d.createdAt) > MAX_AGE_MS) return { out: { ok: false, msg: "Bu öneri 2 günden eski — göndermedim. Gerekirse kendiniz yazın.", draft: d } };
     return { list: list.map((x) => (x.id === id ? { ...x, status: "sending" as const } : x)), out: { ok: true, msg: "", draft: d } };
   });
@@ -228,4 +229,12 @@ export async function approveDraft(id: string): Promise<{ ok: boolean; msg: stri
 /** Bu müşteri için belirtilen andan sonra oluşturulmuş, hâlâ bekleyen öneri var mı? */
 export async function hasPendingDraft(coupleKey: string, sinceIso: string): Promise<boolean> {
   return locked(async (list) => ({ out: list.some((d) => d.coupleId === coupleKey && d.status === "pending" && d.createdAt >= sinceIso) }));
+}
+
+/** Bu müşterinin bekleyen önerilerini iptal et (yenisi hazırlanacak) */
+export async function cancelPendingDrafts(coupleKey: string): Promise<number> {
+  return locked(async (list) => {
+    const n = list.filter((d) => d.coupleId === coupleKey && d.status === "pending").length;
+    return { list: list.map((d) => (d.coupleId === coupleKey && d.status === "pending" ? { ...d, status: "cancelled" as const } : d)), out: n };
+  });
 }
