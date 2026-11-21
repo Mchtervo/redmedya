@@ -21,7 +21,7 @@ import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
-import { FACTS, generateWaOpener } from "@/lib/ai-couples/wa-agent";
+import { FACTS, fixTenCouples, generateWaOpener } from "@/lib/ai-couples/wa-agent";
 import { cancelPendingDrafts, createDraftAndNotify, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
@@ -473,7 +473,7 @@ async function generate(t: IgThread): Promise<Gen> {
     const checks = blocks.filter((b) => b.type === "tool_use" && (b.name === "tarih_kontrol" || b.name === "hesapla"));
     if (final && !checks.length) {
       const inp = final.input ?? {};
-      const text = typeof inp.text === "string" ? inp.text.trim().slice(0, 900) : "";
+      const text = typeof inp.text === "string" ? fixTenCouples(inp.text.trim()).slice(0, 900) : "";
       const d = typeof inp.dugun_tarihi === "string" && /^\d{4}-\d{2}-\d{2}$/.test(inp.dugun_tarihi) ? inp.dugun_tarihi : undefined;
       const stage = typeof inp.evre === "string" && inp.evre in IG_STAGES ? (inp.evre as IgStage) : undefined;
       const summary = typeof inp.ozet === "string" ? inp.ozet.replace(/\s+/g, " ").trim().slice(0, 240) : undefined;

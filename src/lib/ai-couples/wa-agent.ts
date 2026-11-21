@@ -306,13 +306,13 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
       const inp = final.input ?? {};
       const action = String(inp.action);
       const text = typeof inp.text === "string" ? inp.text.trim() : "";
-      if (action === "send" && text) return { action: "send", text: text.slice(0, 1500), note: typeof inp.sahibine_not === "string" && inp.sahibine_not.trim() ? inp.sahibine_not.trim().slice(0, 400) : undefined };
+      if (action === "send" && text) return { action: "send", text: fixTenCouples(text).slice(0, 1500), note: typeof inp.sahibine_not === "string" && inp.sahibine_not.trim() ? inp.sahibine_not.trim().slice(0, 400) : undefined };
       // "Cevap gerekmiyor" sadece kısa kapanış mesajlarında kabul edilir; soru/itiraz cevapsız kalmaz → sahibine devret
       const lastIn = [...c.messages].reverse().find((m) => m.direction === "in")?.text ?? "";
       const closing = lastIn.length <= 40 && !lastIn.includes("?") && /(teşekkür|tesekkur|sağ ?ol|sag ?ol|tamam|tmm|eyv|👍|🙏|iyi günler|iyi akşamlar|görüşürüz|ok\b|peki)/i.test(lastIn);
       if ((action === "skip" || (action === "send" && !text)) && closing) return { action: "skip", reason: String(inp.reason ?? "cevap gerekmiyor") };
       if (action !== "handoff" && !(action === "send" && text)) return { action: "handoff", reason: "Yapay zekâ bu mesaja cevap üretemedi — lütfen siz dönün." };
-      return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? inp.draft.slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? inp.bekletme.trim().slice(0, 400) : undefined };
+      return { action: "handoff", reason: String(inp.reason ?? "Yapay zekâ emin olamadı"), draft: typeof inp.draft === "string" ? fixTenCouples(inp.draft).slice(0, 1500) : undefined, hold: typeof inp.bekletme === "string" && inp.bekletme.trim() ? fixTenCouples(inp.bekletme.trim()).slice(0, 400) : undefined };
     }
     const calls = blocks.filter((b) => b.type === "tool_use" && (b.name === "tarih_kontrol" || b.name === "hesapla"));
     if (!calls.length) return { action: "handoff", reason: "Yapay zekâ net bir cevap vermedi — lütfen siz dönün." };
@@ -380,5 +380,17 @@ Sadece mesaj metnini yaz, başka hiçbir şey yazma.`;
   if (!res?.ok) return null;
   const j = (await res.json().catch(() => null)) as { content?: { type: string; text?: string }[] } | null;
   const text = (j?.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
-  return text ? text.slice(0, 1500) : null;
+  return text ? fixTenCouples(text).slice(0, 1500) : null;
+}
+
+/**
+ * "Her ay 10 çift alıyoruz" YANLIŞ (daha fazla çekim yapıyoruz) — doğrusu "her ay BU KAMPANYA FİYATINDAN sadece 10 çift".
+ * Model kurala rağmen kısaltabiliyor; giden her metin buradan geçer.
+ */
+export function fixTenCouples(text: string): string {
+  return text.replace(/(her ay|ayda)(\s+)(sadece\s+|yalnızca\s+)?10 çift(?:le|e)?\s+(alıyoruz|çalışıyoruz)/gi, (m, lead: string, _sp: string, _only: string | undefined, _verb: string, offset: number, all: string) => {
+    if (/kampanya fiyat/i.test(all.slice(Math.max(0, offset - 40), offset))) return m;
+    const cap = lead[0] === lead[0].toUpperCase();
+    return (cap ? "Her ay" : "her ay") + " bu kampanya fiyatından sadece 10 çift alıyoruz";
+  });
 }
