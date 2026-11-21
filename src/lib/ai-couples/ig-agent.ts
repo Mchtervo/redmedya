@@ -620,3 +620,15 @@ async function sendWaOpener(igsid: string, isTest: boolean): Promise<void> {
   const ok = await createDraftAndNotify({ coupleId: couple.id, text, tg }).catch(() => false);
   if (!ok) await sendTelegramMessage(`${tg}\n\n(Düğme eklenemedi — beğendiyseniz kopyalayıp WhatsApp'tan gönderin.)`).catch(() => false);
 }
+
+/** Elle: numarası alınmış sohbet için WhatsApp ilk mesaj önerisini şimdi hazırla (WhatsApp istediyse hemen aranmaz) */
+export async function waOpenerNow(igsid: string, prefersWa: boolean): Promise<boolean> {
+  const t = await patchThread(igsid, (x) => ({ ...x, prefersWa: prefersWa || x.prefersWa, waOpenerAt: undefined }));
+  if (!t.phone) return false;
+  if (t.coupleId && (prefersWa || t.prefersWa)) {
+    const now = new Date().toISOString();
+    await mutateCouple(t.coupleId, (c) => ({ ...c, status: c.status === "new" ? "contacted" : c.status, callbackRequested: false, callbackAt: undefined, updatedAt: now })).catch(() => null);
+  }
+  await sendWaOpener(igsid, Boolean(t.test));
+  return true;
+}
