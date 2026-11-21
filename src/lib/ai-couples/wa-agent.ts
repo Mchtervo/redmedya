@@ -334,3 +334,46 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
   }
   return { action: "handoff", reason: "Yapay zekâ cevabı tamamlayamadı — lütfen siz dönün." };
 }
+
+/**
+ * Instagram'dan numarasını veren çifte WhatsApp'tan atılacak İLK mesaj (öneri olarak — sahibi onaylarsa gider).
+ * İçerik: Instagram'dan geldiğini hatırlat → tarih varsa müsaitlik → paketler fiyat düşüşüyle → 1 ek hizmet → aciliyet → "nasıl bir çekim?" sorusu.
+ */
+export async function generateWaOpener(c: AiCouple, igContext: string): Promise<string | null> {
+  const { anthropicKey } = await readIntegrations();
+  if (!anthropicKey) return null;
+  const cfg = await readCapacityConfig();
+  const months = await upcomingCapacity(14, cfg);
+  const kontenjan = months.map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : `${m.remaining}/${m.total}`}`).join(" | ");
+  const d = c.weddingDate ? await checkDate(c.weddingDate, cfg).catch(() => null) : null;
+  const h = hitapFor(c.name).hitap || "";
+  const prompt = `${FACTS}
+
+# GÖREV
+Bu çift Instagram DM'den bize yazdı ve telefon numarasını verdi. Şimdi ona WhatsApp'tan İLK mesajı atıyoruz. Mesajı sen yaz.
+Hitap: ${h || "(isim belirsiz — sadece 'Merhabalar' de)"}
+Instagram'da konuşulanlar: ${igContext.slice(0, 1500)}
+Çekim/düğün tarihi: ${c.weddingDate ?? "bilinmiyor"}${d ? ` → takvim: ${d.available ? "MÜSAİT" : "DOLU (alternatifler: " + d.alternatives.map((a) => a.dateLabel).join(", ") + ")"}, o ay kalan yer: ${d.month.remaining}/${d.month.total}` : ""}
+Ay bazında kalan yer: ${kontenjan}
+
+MESAJIN İÇERİĞİ (sırayla, akıcı, samimi esnaf ağzı, kısa cümleler; en fazla 1-2 emoji; madde işareti YOK; toplam 5-7 kısa cümle):
+1) "Merhabalar [hitap], RED MEDIA'dan yazıyorum 🤍 Instagram'dan numaranızı vermiştiniz." gibi.
+2) Tarih biliniyorsa müsaitliği ve o ayın GERÇEK kalan yerini söyle; bilinmiyorsa atla.
+3) Paketleri fiyat DÜŞÜŞÜYLE ver: fotoğraf 7.000 yerine 5.000, fotoğraf + sinematik klip 12.600 yerine 9.000, fotoğraf + klip + albüm 19.600 yerine 14.000 TL.
+4) TEK bir ek hizmeti indirimiyle öner (konuşmaya uygun olanı; yoksa gelin alma klibi): "... eklerseniz 5.000 yerine 4.000 TL'ye düşüyor, bence değerlendirin".
+5) Aciliyet tek cümlede: her ay sadece 10 çift alıyoruz, son yerlerden ayırtanlara dış çekimde drone hediye, %40 zam henüz yansımadı.
+6) Fiyat listesi linki: https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf
+7) "Nasıl bir çekim düşünüyordunuz?" gibi bir soruyla bitir.
+Yol/ulaşım/servis konusunu ASLA açma. Instagram'da zaten söylenmiş bir şeyi aynen tekrarlama, devam ediyormuş gibi yaz. Fiyatları SADECE yukarıdaki bilgilerden ver.
+Sadece mesaj metnini yaz, başka hiçbir şey yazma.`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({ model: MODEL, max_tokens: 2500, output_config: { effort: "low" }, messages: [{ role: "user", content: prompt }] }),
+    signal: AbortSignal.timeout(60_000),
+  }).catch(() => null);
+  if (!res?.ok) return null;
+  const j = (await res.json().catch(() => null)) as { content?: { type: string; text?: string }[] } | null;
+  const text = (j?.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
+  return text ? text.slice(0, 1500) : null;
+}

@@ -21,8 +21,8 @@ import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
-import { FACTS } from "@/lib/ai-couples/wa-agent";
-import { cancelPendingDrafts, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
+import { FACTS, generateWaOpener } from "@/lib/ai-couples/wa-agent";
+import { cancelPendingDrafts, createDraftAndNotify, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
 const MODEL = "claude-sonnet-5-5";
@@ -61,6 +61,10 @@ export type IgThread = {
   synced?: number;
   /** Müşterinin aranmak istediği saat (ISO) — sesli asistan o saatte arar */
   callAt?: string;
+  /** Müşteri WhatsApp'tan yazılmasını istedi (arama saati sorulmaz) */
+  prefersWa?: boolean;
+  /** WhatsApp ilk mesaj önerisi hazırlandı mı */
+  waOpenerAt?: string;
   /** Konuşmanın son aşaması + 1 cümlelik gidişat özeti (panel ve Telegram için) */
   stage?: IgStage;
   summary?: string;
@@ -215,7 +219,7 @@ AKIŞ — her aşamada ZORUNLU olanlar (bunları atlama):
    a) Tarih verdiyse tarih_kontrol ile bak; "Her ay sadece 10 çift alıyoruz, [ay] için X yer kaldı" (GERÇEK sayı). Tarih yoksa: "Her ay sadece 10 çift alıyoruz, çoğu ayda son 3-4 yer kaldı".
    b) "Bu son yerlerden ayırtanlara dış çekimde drone çekimi hediye, üstelik fiyatlarımıza %40 zam henüz yansımadı."
    c) NUMARA iste: "Size özel fiyatı ve detayları anlatalım, WhatsApp / telefon numaranızı yazar mısınız? ${CALL_NUMBER}'den dönelim."
-3) NUMARA GELİNCE: teşekkür et; arama saati bilinmiyorsa "Sizi hangi saatte aramamız uygun olur?" diye sor; biliniyorsa onayla. Numara alındıktan sonra bir daha numara isteme.
+3) NUMARA GELİNCE: teşekkür et; müşteri WhatsApp istediyse saat SORMA, "Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍" de; istemediyse ve arama saati bilinmiyorsa "Sizi hangi saatte aramamız uygun olur?" diye sor; biliniyorsa onayla. Numara alındıktan sonra bir daha numara isteme.
 4) MÜŞTERİ "WhatsApp'tan yazayım / WhatsApp'tan konuşalım / numaranızı verin / WhatsApp numaranız ne" derse: HEMEN onun numarasını iste — "Tabii 😊 Numaranızı yazarsanız fiyat listesini ve detayları hemen WhatsApp'tan atalım" (bizim numaramızı verip bekleme; onun numarasını al). Numara gelince "Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍" de.
 5) NUMARA VERMEK İSTEMEZSE ya da "buradan devam edelim" derse: sorun değil, DM'den satışa devam et — fiyatları düşüşüyle ver, fiyat listesini at (https://redmediadugun.com/redmedia-2027-fiyat-listesi.pdf), tarihi kontrol et, kaporayla tarihi tutmayı teklif et. Numarayı bir daha isteme (en fazla çok sonra bir kez "isterseniz 2 dakikada telefonda anlatalım").
 
@@ -267,8 +271,13 @@ async function replyThread(igsid: string): Promise<void> {
   if (newPhone) t = await patchThread(igsid, (x) => ({ ...x, phone: newPhone }));
 
   // Aranmak istediği saati yakala ("akşam 7 gibi", "yarın öğlen") — numara yazılan mesajdaki rakamlar saat sanılmasın
+  // "WhatsApp'tan yazın" → WhatsApp tercihi (saat sorulmaz, WhatsApp'tan ilk mesaj hazırlanır)
+  const recentIn = t.messages.slice(-3).filter((x) => x.dir === "in").map((x) => x.text).join(" ");
+  if (!t.prefersWa && /(whats?app|watsap|vatsap|\bwp\b|wp'?(den|ten|dan|tan))/i.test(recentIn) && !/(aray[ıi]n|arayabilirsiniz|arar m[ıi]s[ıi]n[ıi]z)/i.test(recentIn)) {
+    t = await patchThread(igsid, (x) => ({ ...x, prefersWa: true }));
+  }
   let newCallAt: string | null = null;
-  if (t.phone && !t.callAt) {
+  if (t.phone && !t.callAt && !t.prefersWa) {
     const recent = t.messages.slice(-3).filter((x) => x.dir === "in").map((x) => x.text).join(" ").replace(/(\+?90|0)?\s*5\d{2}[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}/g, " ");
     const when = parseCallbackTime(recent, new Date());
     if (when && when.getTime() > Date.now() + 5 * 60_000 && when.getTime() < Date.now() + 14 * 86400_000) {
@@ -283,6 +292,9 @@ async function replyThread(igsid: string): Promise<void> {
   const who = `@${t.username ?? "?"}${t.name ? ` (${t.name})` : ""}`;
   if (newPhone) await onPhoneCaptured(t, newPhone, isTest);
   if (newCallAt) await applyCallTime(igsid, newCallAt, isTest);
+  // Numara elimizdeyse WhatsApp'tan ilk mesaj (teklif) önerisi — bir kez
+  const tw = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (tw?.phone && !tw.waOpenerAt) await sendWaOpener(igsid, isTest);
 
   // HİÇBİR CEVAP KENDİLİĞİNDEN GİTMEZ: Telegram'a "✅ Gönder" düğmesiyle öneri olarak gider, sahibi onaylarsa gönderilir
   const lastIn = t.messages.filter((x) => x.dir === "in").slice(-3).map((x) => x.text).join(" / ");
@@ -361,10 +373,22 @@ async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
   if (r.ok) {
     await patchThread(t.igsid, (x) => ({ ...x, coupleId: r.couple.id }));
     await syncToCouple(t.igsid); // Instagram yazışması çiftin geçmişine → sesli asistan aradığında bunu bilir
+    if (r.created) {
+      // Standart "talebiniz ulaştı, arayacağız" karşılaması gitmesin (ilk WhatsApp mesajını asistan hazırlıyor, siz onaylıyorsunuz).
+      // WhatsApp istemediyse sesli asistan arar (saat verdiyse o saatte); WhatsApp istediyse aranmaz — cevap vermezse 3. gün takip araması.
+      const fresh = await withThreads(async (m) => ({ out: m[t.igsid] }));
+      const now = new Date().toISOString();
+      await mutateCouple(r.couple.id, (c) => ({
+        ...c,
+        status: c.status === "new" ? "contacted" : c.status,
+        ...(fresh?.prefersWa ? {} : { callbackRequested: true, callbackAt: fresh?.callAt ?? now }),
+        updatedAt: now,
+      })).catch(() => null);
+    }
   }
   await sendTelegramMessage(
     r.ok
-      ? `📸 INSTAGRAM DM'DEN YENİ ÇİFT: ${r.couple.name} - ${displayPhone(phone)}${t.weddingDate ? ` - Düğün: ${t.weddingDate}` : ""}\n${r.couple.contactLocked ? "🚫 Kara listede — aranmayacak." : r.created ? "➡️ Panele eklendi; sesli asistan arayacak, ardından WhatsApp." : "ℹ️ Bu numara panelde zaten vardı."}\n\n${convo}`
+      ? `📸 INSTAGRAM DM'DEN YENİ ÇİFT: ${r.couple.name} - ${displayPhone(phone)}${t.weddingDate ? ` - Düğün: ${t.weddingDate}` : ""}\n${r.couple.contactLocked ? "🚫 Kara listede — aranmayacak." : r.created ? (t.prefersWa ? "➡️ Panele eklendi. WhatsApp'tan yazılmasını istedi — ilk WhatsApp mesajı önerisi birazdan gelecek (aranmayacak; cevap vermezse 3. gün takip araması)." : "➡️ Panele eklendi; sesli asistan arayacak + ilk WhatsApp mesajı önerisi birazdan gelecek.") : "ℹ️ Bu numara panelde zaten vardı."}\n\n${convo}`
       : `⚠️ Instagram DM'den numara geldi ama panele eklenemedi: ${displayPhone(phone)} ${who} (${r.error})`,
   ).catch(() => false);
 }
@@ -395,7 +419,8 @@ async function generate(t: IgThread): Promise<Gen> {
 - Instagram adı: ${t.name ?? "bilinmiyor"} (kullanıcı adı @${t.username ?? "?"})
 - Düğün tarihi: ${t.weddingDate ?? "henüz öğrenilmedi"}
 - Telefon numarası: ${t.phone ? `ALINDI (${displayPhone(t.phone)}) — artık isteme, teşekkür et` : "henüz alınmadı"}
-- Arama saati: ${t.callAt ? `BELLİ — ${new Date(t.callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} (onayla, tekrar sorma)` : t.phone ? "henüz bilinmiyor — bir kez sor" : "-"}
+- İletişim tercihi: ${t.prefersWa ? "WHATSAPP — arama saati SORMA. Numara alındıysa: 'Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍' de; alınmadıysa numarasını iste." : "belirtmedi"}
+- Arama saati: ${t.prefersWa ? "(WhatsApp istedi — sorma)" : ""}${!t.prefersWa && t.callAt ? `BELLİ — ${new Date(t.callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} (onayla, tekrar sorma)` : !t.prefersWa && t.phone ? "henüz bilinmiyor — bir kez sor" : t.prefersWa ? "" : "-"}
 - Kalan yer (ay: kalan/toplam): ${kontenjan}${known}
 - Konuşmanın şu anki aşaması: ${t.stage ? IG_STAGES[t.stage] : "yeni"}${t.summary ? ` — ${t.summary}` : ""}
 - Daha önce selamlaştık mı: ${t.messages.some((m) => m.dir === "out") ? "EVET — tekrar 'merhaba/hayırlı olsun' ile baştan BAŞLAMA, kaldığın yerden devam et" : "hayır, bu ilk cevap"}`;
@@ -558,15 +583,40 @@ export async function importConversation(igsid: string, draft = true): Promise<{
 /** Deneme: verilen yazışmaya asistanın vereceği cevabı üret (HİÇBİR ŞEY göndermez, kaydetmez) */
 export async function simulateIg(input: { messages: { dir: "in" | "out"; text: string }[]; name?: string; phone?: string; weddingDate?: string }): Promise<Gen> {
   const now = Date.now();
+  const recentIn = input.messages.slice(-3).filter((m) => m.dir === "in").map((m) => m.text).join(" ");
+  const prefersWa = /(whats?app|watsap|vatsap|wp|wp'?(den|ten|dan|tan))/i.test(recentIn) && !/(aray[ıi]n|arayabilirsiniz)/i.test(recentIn);
   const t: IgThread = {
     igsid: "sim",
     name: input.name,
     username: "deneme",
     phone: input.phone,
     weddingDate: input.weddingDate,
+    prefersWa,
     messages: input.messages.map((m, i) => ({ at: new Date(now - (input.messages.length - i) * 60_000).toISOString(), dir: m.dir, text: m.text, ...(m.dir === "out" ? { by: "ai" as const } : {}) })),
     createdAt: new Date(now).toISOString(),
     updatedAt: new Date(now).toISOString(),
   };
   return generate(t);
+}
+
+/** Numarası alınan çifte WhatsApp'tan atılacak ilk mesajı hazırla → Telegram'a "✅ Gönder" düğmesiyle (sahibi onaylarsa gider) */
+async function sendWaOpener(igsid: string, isTest: boolean): Promise<void> {
+  const t = await withThreads(async (m) => ({ out: m[igsid] }));
+  if (!t?.phone || t.waOpenerAt) return;
+  await patchThread(igsid, (x) => ({ ...x, waOpenerAt: new Date().toISOString() }));
+  const couple = t.coupleId ? await getCouple(t.coupleId).catch(() => undefined) : undefined;
+  const who = t.name || (t.username ? `@${t.username}` : "Instagram çifti");
+  if (!couple) {
+    await sendTelegramMessage(`📲 ${who} numarasını verdi (${displayPhone(t.phone)}) ama panelde kaydı yok${isTest ? " (test modu)" : ""} — WhatsApp ilk mesajı hazırlanamadı.`).catch(() => false);
+    return;
+  }
+  const ig = t.messages.slice(-10).map((m) => `${m.dir === "in" ? "Müşteri" : "Biz"}: ${m.text.replace(/\s+/g, " ").slice(0, 200)}`).join(" | ");
+  const text = await generateWaOpener({ ...couple, weddingDate: couple.weddingDate ?? t.weddingDate }, ig);
+  if (!text) {
+    await sendTelegramMessage(`📲 ${who} (${displayPhone(t.phone)}) — WhatsApp ilk mesajı üretilemedi, lütfen siz yazın.`).catch(() => false);
+    return;
+  }
+  const tg = `📲 WHATSAPP İLK MESAJ ÖNERİSİ${isTest ? " (TEST)" : ""} — ${couple.name} · ${displayPhone(couple.phone)}\n(Instagram'dan numarasını verdi${t.prefersWa ? ", WhatsApp'tan yazılmasını istedi" : ""})\n\n🤖 Önerdiğim mesaj:\n${text}`;
+  const ok = await createDraftAndNotify({ coupleId: couple.id, text, tg }).catch(() => false);
+  if (!ok) await sendTelegramMessage(`${tg}\n\n(Düğme eklenemedi — beğendiyseniz kopyalayıp WhatsApp'tan gönderin.)`).catch(() => false);
 }
