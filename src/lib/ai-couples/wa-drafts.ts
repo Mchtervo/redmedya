@@ -60,8 +60,11 @@ export async function matchOwnerReply(coupleId: string, text: string): Promise<O
     // Art arda birkaç mesaj yazdıysa birleştir
     const ownerText = d.ownerText ? `${d.ownerText}\n${text}` : text;
     const kind = !d.ownerText && same ? ("copied" as const) : ("edited" as const);
-    const next = { ...d, status: "cancelled" as const, ownerText: ownerText.slice(0, 2000), ownerAt: new Date().toISOString() };
-    if (d.tgMessageId) void stripTgButton(d.tgMessageId, "✍️ Bu müşteriye siz yazdınız — öneri kapandı.");
+    const asIs = kind === "copied";
+    const next = asIs
+      ? { ...d, status: "sent" as const, sentAt: new Date().toISOString(), sentText: text, via: "panel" as const }
+      : { ...d, status: "cancelled" as const, ownerText: ownerText.slice(0, 2000), ownerAt: new Date().toISOString() };
+    if (d.tgMessageId) void stripTgButton(d.tgMessageId, asIs ? `✅ Telefondan gönderdiniz — ${d.name} (onaylandı sayıldı)` : "✍️ Bu müşteriye siz yazdınız — öneri kapandı (farkı not aldım).");
     return { list: list.map((x) => (x.id === d.id ? next : x)), out: { kind, draft: next } };
   });
 }
@@ -155,7 +158,7 @@ export async function createDraftAndNotify(input: { coupleId: string; text: stri
   await supersedeAndAdd(draft);
   const sent = await tgApi<{ message_id: number }>("sendMessage", {
     chat_id: chatId,
-    text: `${input.tg.slice(0, 3600)}\n\n👇 Müşteriye göndermek için düğmeye basın (ya da bu mesaja "gönder" yazın). Basmazsanız hiçbir şey gitmez.`,
+    text: `${input.tg.slice(0, 3000)}\n\n📲 Telefondan göndermek için (mesaj hazır açılır): ${waLink(couple.phone, text)}\n\n👇 Ya da düğmeye basın (veya bu mesaja "gönder" yazın). Basmazsanız hiçbir şey gitmez.`,
     disable_web_page_preview: true,
     reply_markup: { inline_keyboard: [[{ text: "✅ Gönder", callback_data: `wad:${draft.id}` }]] },
   });
@@ -370,4 +373,26 @@ export async function remindStaleDrafts(): Promise<number> {
   await tgApi("sendMessage", { chat_id: chatId, text: `⏰ ONAY BEKLEYEN CEVAPLAR\n${lines.join("\n")}\n\nÖnerilerin altındaki ✅ Gönder'e basın ya da panelin en üstündeki "Cevap bekleyenler" bölümünden gönderin.` });
   for (const d of due) if (d.tgMessageId) await tgApi("sendMessage", { chat_id: chatId, text: "⬆️ Bu öneri hâlâ onay bekliyor", reply_to_message_id: d.tgMessageId }).catch(() => null);
   return due.length;
+}
+
+/** wa.me linki: telefonda WhatsApp sohbetini mesaj yazılı halde açar */
+export function waLink(phone: string, text: string): string {
+  return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+}
+
+/** Kısıtlama / elle gönderme modu: bekleyen her öneriyi Telegram'a kopyala-gönder biçiminde yolla (link + sadece metin) */
+export async function sendCopyHelpers(): Promise<number> {
+  const chatId = tgChatId();
+  if (!chatId) return 0;
+  const drafts = await listPendingDrafts();
+  for (const d of drafts) {
+    const who = d.channel === "instagram" ? `${d.name}${d.username ? " (@" + d.username + ")" : ""} · Instagram` : `${d.name} · ${d.phone ? d.phone.replace(/^90(\d{3})(\d{3})(\d{2})(\d{2})$/, "0$1 $2 $3 $4") : ""}`;
+    const head =
+      d.channel === "whatsapp" && d.phone
+        ? `📋 KOPYALA-GÖNDER — ${who}\n💬 Müşteri: ${d.customer.map((c) => c.text).join(" / ").slice(0, 300) || "-"}\n\n📲 Tek dokunuşla (mesaj hazır açılır): ${waLink(d.phone, d.text)}\n\nYa da aşağıdaki mesajı basılı tutup kopyalayın 👇`
+        : `📋 KOPYALA-GÖNDER — ${who}\n💬 Müşteri: ${d.customer.map((c) => c.text).join(" / ").slice(0, 300) || "-"}\n\nAşağıdaki mesajı kopyalayıp Instagram'dan gönderin 👇`;
+    await tgApi("sendMessage", { chat_id: chatId, text: head, disable_web_page_preview: true });
+    await tgApi("sendMessage", { chat_id: chatId, text: d.text, disable_web_page_preview: true });
+  }
+  return drafts.length;
 }
