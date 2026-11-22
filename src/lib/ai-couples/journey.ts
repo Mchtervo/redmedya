@@ -132,7 +132,7 @@ export function historyForAgent(c: AiCouple): string {
   const parts: string[] = [];
   const ev = [
     ...c.calls.map((x) => ({ at: x.at, t: "call" as const, x })),
-    ...c.messages.map((m) => ({ at: m.at, t: "msg" as const, m })),
+    ...c.messages.filter((m) => !m.text.startsWith("[GERİ ÇEKİLDİ]")).map((m) => ({ at: m.at, t: "msg" as const, m })),
   ].sort((a, b) => a.at.localeCompare(b.at));
   let callNo = 0;
   for (const e of ev) {

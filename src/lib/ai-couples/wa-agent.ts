@@ -65,6 +65,7 @@ AKRABA / TAKI ÇEKİMİ: Akrabalar, takı merasimi, salon anları DÜĞÜN GÜN�
 "POZ SINIRI YOK" sadece fotoğraf için söylenir, klip kalemleri için söyleme.
 KLİP SÜRELERİ: Sadece dış çekim alınırsa klip 1,5–2 dk. Düğün günü kalemleri de eklenirse dış çekim dahil HEPSİ tek bir 4–5 dk'lık düğün günü klibinde birleşir (ayrı klipler toplanmaz). Kına klibi ayrı, 3–4 dk.
 SALON KALEMLERİ: "Salona giriş ve ilk dans klibi" sadece giriş + ilk dansın klibidir; nikah anı, takı merasimi, yakınlarla fotoğraflar bunun içinde DEĞİL — onlar için salon fotoğraf çekimi (5.000) ya da başından after'a kadar çekim (8.000) gerekir. Müşteri salonu genel söylediyse hangi kalemi istediğini sor ya da farkı kısaca anlat.
+NEZAKET: Müşteri özür dilerse ("kusura bakmayın, geç döndüm") "Estağfurullah, hiç sorun değil" de — "Rica ederim" sadece TEŞEKKÜRE cevaptır.
 TEKRAR SORMA: Müşteri bir bilgiyi (arama saati, tarih, isim, paket, tercih) verdiyse onu kısaca TEYİT ET; aynı şeyi tekrar sorma, "başka/özel bir saatiniz var mı" gibi ek soru sorma.
 VARSAYIM YAPMA: Müşterinin SÖYLEMEDİĞİ hiçbir detayı varsayma — nikahın nerede olduğu (nikah dairesi / belediye / salon), düğün olup olmadığı, salon, gelin alma, kuaför var mı. Bilmiyorsan sor ya da hiç değinme.
 EK HİZMET UYUMU: Önerdiğin ek hizmet SADECE müşterinin söylediği etkinliğe uymalı. Nikah geçtiyse uygun kalem NİKAH ÇEKİMİdir (fotoğraf 5.000, sadece klip 5.000, fotoğraf + klip 9.000 TL) ya da sadece "Nikahı da çektirmek ister misiniz?" diye sor. "Salona giriş ve ilk dans", "after'a kadar çekim", "salon fotoğrafı" DÜĞÜN kalemleridir — müşteri düğün yaptığını söylemediyse önerme. Gelin alma / kuaför de ancak düğün günü varsa anlamlıdır; emin değilsen önce "Düğününüz de olacak mı?" diye sor.
@@ -198,7 +199,10 @@ export type WaUsage = { input: number; cacheRead: number; cacheWrite: number; ou
 export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { usage?: WaUsage }> {
   const usage: WaUsage = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0, calls: 0, usd: 0 };
   let r = await generateInner(c, usage);
-  const convo = c.messages.filter((m) => m.channel === "whatsapp" || m.channel === "instagram").slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
+  const lastOutIdx = c.messages.map((m) => m.direction).lastIndexOf("out");
+  const recentCustomer = c.messages.slice(lastOutIdx + 1).filter((m) => m.direction === "in").map((m) => m.text).join(" ");
+  if (r.action === "send") r = { ...r, text: fixCourtesy(r.text, recentCustomer) };
+  const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
   if (r.action === "send") {
     const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text });
     if (rv.issues.length) r = { ...r, text: rv.text, note: [r.note, `🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`].filter(Boolean).join(" · ").slice(0, 400) };
@@ -220,7 +224,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
   const kontenjan = months.filter((m) => m.monthKey.startsWith("2027")).map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : m.remaining}`).join(" | ") || "bilinmiyor";
 
   const convo = c.messages
-    .filter((m) => m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms" || m.channel === "instagram")
+    .filter((m) => (m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]"))
     .slice(-24)
     .map((m) => {
       const who = (m.channel === "instagram" ? "[Instagram DM] " : "") + (m.direction === "in" ? "MÜŞTERİ" : m.kind === "reply" ? "EKİP (insan)" : "BİZ");
@@ -423,7 +427,8 @@ export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; co
 3) Müşterinin söylemediği bir şeyi varsayıyor mu (nikahın yeri, düğün olduğu, salon, gelin alma vb.)? → varsayımı kaldır.
 4) Hesap: birden fazla kalem toplanmışsa toplam doğru mu? Kapora: toplam 15.000 TL altı 1.000 TL, üstü 2.000 TL. Fiyatlar aşağıdaki bilgilerle uyumlu mu? → yanlışı düzelt.
 5) Yasak: yol/ulaşım/servis; "her ay 10 çift alıyoruz" (doğrusu "her ay bu kampanya fiyatından sadece 10 çift"); "10 yerin 10'u boş" gibi kalan yer çok olduğunu söyleyen cümle; "Harika bir soru / memnuniyetle / size yardımcı olmaktan mutluluk duyarım" gibi robotik laflar. → düzelt.
-6) Müşterinin SON mesajına gerçekten cevap veriyor mu? Müşteri "hayır / istemiyorum" dediyse ısrar ediyor mu? → düzelt.
+6) Nezaket: müşteri özür dilediyse (\"kusura bakmayın, geç döndüm\") \"Rica ederim\" YANLIŞ → \"Estağfurullah, hiç sorun değil\"; \"Rica ederim\" sadece teşekküre cevaptır.
+7) Müşterinin SON mesajına gerçekten cevap veriyor mu? Müşteri "hayır / istemiyorum" dediyse ısrar ediyor mu? → düzelt.
 Sorun yoksa metni AYNEN döndür. Sorun varsa SADECE sorunlu kısmı düzelt; üslubu, emojileri ve geri kalan her şeyi koru, yeni bilgi ekleme.
 Sadece şu JSON'u yaz: {"sorunlar": ["kısa açıklama", ...], "metin": "son hali"}
 
@@ -457,4 +462,12 @@ ${input.draft}`;
   } catch {
     return { text: input.draft, issues: [] };
   }
+}
+
+/** Müşteri özür dilediyse ("kusura bakmayın, geç döndüm") "Rica ederim" yanlış → "Estağfurullah, hiç sorun değil" */
+export function fixCourtesy(text: string, recentCustomer: string): string {
+  const apology = /(kusura bakma|özür|ozur|pardon|affedersiniz|geç (döndüm|dönüş|yazdım|cevap|kaldım)|gec dondum)/i.test(recentCustomer);
+  const thanks = /(teşekkür|tesekkur|sağ ?ol|sag ?ol|eyvallah|çok iyisiniz)/i.test(recentCustomer);
+  if (!apology || thanks) return text;
+  return text.replace(/^(\s*)rica eder(im|iz)\b/i, "$1Estağfurullah").replace(/^(Estağfurullah[^.!?\n]{0,40}?),?\s*ne demek\b/i, "$1, hiç sorun değil");
 }

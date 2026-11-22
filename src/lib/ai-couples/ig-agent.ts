@@ -21,7 +21,7 @@ import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
-import { FACTS, fixTenCouples, generateWaOpener, reviewDraft } from "@/lib/ai-couples/wa-agent";
+import { FACTS, fixCourtesy, fixTenCouples, generateWaOpener, reviewDraft } from "@/lib/ai-couples/wa-agent";
 import { cancelPendingDrafts, createDraftAndNotify, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
@@ -290,9 +290,11 @@ async function replyThread(igsid: string): Promise<void> {
   }
 
   const r = await generate(t);
-  // İkinci kontrol (tekrar soru, varsayım, hesap, yasak ifade)
+  // İkinci kontrol (tekrar soru, varsayım, hesap, yasak ifade) + nezaket
   let reviewNote = "";
   if (r.text) {
+    const lo = t.messages.map((m) => m.dir).lastIndexOf("out");
+    r.text = fixCourtesy(r.text, t.messages.slice(lo + 1).filter((m) => m.dir === "in").map((m) => m.text).join(" "));
     const convoTxt = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
     const rv = await reviewDraft({ channel: "Instagram", convo: convoTxt, draft: r.text });
     if (rv.issues.length) {

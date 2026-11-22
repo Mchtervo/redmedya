@@ -52,6 +52,19 @@ export async function POST(request: Request, { params }: Ctx) {
   const existing = await getCouple(id);
   if (!existing) return bad("Bulunamadı", 404);
 
+  // Sahibi WhatsApp'ta mesajını herkesten sildi → son 48 saatteki son giden mesaj "geri çekildi" (asistan onu gitmiş saymaz)
+  if (fromPhone && text === "__GERI_CEKILDI__") {
+    let marked = "";
+    await mutateCouple(id, (c) => {
+      const idx = [...c.messages].map((m, i) => ({ m, i })).reverse().find(({ m }) => m.direction === "out" && !m.text.startsWith("[GERİ ÇEKİLDİ]") && Date.now() - Date.parse(m.at) < 48 * 3600_000)?.i;
+      if (idx === undefined) return c;
+      marked = c.messages[idx].text.slice(0, 80);
+      const messages = c.messages.map((m, i) => (i === idx ? { ...m, text: `[GERİ ÇEKİLDİ] ${m.text}` } : m));
+      return { ...c, messages, timeline: [...c.timeline, { at: new Date().toISOString(), type: "edit", text: `WhatsApp'ta mesaj geri çekildi: "${marked}"` }], updatedAt: new Date().toISOString() };
+    });
+    return NextResponse.json({ ok: true, retracted: Boolean(marked) });
+  }
+
   // Giden mesaj izni. Panelden personelin elle yazdığı cevap (kind "reply"): saat kuralı yok, kara liste kuralı var.
   // Düğün.com karşılaması (SMS / platform mesajı) gece de gidebilir — numara ancak SMS'le açılıyor, 1 saat içinde dönüş kuralı.
   const decide = (c: AiCouple): { allowed: true } | { allowed: false; reason: string } => {

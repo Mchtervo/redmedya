@@ -294,3 +294,14 @@ export async function reseedExamples(): Promise<number> {
   const fresh = await seedExamples();
   return examplesDo(async () => ({ list: fresh, out: fresh.length }));
 }
+
+/** Sahibinin Telegram'dan doğrudan öğrettiği kural (/ogret ...) — onaylı olarak eklenir */
+export async function addRuleDirect(text: string): Promise<string> {
+  const t = text.replace(/\s+/g, " ").trim().slice(0, 300);
+  if (t.length < 5) return "Kural çok kısa. Örnek: /ogret Müşteri özür dilerse 'Estağfurullah, hiç sorun değil' de";
+  const n = await rulesDo(async (list) => {
+    const rule: WaRule = { id: randomUUID().replace(/-/g, "").slice(0, 12), text: t, why: "Sahibi Telegram'dan öğretti", status: "active", createdAt: new Date().toISOString(), decidedAt: new Date().toISOString() };
+    return { list: [...list, rule], out: list.filter((r) => r.status === "active").length + 1 };
+  });
+  return `✅ Öğrendim (toplam ${n} kural). WhatsApp ve Instagram asistanı bundan sonra buna uyacak:\n"${t}"\n\nTüm kurallar: /kurallar · silmek: /kuralsil numara`;
+}

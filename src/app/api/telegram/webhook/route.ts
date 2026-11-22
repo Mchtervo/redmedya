@@ -10,7 +10,7 @@ import { sendTelegramMessage } from "@/lib/lead-notify";
 import { answerCommand } from "@/lib/ai-couples/telegram-commands";
 import { transcribeTelegramVoice, voiceToCommand } from "@/lib/ai-couples/voice";
 import { approveDraft, findDraftByTgMessage, tgApi } from "@/lib/ai-couples/wa-drafts";
-import { decideRule, removeRule, rulesListText } from "@/lib/ai-couples/wa-learning";
+import { addRuleDirect, decideRule, removeRule, rulesListText } from "@/lib/ai-couples/wa-learning";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +79,11 @@ export async function POST(request: Request) {
   const cmdText = update?.message?.text?.trim() ?? "";
   if (/^\/kurallar\b/i.test(cmdText)) {
     await sendTelegramMessage(await rulesListText()).catch(() => false);
+    return NextResponse.json({ ok: true });
+  }
+  const teach = cmdText.match(/^\/[oö][gğ]ret\s+([\s\S]+)/i);
+  if (teach) {
+    await sendTelegramMessage(await addRuleDirect(teach[1])).catch(() => false);
     return NextResponse.json({ ok: true });
   }
   const del = cmdText.match(/^\/kuralsil\s+(\d+)/i);
