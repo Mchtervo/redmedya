@@ -33,6 +33,8 @@ export type WaDraft = {
   sentText?: string;
   /** Nereden onaylandı */
   via?: "telegram" | "panel";
+  /** Onaysız bekliyor hatırlatması gönderildi mi */
+  remindedAt?: string;
 };
 
 const normText = (t: string) => t.toLocaleLowerCase("tr-TR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -345,4 +347,27 @@ export async function listPendingDrafts(): Promise<PendingDraftView[]> {
     }
   }
   return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** 45 dakikadır onay bekleyen öneriler için sahibine bir kez Telegram hatırlatması (08:00–23:00) */
+export async function remindStaleDrafts(): Promise<number> {
+  const hour = Number(new Date().toLocaleString("en-US", { timeZone: "Europe/Istanbul", hour: "numeric", hour12: false })) % 24;
+  if (hour < 8 || hour >= 23) return 0;
+  const now = Date.now();
+  const due = await locked(async (list) => {
+    const d = list.filter((x) => x.status === "pending" && !x.remindedAt && now - Date.parse(x.createdAt) > 45 * 60_000 && now - Date.parse(x.createdAt) < (x.igsid ? 23 : 47) * 3600_000);
+    if (!d.length) return { out: [] as WaDraft[] };
+    const ids = new Set(d.map((x) => x.id));
+    return { list: list.map((x) => (ids.has(x.id) ? { ...x, remindedAt: new Date().toISOString() } : x)), out: d };
+  });
+  const chatId = tgChatId();
+  if (!due.length || !chatId) return 0;
+  const lines = due.map((d) => {
+    const mins = Math.round((now - Date.parse(d.createdAt)) / 60_000);
+    const t = mins < 120 ? `${mins} dk` : `${Math.round(mins / 60)} saat`;
+    return `• ${d.name} (${d.igsid ? "Instagram" : "WhatsApp"}) — ${t}dır cevap bekliyor${d.igsid ? " · Instagram 24 saat sonra izin vermez" : ""}`;
+  });
+  await tgApi("sendMessage", { chat_id: chatId, text: `⏰ ONAY BEKLEYEN CEVAPLAR\n${lines.join("\n")}\n\nÖnerilerin altındaki ✅ Gönder'e basın ya da panelin en üstündeki "Cevap bekleyenler" bölümünden gönderin.` });
+  for (const d of due) if (d.tgMessageId) await tgApi("sendMessage", { chat_id: chatId, text: "⬆️ Bu öneri hâlâ onay bekliyor", reply_to_message_id: d.tgMessageId }).catch(() => null);
+  return due.length;
 }
