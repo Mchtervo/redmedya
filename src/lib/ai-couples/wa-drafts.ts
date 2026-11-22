@@ -29,6 +29,10 @@ export type WaDraft = {
   ownerAt?: string;
   /** Instagram DM önerisi ise müşterinin Instagram kimliği (coupleId = "ig:<igsid>") */
   igsid?: string;
+  /** Gönderilen metin (panelden düzenlenip gönderildiyse öneriden farklı olabilir) */
+  sentText?: string;
+  /** Nereden onaylandı */
+  via?: "telegram" | "panel";
 };
 
 const normText = (t: string) => t.toLocaleLowerCase("tr-TR").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -46,11 +50,16 @@ export async function matchOwnerReply(coupleId: string, text: string): Promise<O
     const d = [...list].reverse().find((x) => x.coupleId === coupleId && now - Date.parse(x.createdAt) < 12 * 3600_000);
     if (!d) return { out: null };
     const same = normText(d.text) === normText(text);
+    if (d.status === "cancelled" && d.ownerText) {
+      const next = { ...d, ownerText: `${d.ownerText}\n${text}`.slice(0, 2000), ownerAt: new Date().toISOString() };
+      return { list: list.map((x) => (x.id === d.id ? next : x)), out: { kind: "edited" as const, draft: next } };
+    }
     if (d.status !== "pending") return { out: same ? { kind: "approval" as const, draft: d } : null };
     // Art arda birkaç mesaj yazdıysa birleştir
     const ownerText = d.ownerText ? `${d.ownerText}\n${text}` : text;
     const kind = !d.ownerText && same ? ("copied" as const) : ("edited" as const);
-    const next = { ...d, ownerText: ownerText.slice(0, 2000), ownerAt: new Date().toISOString() };
+    const next = { ...d, status: "cancelled" as const, ownerText: ownerText.slice(0, 2000), ownerAt: new Date().toISOString() };
+    if (d.tgMessageId) void stripTgButton(d.tgMessageId, "✍️ Bu müşteriye siz yazdınız — öneri kapandı.");
     return { list: list.map((x) => (x.id === d.id ? next : x)), out: { kind, draft: next } };
   });
 }
@@ -141,7 +150,7 @@ export async function createDraftAndNotify(input: { coupleId: string; text: stri
   if (!chatId) return false;
   await ensureTelegramWebhook().catch(() => undefined);
   const draft: WaDraft = { id: randomUUID().replace(/-/g, "").slice(0, 16), coupleId: couple.id, name: couple.name, text, createdAt: new Date().toISOString(), status: "pending" };
-  await locked(async (list) => ({ list: [...list, draft], out: null }));
+  await supersedeAndAdd(draft);
   const sent = await tgApi<{ message_id: number }>("sendMessage", {
     chat_id: chatId,
     text: `${input.tg.slice(0, 3600)}\n\n👇 Müşteriye göndermek için düğmeye basın (ya da bu mesaja "gönder" yazın). Basmazsanız hiçbir şey gitmez.`,
@@ -160,7 +169,7 @@ export async function createIgDraftAndNotify(input: { igsid: string; name: strin
   if (!text || !chatId) return false;
   await ensureTelegramWebhook().catch(() => undefined);
   const draft: WaDraft = { id: randomUUID().replace(/-/g, "").slice(0, 16), coupleId: `ig:${input.igsid}`, igsid: input.igsid, name: input.name, text, createdAt: new Date().toISOString(), status: "pending" };
-  await locked(async (list) => ({ list: [...list, draft], out: null }));
+  await supersedeAndAdd(draft);
   const sent = await tgApi<{ message_id: number }>("sendMessage", {
     chat_id: chatId,
     text: `${input.tg.slice(0, 3600)}\n\n👇 Instagram'dan göndermek için düğmeye basın (ya da bu mesaja "gönder" yazın). Basmazsanız hiçbir şey gitmez.`,
@@ -181,7 +190,7 @@ export async function findDraftByTgMessage(messageId: number): Promise<WaDraft |
  * Göndermez: öneri eskiyse, zaten gittiyse, sonrasında müşteriye başka mesaj gittiyse (siz yazmışsanız),
  * müşteri kara listede / mesajlar iptal / kaybedildi ise.
  */
-export async function approveDraft(id: string): Promise<{ ok: boolean; msg: string; draft?: WaDraft }> {
+export async function approveDraft(id: string, opts: { text?: string; via?: "telegram" | "panel" } = {}): Promise<{ ok: boolean; msg: string; draft?: WaDraft }> {
   const claim = await locked<{ ok: boolean; msg: string; draft?: WaDraft }>(async (list) => {
     const d = list.find((x) => x.id === id);
     if (!d) return { out: { ok: false, msg: "Bu öneri bulunamadı." } };
@@ -192,9 +201,21 @@ export async function approveDraft(id: string): Promise<{ ok: boolean; msg: stri
     return { list: list.map((x) => (x.id === id ? { ...x, status: "sending" as const } : x)), out: { ok: true, msg: "", draft: d } };
   });
   if (!claim.ok || !claim.draft) return claim;
-  const d = claim.draft;
-  const release = (status: WaDraft["status"]) =>
-    locked(async (list) => ({ list: list.map((x) => (x.id === id ? { ...x, status, ...(status === "sent" ? { sentAt: new Date().toISOString() } : {}) } : x)), out: null }));
+  const d0 = claim.draft;
+  const sendText = (opts.text ?? d0.text).trim().slice(0, d0.igsid ? 990 : 3000) || d0.text;
+  const d = { ...d0, text: sendText };
+  const via = opts.via ?? "telegram";
+  const release = async (status: WaDraft["status"]) => {
+    await locked(async (list) => ({ list: list.map((x) => (x.id === id ? { ...x, status, ...(status === "sent" ? { sentAt: new Date().toISOString(), sentText: sendText, via } : {}) } : x)), out: null }));
+    // Panelden gönderildiyse Telegram'daki düğmeyi kaldır
+    if (status === "sent" && via === "panel" && d0.tgMessageId) await stripTgButton(d0.tgMessageId, `✅ Panelden gönderildi — ${d0.name}`);
+    // Panelde metni değiştirip gönderdiyse: farktan ders çıkar (sahibine sorulur)
+    if (status === "sent" && normText(sendText) !== normText(d0.text)) {
+      await locked(async (list) => ({ list: list.map((x) => (x.id === id ? { ...x, ownerText: sendText, ownerAt: new Date().toISOString() } : x)), out: null }));
+      const { learnFromEditedDraft } = await import("@/lib/ai-couples/wa-learning");
+      learnFromEditedDraft(id);
+    }
+  };
 
   // Instagram DM önerisi
   if (d.igsid) {
@@ -237,4 +258,91 @@ export async function cancelPendingDrafts(coupleKey: string): Promise<number> {
     const n = list.filter((d) => d.coupleId === coupleKey && d.status === "pending").length;
     return { list: list.map((d) => (d.coupleId === coupleKey && d.status === "pending" ? { ...d, status: "cancelled" as const } : d)), out: n };
   });
+}
+
+/** Telegram öneri mesajındaki düğmeyi kaldır (+ isteğe bağlı kısa not) */
+async function stripTgButton(messageId: number, note?: string): Promise<void> {
+  const chatId = tgChatId();
+  if (!chatId) return;
+  await tgApi("editMessageReplyMarkup", { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }).catch(() => null);
+  if (note) await tgApi("sendMessage", { chat_id: chatId, text: note, reply_to_message_id: messageId }).catch(() => null);
+}
+
+/** Aynı müşterinin bekleyen eski önerilerini iptal edip yenisini ekle (eski düğmeler kalkar) */
+async function supersedeAndAdd(draft: WaDraft): Promise<void> {
+  const old = await locked(async (list) => {
+    const prev = list.filter((d) => d.coupleId === draft.coupleId && d.status === "pending");
+    return { list: [...list.map((d) => (d.coupleId === draft.coupleId && d.status === "pending" ? { ...d, status: "cancelled" as const } : d)), draft], out: prev };
+  });
+  for (const d of old) if (d.tgMessageId) await stripTgButton(d.tgMessageId);
+}
+
+/** Panelden "gönderme" (öneriyi kapat) */
+export async function rejectDraft(id: string, via: "panel" | "telegram" = "panel"): Promise<{ ok: boolean; msg: string }> {
+  const d = await locked(async (list) => {
+    const x = list.find((y) => y.id === id);
+    if (!x || x.status !== "pending") return { out: x ?? null };
+    return { list: list.map((y) => (y.id === id ? { ...y, status: "cancelled" as const } : y)), out: x };
+  });
+  if (!d) return { ok: false, msg: "Öneri bulunamadı" };
+  if (d.status !== "pending") return { ok: false, msg: d.status === "sent" ? "Bu öneri zaten gönderilmiş" : "Bu öneri zaten kapalı" };
+  if (d.tgMessageId) await stripTgButton(d.tgMessageId, via === "panel" ? `✖ Panelden kapatıldı (gönderilmedi) — ${d.name}` : undefined);
+  return { ok: true, msg: "Öneri kapatıldı" };
+}
+
+export type PendingDraftView = {
+  id: string;
+  channel: "whatsapp" | "instagram";
+  coupleId?: string;
+  igsid?: string;
+  name: string;
+  phone?: string;
+  username?: string;
+  text: string;
+  createdAt: string;
+  summary?: string;
+  customer: { at: string; text: string }[];
+  expiresAt: string;
+};
+
+/** Panel: bekleyen öneriler (müşteri başına en yenisi), müşterinin son mesajları ve özetiyle */
+export async function listPendingDrafts(): Promise<PendingDraftView[]> {
+  const list = await locked(async (l) => ({ out: l }));
+  const now = Date.now();
+  const latest = new Map<string, WaDraft>();
+  for (const d of list) {
+    if (d.status !== "pending") continue;
+    const limit = d.igsid ? 23.5 * 3600_000 : MAX_AGE_MS;
+    if (now - Date.parse(d.createdAt) > limit) continue;
+    const cur = latest.get(d.coupleId);
+    if (!cur || cur.createdAt < d.createdAt) latest.set(d.coupleId, d);
+  }
+  const out: PendingDraftView[] = [];
+  let threads: { igsid: string; name?: string; username?: string; summary?: string; messages: { at: string; dir: string; text: string }[] }[] = [];
+  if ([...latest.values()].some((d) => d.igsid)) {
+    const { listThreads } = await import("@/lib/ai-couples/ig-agent");
+    threads = await listThreads();
+  }
+  for (const d of latest.values()) {
+    if (d.igsid) {
+      const t = threads.find((x) => x.igsid === d.igsid);
+      const msgs = t?.messages ?? [];
+      const lastOut = msgs.map((m) => m.dir).lastIndexOf("out");
+      out.push({
+        id: d.id, channel: "instagram", igsid: d.igsid, name: t?.name || d.name, username: t?.username, text: d.text, createdAt: d.createdAt, summary: t?.summary,
+        customer: msgs.slice(lastOut + 1).filter((m) => m.dir === "in").slice(-4).map((m) => ({ at: m.at, text: m.text.slice(0, 400) })),
+        expiresAt: new Date(Date.parse(d.createdAt) + 23.5 * 3600_000).toISOString(),
+      });
+    } else {
+      const c = await getCouple(d.coupleId);
+      if (!c) continue;
+      const lastOut = c.messages.map((m) => m.direction).lastIndexOf("out");
+      out.push({
+        id: d.id, channel: "whatsapp", coupleId: c.id, name: c.name, phone: c.phone, text: d.text, createdAt: d.createdAt, summary: c.aiSummary,
+        customer: c.messages.slice(lastOut + 1).filter((m) => m.direction === "in").slice(-4).map((m) => ({ at: m.at, text: m.text.slice(0, 400) })),
+        expiresAt: new Date(Date.parse(d.createdAt) + MAX_AGE_MS).toISOString(),
+      });
+    }
+  }
+  return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }

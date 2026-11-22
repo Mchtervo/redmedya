@@ -305,3 +305,8 @@ export async function addRuleDirect(text: string): Promise<string> {
   });
   return `✅ Öğrendim (toplam ${n} kural). WhatsApp ve Instagram asistanı bundan sonra buna uyacak:\n"${t}"\n\nTüm kurallar: /kurallar · silmek: /kuralsil numara`;
 }
+
+/** Panelde düzenlenip gönderilen öneri: öneri ↔ gönderilen metin farkından ders çıkar (Telegram'dan onay istenir) */
+export function learnFromEditedDraft(draftId: string): void {
+  scheduleAnalysis(draftId);
+}
