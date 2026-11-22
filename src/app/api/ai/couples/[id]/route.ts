@@ -51,6 +51,19 @@ export async function PATCH(request: Request, { params }: Ctx) {
         ? { ...next, sourceRef: "test", callbackRequested: false, callbackAt: undefined, followUpAt: undefined, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "🧪 Test kaydı olarak işaretlendi — istatistiğe sayılmaz, otomatik aranmaz" }] }
         : { ...next, sourceRef: next.sourceRef === "test" ? undefined : next.sourceRef, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "Test işareti kaldırıldı — gerçek çift olarak sayılır" }] };
     }
+    // Belirli mesajı geri çekildi işaretle / işareti kaldır (id ile)
+    const RT = "[GERİ ÇEKİLDİ] ";
+    const retractId = str(body.retractId, 60);
+    const unretractId = str(body.unretractId, 60);
+    if (retractId || unretractId) {
+      next = {
+        ...next,
+        messages: next.messages.map((m) =>
+          m.id === retractId && !m.text.startsWith(RT) ? { ...m, text: RT + m.text } : m.id === unretractId && m.text.startsWith(RT) ? { ...m, text: m.text.slice(RT.length) } : m,
+        ),
+        updatedAt: now.toISOString(),
+      };
+    }
     if (body.retractLastOut === true) {
       const idx = [...next.messages].map((m, i) => ({ m, i })).reverse().find(({ m }) => m.direction === "out" && !m.text.startsWith("[GERİ ÇEKİLDİ]"))?.i;
       if (idx !== undefined) next = { ...next, messages: next.messages.map((m, i) => (i === idx ? { ...m, text: `[GERİ ÇEKİLDİ] ${m.text}` } : m)), timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "Son giden mesaj geri çekildi olarak işaretlendi" }], updatedAt: now.toISOString() };
