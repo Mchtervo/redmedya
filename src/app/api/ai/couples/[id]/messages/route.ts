@@ -23,6 +23,8 @@ import { sendTelegramMessage } from "@/lib/lead-notify";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { onOwnerReply } from "@/lib/ai-couples/wa-learning";
+import { isWaManual, readAutomation } from "@/lib/ai-couples/automation";
+import { forwardManual } from "@/lib/ai-couples/wa-manual";
 import type { AiCouple, AiMessageChannel, AiMessageRecord } from "@/types/ai-couples";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +84,16 @@ export async function POST(request: Request, { params }: Ctx) {
     if (kind === "follow_up" && c.followUpSentAt) return { allowed: false, reason: "Takip mesajı zaten gönderildi" };
     return { allowed: true };
   };
+  if (direction === "out" && !fromPhone && isWaManual(await readAutomation()) && channel === "whatsapp") {
+    // Kampanya (soğuk liste) bu sürede tamamen durur; diğerleri sahibine kopyala-gönder olarak gider
+    if (existing.sourceRef === "kampanya-2027" && !existing.messages.some((m) => m.direction === "in")) {
+      return NextResponse.json({ ok: false, allowed: false, reason: "WhatsApp manuel mod — kampanya durduruldu" }, { status: 423 });
+    }
+    const pre = decide(existing);
+    if (!pre.allowed) return NextResponse.json({ ok: false, allowed: false, reason: pre.reason }, { status: 423 });
+    const fresh = await forwardManual(existing, text, kind ?? "other");
+    return NextResponse.json({ ok: false, allowed: false, manual: true, reason: fresh ? "WhatsApp kısıtlı — mesaj Telegram'a kopyala-gönder olarak iletildi" : "WhatsApp kısıtlı — bu mesaj zaten Telegram'a iletilmişti" }, { status: 423 });
+  }
   if (direction === "out" && !fromPhone) {
     const pre = decide(existing);
     if (!pre.allowed) return NextResponse.json({ ok: false, allowed: false, reason: pre.reason }, { status: 423 });

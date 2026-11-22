@@ -12,10 +12,10 @@ export async function POST(request: Request) {
   if (denied) return denied;
   const body = await readJson(request);
   // Instagram asistanı modu / test hesapları (otomasyon ayarına yazılır)
-  const AUTO_KEYS = ["igAiMode", "igAiTestUsers", "fuMsgDay", "fuCallDay", "fuLastDay"];
+  const AUTO_KEYS = ["igAiMode", "igAiTestUsers", "fuMsgDay", "fuCallDay", "fuLastDay", "waManualUntil", "waPerDay", "waGapMin", "waGapMax"];
   if (body && Object.keys(body).length && Object.keys(body).every((k) => AUTO_KEYS.includes(k))) {
     const saved = await writeAutomation(cleanAutomation(body as Record<string, unknown>, await readAutomation()));
-    return NextResponse.json({ ok: true, igAiMode: saved.igAiMode, igAiTestUsers: saved.igAiTestUsers, fuMsgDay: saved.fuMsgDay, fuCallDay: saved.fuCallDay, fuLastDay: saved.fuLastDay });
+    return NextResponse.json({ ok: true, igAiMode: saved.igAiMode, igAiTestUsers: saved.igAiTestUsers, fuMsgDay: saved.fuMsgDay, fuCallDay: saved.fuCallDay, fuLastDay: saved.fuLastDay, waManualUntil: saved.waManualUntil ?? null, waPerDay: saved.waPerDay, waGapMin: saved.waGapMin, waGapMax: saved.waGapMax });
   }
   const base = str(body?.panelHookBase, 300);
   const key = str(body?.panelHookKey, 200);

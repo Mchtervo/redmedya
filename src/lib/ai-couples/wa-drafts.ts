@@ -11,6 +11,7 @@ import { siteConfig } from "@/config/site";
 import { getTelegramWebhookSecret } from "@/lib/ai-couples/auth";
 import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { callPanelHook } from "@/lib/ai-couples/integrations";
+import { isWaManual, readAutomation } from "@/lib/ai-couples/automation";
 
 const FILE = dataPath("ai-wa-drafts.json");
 const MAX_AGE_MS = 48 * 3600_000;
@@ -164,6 +165,8 @@ export async function createDraftAndNotify(input: { coupleId: string; text: stri
   });
   const mid = sent?.result?.message_id;
   if (mid) await locked(async (list) => ({ list: list.map((d) => (d.id === draft.id ? { ...d, tgMessageId: mid } : d)), out: null }));
+  // WhatsApp kısıtlıyken (manuel mod): öneri metnini ayrıca düz mesaj olarak yolla — kolay kopyalansın
+  if (isWaManual(await readAutomation())) await tgApi("sendMessage", { chat_id: chatId, text, disable_web_page_preview: true });
   return Boolean(sent?.ok);
 }
 

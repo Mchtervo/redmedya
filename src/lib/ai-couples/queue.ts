@@ -154,7 +154,13 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
   }
 
   // 2b) Kapora hatırlatması ("tarihi tutalım" dedi, ~20 saat geçti) ve "düşüneyim" diyene 3. gün hatırlatması
+  // WhatsApp kısıtlanmasın: otomatik hatırlatmalar arası en az 10 dk, günde en fazla 15 (kampanya ve sahibinin cevapları hariç)
+  const autoOut = couples.flatMap((c) => c.messages.filter((m) => m.direction === "out" && m.channel === "whatsapp" && m.kind === "other" && !m.text.startsWith("[")).map((m) => Date.parse(m.at)));
+  const lastAuto = autoOut.length ? Math.max(...autoOut) : 0;
+  const todayStart = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) + "T00:00:00+03:00").getTime();
+  const reminderRoom = now.getTime() - lastAuto >= 10 * 60_000 && autoOut.filter((t) => t >= todayStart).length < 15;
   for (const c of couples) {
+    if (!reminderRoom) break;
     if (!canContact(c, "whatsapp", now).allowed) continue;
     if (isDepositReminderDue(c, now)) {
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildDepositReminder(c), reason: "Tarih tuttu — kapora hatırlatması" });

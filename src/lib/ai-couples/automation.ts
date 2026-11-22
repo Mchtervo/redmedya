@@ -34,6 +34,8 @@ export type AiAutomation = {
   igAiMode: "off" | "test" | "all";
   /** Test modunda cevap verilecek Instagram kullanıcı adları (@ olmadan, küçük harf) */
   igAiTestUsers: string[];
+  /** WhatsApp kısıtlıyken: bu zamana kadar giden mesajlar müşteriye gitmez, Telegram'a kopyala-gönder olarak gelir */
+  waManualUntil?: string;
   updatedAt?: string;
 };
 
@@ -73,6 +75,7 @@ export function cleanAutomation(input: Partial<Record<keyof AiAutomation, unknow
     igAiTestUsers: Array.isArray(input.igAiTestUsers)
       ? [...new Set(input.igAiTestUsers.flatMap((u) => String(u).split(/[,; \n]/)).map((u) => u.trim().replace(/^@/, "").toLowerCase()).filter((u) => /^[a-z0-9._]{1,30}$/.test(u)))].slice(0, 10)
       : cur.igAiTestUsers,
+    waManualUntil: typeof input.waManualUntil === "string" ? (input.waManualUntil && !Number.isNaN(Date.parse(input.waManualUntil)) ? new Date(input.waManualUntil).toISOString() : undefined) : cur.waManualUntil,
   };
   if (next.waGapMax < next.waGapMin) next.waGapMax = next.waGapMin;
   if (next.fuCallDay < next.fuMsgDay) next.fuCallDay = next.fuMsgDay;
@@ -99,4 +102,9 @@ export async function writeAutomation(a: AiAutomation): Promise<AiAutomation> {
   await writeFile(tmp, JSON.stringify(out, null, 2), "utf-8");
   await rename(tmp, FILE);
   return out;
+}
+
+/** WhatsApp manuel mod açık mı (kısıtlama süresince) */
+export function isWaManual(a: AiAutomation, now = Date.now()): boolean {
+  return Boolean(a.waManualUntil && Date.parse(a.waManualUntil) > now);
 }
