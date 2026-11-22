@@ -122,6 +122,10 @@ export async function POST(request: Request, { params }: Ctx) {
         timeline: [...next.timeline, { at: msg.at, type: "lost", text: "WhatsApp: ilgilenmediğini / bütçenin uymadığını söyledi" }] };
     }
     if (intent === "thinking") next = markThinking(next, now, "WhatsApp: düşüneceğini söyledi");
+    // "WhatsApp'tan yazın / buradan yazsanız / mesajla konuşalım / arama yerine" → aranmak yerine yazışmayı tercih ediyor
+    if (!next.prefersWhatsapp && /((whats?app|watsap|vatsap|\bwp\b|bur(a)?dan|mesaj(la|dan)?)[^.?!\n]{0,25}(yaz|konuş|devam|ileti[şs]im|olur mu)|arama yerine|aranmak istemiyorum|telefonla değil)/i.test(text) && !/(aray[ıi]n|arayabilirsiniz)/i.test(text)) {
+      next = { ...next, prefersWhatsapp: true, timeline: [...next.timeline, { at: msg.at, type: "edit", text: "İletişim tercihi: WhatsApp (aranmak yerine yazışmak istedi) — takipte önce 2 mesaj, sonra arama" }] };
+    }
     // "Akşam 7'de arayın / yarın öğlen müsaitim" → aramayı o saate kur (henüz telefonda konuşulmadıysa)
     // Bizim son mesajımız aramaya dairse ("sizi arayacağız", "hangi saatte arayalım") müşterinin yazdığı saat = arama saati ("13:40'tan sonra olur mu")
     const prevOut = [...c.messages].reverse().find((m) => m.direction === "out");

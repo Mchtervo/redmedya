@@ -22,7 +22,7 @@ import { readCouples } from "@/lib/ai-couples/store";
 import { historyForAgent } from "@/lib/ai-couples/journey";
 import { hitapFor, selamFor } from "@/lib/ai-couples/hitap";
 import { buildDepositReminder, buildThinkingNudge, isDepositReminderDue, isThinkingNudgeDue } from "@/lib/ai-couples/nudges";
-import { buildFollowLast, buildFollowMsg, isFollowCallDue, isFollowLastDue, isFollowMsgDue } from "@/lib/ai-couples/followup";
+import { buildFollowLast, buildFollowMsg, buildFollowMsg2, isFollowCallDue, isFollowLastDue, isFollowMsg2Due, isFollowMsgDue } from "@/lib/ai-couples/followup";
 import { readAutomation } from "@/lib/ai-couples/automation";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
@@ -164,6 +164,9 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     } else if (isFollowMsgDue(c, now)) {
       const cap = await getCapacityForDate(c.weddingDate, cfg);
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowMsg(c, cap, now), reason: "Teklif sonrası cevap yok — hatırlatma (tarih + fiyat + %40 zam)" });
+    } else if (isFollowMsg2Due(c, now)) {
+      const cap = await getCapacityForDate(c.weddingDate, cfg);
+      actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowMsg2(c, cap), reason: "WhatsApp'ı tercih etti, cevap yok — 2. hatırlatma" });
     } else if (isFollowLastDue(c, now)) {
       const cap = await getCapacityForDate(c.weddingDate, cfg);
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowLast(c, cap), reason: "Teklif sonrası cevap yok — son mesaj" });

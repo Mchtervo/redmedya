@@ -184,6 +184,7 @@ function dynamicPrompt(c: AiCouple, kontenjan: string, drone: number): string {
 - Bugün: ${today}
 - Hitap: ${h || "(isim belirsiz — 'Merhaba' de, isim kullanma)"}
 - Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}
+- İletişim tercihi: ${c.prefersWhatsapp ? "WHATSAPP — müşteri yazışmayı tercih etti. ARAMA TEKLİF ETME, 'uygun saatiniz varsa arayalım' / 'hangi saatte arayalım' DEME; her şeyi buradan hallet." : c.callbackRequested && c.callbackAt ? `arama saati belli (${new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })}) — tekrar saat sorma` : "belirtmedi"}
 - Geçmiş özeti: ${historyForAgent(c)}
 - 2027 KALAN YER (ay bazında): ${kontenjan}
 - Drone hediyesi: ayın kalan son yerlerine (yukarıdaki kalan yer listesi)${drone ? "" : ""}`;

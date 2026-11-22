@@ -77,6 +77,8 @@ export type AiCouple = {
   /** Yapay zekânın çıkardığı gidişat özeti ("şu an nerede": ne istedi, ne verildi, sırada ne var) */
   aiSummary?: string;
   aiSummaryAt?: string;
+  /** Müşteri aranmak yerine WhatsApp'tan yazışmayı tercih etti (arama teklif edilmez; takipte önce 2 mesaj, sonra arama) */
+  prefersWhatsapp?: boolean;
   /** 90XXXXXXXXXX biçiminde normalize */
   phone: string;
   weddingDate?: string; // YYYY-MM-DD

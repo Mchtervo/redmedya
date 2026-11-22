@@ -13,6 +13,8 @@ import { hitapFor } from "@/lib/ai-couples/hitap";
 
 export const FU_MSG_MARK = "zamsız fiyattan yararlanmanız için";
 export const FU_LAST_MARK = "son kez kısaca hatırlatıyorum";
+/** WhatsApp tercih edene 2. takip mesajı */
+export const FU_MSG2_MARK = "buradan birlikte netleştirelim";
 /** Takip / hatırlatma türü mesajlar (yeni takip dayanağı sayılmaz; "hatırlatma gitti" sayılır) */
 const REMINDER_MARKS = [
   FU_MSG_MARK,
@@ -20,6 +22,7 @@ const REMINDER_MARKS = [
   "24 saatliğine sizin adınıza ayırmıştık", // kapora hatırlatması
   "fiyat listemize göz atabildiniz", // kampanya 48. saat takibi
   "iki kez ulaşmaya", // 2 arama açılmadı son mesajı
+  FU_MSG2_MARK, // WhatsApp tercih edene 2. hatırlatma
 ];
 
 const DAY = 86_400_000;
@@ -85,12 +88,32 @@ export function isFollowCallDue(c: AiCouple, now: Date): boolean {
   const a = followAnchor(c);
   if (!a || c.callsPaused) return false;
   const d = followDays(), age = ageDays(a.at, now);
+  // WhatsApp tercih eden: arama en son adım (iki mesaja da cevap yoksa)
+  if (c.prefersWhatsapp) return age >= d.last && age <= d.last + 3 && !calledAfter(c, a.at) && sentAfter(c, a.at, (m) => m.text.includes(FU_MSG2_MARK));
   return age >= d.call && age <= d.last + 3 && !calledAfter(c, a.at);
+}
+
+/** WhatsApp tercih edene 2. takip mesajı (arama yerine) */
+export function isFollowMsg2Due(c: AiCouple, now: Date): boolean {
+  if (!c.prefersWhatsapp) return false;
+  const a = followAnchor(c);
+  if (!a || c.messagesPaused) return false;
+  const d = followDays(), age = ageDays(a.at, now);
+  return age >= d.call && age < d.last + 2 && sentAfter(c, a.at, (m) => m.text.includes(FU_MSG_MARK)) && !sentAfter(c, a.at, (m) => m.text.includes(FU_MSG2_MARK));
+}
+
+export function buildFollowMsg2(c: AiCouple, cap: AiCapacityInfo | null): string {
+  const d = dateText(c);
+  const yer = cap && cap.remaining > 0 && cap.remaining <= 5 ? ` ${cap.monthLabel} için kampanya fiyatından son ${cap.remaining} yer kaldı.` : "";
+  return (
+    `${greet(c)} RedMedia'dan tekrar yazıyorum 🤍 ${d ? d + " için " : ""}kampanya fiyatlarımız hâlâ geçerli, %40 zam henüz yansımadı.${yer}` +
+    ` Aklınıza takılan bir şey ya da düşündüğünüz bir paket varsa ${FU_MSG2_MARK}; kapora sadece 1.000 TL, kalanı çekimden sonra.`
+  );
 }
 
 export function isFollowLastDue(c: AiCouple, now: Date): boolean {
   const a = followAnchor(c);
-  if (!a || c.messagesPaused) return false;
+  if (!a || c.messagesPaused || c.prefersWhatsapp) return false; // WhatsApp tercih edenin son adımı arama
   const d = followDays(), age = ageDays(a.at, now);
   return age >= d.last && age < d.last + 5 && !sentAfter(c, a.at, (m) => m.text.includes(FU_LAST_MARK));
 }
@@ -142,6 +165,7 @@ export function followCallNote(c: AiCouple, now: Date): string {
   const p = quotedPackage(a.call);
   const ct = contactText(a, now);
   return (
+    (c.prefersWhatsapp ? "NOT: Müşteri WhatsApp'tan yazışmayı tercih etmişti; iki WhatsApp mesajımıza cevap gelmediği için arıyoruz — bunu nazikçe söyle (\"WhatsApp'tan yazmıştık ama ulaşamadık, kısaca bilgi vermek istedim\"), konuşmak istemezse WhatsApp'tan devam edeceğimizi söyle. " : "") +
     `BU BİR TAKİP ARAMASI: ${ct}${d ? `, düğün ${d}` : ""}${p ? `, ${p.name} paketine ${p.price} fiyat verdik` : ", 2027 fiyatlarını gönderdik"}; cevap gelmedi.` +
     ` Açılışta (kimlik teyidinden sonra) "${ct}${d ? `, ${d} için` : ""} size fiyat bilgisi vermiştik" diye hatırlat; tarihlerin dolduğunu, kampanyanın 31 Aralık'ta bittiğini ve %40 zam gelmeden yerini ayırmak isteyip istemediğini sor. Kısa tut, baskı yapma.`
   );
@@ -159,6 +183,11 @@ export function followStepText(c: AiCouple, now: Date): string | null {
   const age = ageDays(a.at, now);
   if (!sentAfter(c, a.at, (m) => REMINDER_MARKS.some((k) => m.text.includes(k))) && age < d.call + 2 && !c.messagesPaused)
     return `Cevap gelmezse ${when(d.msg)} hatırlatma WhatsApp'ı (tarih + fiyat + %40 zam).`;
+  if (c.prefersWhatsapp) {
+    if (!sentAfter(c, a.at, (m) => m.text.includes(FU_MSG2_MARK)) && age < d.last + 2 && !c.messagesPaused) return `Cevap gelmezse ${when(d.call)} 2. WhatsApp hatırlatması (WhatsApp'ı tercih etti).`;
+    if (!calledAfter(c, a.at) && age <= d.last + 3 && !c.callsPaused) return `Cevap gelmezse ${when(d.last)} takip araması (iki mesaja cevap yoksa).`;
+    return null;
+  }
   if (!calledAfter(c, a.at) && age <= d.last + 3 && !c.callsPaused) return `Cevap gelmezse ${when(d.call)} takip araması.`;
   if (!sentAfter(c, a.at, (m) => m.text.includes(FU_LAST_MARK)) && age < d.last + 5 && !c.messagesPaused) return `Cevap gelmezse ${when(d.last)} son WhatsApp.`;
   return null;

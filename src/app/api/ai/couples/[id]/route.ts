@@ -51,6 +51,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
         ? { ...next, sourceRef: "test", callbackRequested: false, callbackAt: undefined, followUpAt: undefined, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "🧪 Test kaydı olarak işaretlendi — istatistiğe sayılmaz, otomatik aranmaz" }] }
         : { ...next, sourceRef: next.sourceRef === "test" ? undefined : next.sourceRef, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "Test işareti kaldırıldı — gerçek çift olarak sayılır" }] };
     }
+    if (typeof body.prefersWhatsapp === "boolean") next = { ...next, prefersWhatsapp: body.prefersWhatsapp, updatedAt: now.toISOString() };
     // Arama saati kur (ör. müşteri "13:40'tan sonra" dedi ama yakalanamadı)
     const cbAt = str(body.callbackAt, 40);
     if (cbAt && !Number.isNaN(Date.parse(cbAt)) && Date.parse(cbAt) > now.getTime() && !next.contactLocked) {

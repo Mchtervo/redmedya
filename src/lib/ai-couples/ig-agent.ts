@@ -395,7 +395,7 @@ async function onPhoneCaptured(t: IgThread, phone: string, isTest: boolean) {
       await mutateCouple(r.couple.id, (c) => ({
         ...c,
         status: c.status === "new" ? "contacted" : c.status,
-        ...(fresh?.prefersWa ? {} : { callbackRequested: true, callbackAt: fresh?.callAt ?? now }),
+        ...(fresh?.prefersWa ? { prefersWhatsapp: true } : { callbackRequested: true, callbackAt: fresh?.callAt ?? now }),
         updatedAt: now,
       })).catch(() => null);
     }
@@ -664,7 +664,7 @@ export async function waOpenerNow(igsid: string, prefersWa: boolean): Promise<bo
   if (t.coupleId) await cancelPendingDrafts(t.coupleId); // eski öneri gönderilmesin
   if (t.coupleId && (prefersWa || t.prefersWa)) {
     const now = new Date().toISOString();
-    await mutateCouple(t.coupleId, (c) => ({ ...c, status: c.status === "new" ? "contacted" : c.status, callbackRequested: false, callbackAt: undefined, updatedAt: now })).catch(() => null);
+    await mutateCouple(t.coupleId, (c) => ({ ...c, prefersWhatsapp: true, status: c.status === "new" ? "contacted" : c.status, callbackRequested: false, callbackAt: undefined, updatedAt: now })).catch(() => null);
   }
   await sendWaOpener(igsid, Boolean(t.test));
   return true;
