@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const metaToken = str(body?.metaAdsToken, 600);
   const metaAccount = str(body?.metaAdAccountId, 40);
   const anthropic = str(body?.anthropicKey, 300);
-  const meta = { metaAppId: str(body?.metaAppId, 40), metaAppSecret: str(body?.metaAppSecret, 80), metaPageId: str(body?.metaPageId, 40), metaPageToken: str(body?.metaPageToken, 600), metaVerifyToken: str(body?.metaVerifyToken, 120) };
+  const meta = { metaAppId: str(body?.metaAppId, 40), metaAppSecret: str(body?.metaAppSecret, 80), metaPageId: str(body?.metaPageId, 40), metaPageToken: str(body?.metaPageToken, 600), metaVerifyToken: str(body?.metaVerifyToken, 120), evolutionUrl: str(body?.evolutionUrl, 200), evolutionKey: str(body?.evolutionKey, 200), evolutionInstance: str(body?.evolutionInstance, 60) };
   const metaSet = Object.fromEntries(Object.entries(meta).filter(([, v]) => v));
   const cur = await readIntegrations();
   if (base && !/^https:\/\//.test(base)) return bad("panelHookBase https olmalı");

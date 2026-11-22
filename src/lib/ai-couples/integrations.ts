@@ -23,6 +23,10 @@ export type AiIntegrations = {
   metaPageId?: string;
   metaPageToken?: string;
   metaVerifyToken?: string;
+  /** WhatsApp (Evolution) — panelden bağlantı durumu / QR için */
+  evolutionUrl?: string;
+  evolutionKey?: string;
+  evolutionInstance?: string;
 };
 
 export async function readIntegrations(): Promise<AiIntegrations> {

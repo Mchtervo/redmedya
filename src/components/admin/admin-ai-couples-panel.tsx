@@ -28,6 +28,7 @@ import { AdminTestCallBox } from "@/components/admin/admin-ai-test-call";
 import { AdminAutomationSettings, useAutomation } from "@/components/admin/admin-automation-settings";
 import { AdminIgThreads } from "@/components/admin/admin-ig-threads";
 import { AdminDraftsInbox } from "@/components/admin/admin-drafts-inbox";
+import { AdminWaConnection } from "@/components/admin/admin-wa-connection";
 import { useAiSystemStatus } from "@/hooks/use-ai-system-status";
 import type {
   AiCapacityConfig,
@@ -375,6 +376,8 @@ export function AdminAiCouplesPanel() {
         icon={Bot}
         meta={`${real.length} çift · ${counts.hot} sıcak · ${counts.warm} ılık · ${stageCounts.needsReply ?? 0} cevap bekliyor`}
       />
+
+      <AdminWaConnection />
 
       <AdminDraftsInbox />
 
