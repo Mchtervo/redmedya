@@ -21,7 +21,7 @@ import type { AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { normalizePhone, displayPhone } from "@/lib/ai-couples/rules";
 import { parseCallbackTime } from "@/lib/ai-couples/callback-time";
 import { sendTelegramMessage } from "@/lib/lead-notify";
-import { FACTS, fixTenCouples, generateWaOpener } from "@/lib/ai-couples/wa-agent";
+import { FACTS, fixTenCouples, generateWaOpener, reviewDraft } from "@/lib/ai-couples/wa-agent";
 import { cancelPendingDrafts, createDraftAndNotify, createIgDraftAndNotify, draftTexts, hasPendingDraft, normDraftText } from "@/lib/ai-couples/wa-drafts";
 
 const FILE = dataPath("ai-ig-threads.json");
@@ -290,6 +290,16 @@ async function replyThread(igsid: string): Promise<void> {
   }
 
   const r = await generate(t);
+  // İkinci kontrol (tekrar soru, varsayım, hesap, yasak ifade)
+  let reviewNote = "";
+  if (r.text) {
+    const convoTxt = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
+    const rv = await reviewDraft({ channel: "Instagram", convo: convoTxt, draft: r.text });
+    if (rv.issues.length) {
+      r.text = rv.text;
+      reviewNote = `\n🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`;
+    }
+  }
   if (r.date) t = await patchThread(igsid, (x) => ({ ...x, weddingDate: r.date }));
   if (r.stage || r.summary || r.handoff) t = await patchThread(igsid, (x) => ({ ...x, stage: r.handoff ? "devredildi" : r.stage ?? x.stage, summary: r.summary ?? x.summary }));
   if (r.summary && t.coupleId) await mutateCouple(t.coupleId, (c) => ({ ...c, aiSummary: `Instagram: ${r.summary}`, aiSummaryAt: new Date().toISOString() })).catch(() => null);
@@ -305,7 +315,7 @@ async function replyThread(igsid: string): Promise<void> {
   if (r.text) {
     const tg =
       `📸 INSTAGRAM CEVAP ÖNERİSİ${isTest ? " (TEST)" : ""} — ${who}${r.handoff ? "\n⚠️ Dikkat: bu konuya sizin bakmanız iyi olur" : ""}${t.stage ? `\n📍 ${IG_STAGES[t.stage]}${t.summary ? ` — ${t.summary}` : ""}` : ""}\n\n` +
-      `💬 Müşteri: ${lastIn.slice(0, 500)}\n\n🤖 Önerdiğim cevap:\n${r.text}`;
+      `💬 Müşteri: ${lastIn.slice(0, 500)}\n\n🤖 Önerdiğim cevap:\n${r.text}${reviewNote}`;
     const ok = await createIgDraftAndNotify({ igsid, name: who, text: r.text, tg }).catch(() => false);
     if (!ok) await sendTelegramMessage(`${tg}\n\n(Düğme eklenemedi — beğendiyseniz kopyalayıp Instagram'dan gönderin.)`).catch(() => false);
   } else {

@@ -51,6 +51,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
         ? { ...next, sourceRef: "test", callbackRequested: false, callbackAt: undefined, followUpAt: undefined, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "🧪 Test kaydı olarak işaretlendi — istatistiğe sayılmaz, otomatik aranmaz" }] }
         : { ...next, sourceRef: next.sourceRef === "test" ? undefined : next.sourceRef, timeline: [...next.timeline, { at: now.toISOString(), type: "edit", text: "Test işareti kaldırıldı — gerçek çift olarak sayılır" }] };
     }
+    // Arama saati kur (ör. müşteri "13:40'tan sonra" dedi ama yakalanamadı)
+    const cbAt = str(body.callbackAt, 40);
+    if (cbAt && !Number.isNaN(Date.parse(cbAt)) && Date.parse(cbAt) > now.getTime() && !next.contactLocked) {
+      const label = new Date(cbAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+      next = { ...next, callbackRequested: true, callbackAt: new Date(cbAt).toISOString(), busyRetries: 0, timeline: [...next.timeline, { at: now.toISOString(), type: "callback", text: `Tekrar arama zamanı: ${label}${str(body.reason, 160) ? ` (${str(body.reason, 160)})` : ""}` }], updatedAt: now.toISOString() };
+    }
     const leadAt = str(body.leadAt, 40);
     if (leadAt && !Number.isNaN(Date.parse(leadAt)) && Date.parse(leadAt) <= now.getTime()) next = { ...next, leadAt: new Date(leadAt).toISOString() };
     // Yanlış sınıflanan aramayı düzelt: { fixCall: { externalId, summary? } } → "açtı ama dinlemeden kapattı" (no_answer)

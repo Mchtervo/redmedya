@@ -123,7 +123,11 @@ export async function POST(request: Request, { params }: Ctx) {
     }
     if (intent === "thinking") next = markThinking(next, now, "WhatsApp: düşüneceğini söyledi");
     // "Akşam 7'de arayın / yarın öğlen müsaitim" → aramayı o saate kur (henüz telefonda konuşulmadıysa)
-    const wantsCall = /(aray[ıi]n|arayabilir|arars[aı]n[ıi]z|ararsan|m[üu]sait(im|iz)|uygunum|uygunuz|d[öo]n[üu]n|g[öo]r[üu][şs]elim|g[öo]r[üu][şs]ebiliriz)/i.test(text) && !/(tl|lira|fiyat|[üu]cret|\bbin\b|\d{3})/i.test(text);
+    // Bizim son mesajımız aramaya dairse ("sizi arayacağız", "hangi saatte arayalım") müşterinin yazdığı saat = arama saati ("13:40'tan sonra olur mu")
+    const prevOut = [...c.messages].reverse().find((m) => m.direction === "out");
+    const offeredCall = !!prevOut && /(arayaca|arayal|aramam[ıi]z|arar[ıi]z|hangi saat|saatte ara|sizi ara)/i.test(prevOut.text);
+    const eventWords = /(nikah|nikâh|d[üu]ğ[üu]n|k[ıi]na|ni[şs]an|[çc]ekim|t[öo]ren|salon|kuaf[öo]r)/i.test(text);
+    const wantsCall = (/(aray[ıi]n|arayabilir|arars[aı]n[ıi]z|ararsan|m[üu]sait(im|iz)|uygunum|uygunuz|d[öo]n[üu]n|g[öo]r[üu][şs]elim|g[öo]r[üu][şs]ebiliriz)/i.test(text) && !/(tl|lira|fiyat|[üu]cret|\bbin\b|\d{3})/i.test(text)) || (offeredCall && !eventWords && !/(tl|lira|fiyat|[üu]cret)/i.test(text));
     const hasMonth = /(^|[\s\d])(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)/i.test(text); // düğün tarihi yazmışsa saat sanma
     const talked = next.calls.some((x) => x.outcome !== "no_answer");
     if (wantsCall && !hasMonth && !talked && !next.callsPaused && intent !== "thinking" && next.status !== "won" && next.status !== "lost") {

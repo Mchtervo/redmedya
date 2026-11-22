@@ -65,6 +65,7 @@ AKRABA / TAKI ÇEKİMİ: Akrabalar, takı merasimi, salon anları DÜĞÜN GÜN�
 "POZ SINIRI YOK" sadece fotoğraf için söylenir, klip kalemleri için söyleme.
 KLİP SÜRELERİ: Sadece dış çekim alınırsa klip 1,5–2 dk. Düğün günü kalemleri de eklenirse dış çekim dahil HEPSİ tek bir 4–5 dk'lık düğün günü klibinde birleşir (ayrı klipler toplanmaz). Kına klibi ayrı, 3–4 dk.
 SALON KALEMLERİ: "Salona giriş ve ilk dans klibi" sadece giriş + ilk dansın klibidir; nikah anı, takı merasimi, yakınlarla fotoğraflar bunun içinde DEĞİL — onlar için salon fotoğraf çekimi (5.000) ya da başından after'a kadar çekim (8.000) gerekir. Müşteri salonu genel söylediyse hangi kalemi istediğini sor ya da farkı kısaca anlat.
+TEKRAR SORMA: Müşteri bir bilgiyi (arama saati, tarih, isim, paket, tercih) verdiyse onu kısaca TEYİT ET; aynı şeyi tekrar sorma, "başka/özel bir saatiniz var mı" gibi ek soru sorma.
 VARSAYIM YAPMA: Müşterinin SÖYLEMEDİĞİ hiçbir detayı varsayma — nikahın nerede olduğu (nikah dairesi / belediye / salon), düğün olup olmadığı, salon, gelin alma, kuaför var mı. Bilmiyorsan sor ya da hiç değinme.
 EK HİZMET UYUMU: Önerdiğin ek hizmet SADECE müşterinin söylediği etkinliğe uymalı. Nikah geçtiyse uygun kalem NİKAH ÇEKİMİdir (fotoğraf 5.000, sadece klip 5.000, fotoğraf + klip 9.000 TL) ya da sadece "Nikahı da çektirmek ister misiniz?" diye sor. "Salona giriş ve ilk dans", "after'a kadar çekim", "salon fotoğrafı" DÜĞÜN kalemleridir — müşteri düğün yaptığını söylemediyse önerme. Gelin alma / kuaför de ancak düğün günü varsa anlamlıdır; emin değilsen önce "Düğününüz de olacak mı?" diye sor.
 10 ÇİFT DOĞRU CÜMLE: "Her ay 10 çift alıyoruz" DEME — YANLIŞ (daha fazla çekim yapıyoruz). Doğrusu: "Her ay BU KAMPANYA FİYATINDAN sadece 10 çift alıyoruz" (kampanya yerleri ayda 10).
@@ -195,7 +196,15 @@ export type WaUsage = { input: number; cacheRead: number; cacheWrite: number; ou
 
 export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { usage?: WaUsage }> {
   const usage: WaUsage = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0, calls: 0, usd: 0 };
-  const r = await generateInner(c, usage);
+  let r = await generateInner(c, usage);
+  const convo = c.messages.filter((m) => m.channel === "whatsapp" || m.channel === "instagram").slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
+  if (r.action === "send") {
+    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text });
+    if (rv.issues.length) r = { ...r, text: rv.text, note: [r.note, `🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`].filter(Boolean).join(" · ").slice(0, 400) };
+  } else if (r.action === "handoff" && r.draft) {
+    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.draft });
+    if (rv.issues.length) r = { ...r, draft: rv.text };
+  }
   // Sonnet 5.5: girdi $2/M, önbellek okuma $0.10/M, önbellek yazma ~$2.5/M, çıktı $10/M
   usage.usd = Math.round(((usage.input * 2 + usage.cacheRead * 0.1 + usage.cacheWrite * 2.5 + usage.output * 10) / 1e6) * 10000) / 10000;
   return { ...r, usage };
@@ -397,4 +406,54 @@ export function fixTenCouples(text: string): string {
     const cap = lead[0] === lead[0].toUpperCase();
     return (cap ? "Her ay" : "her ay") + " bu kampanya fiyatından sadece 10 çift alıyoruz";
   });
+}
+
+/**
+ * İKİNCİ KONTROL — öneri sahibine gitmeden önce ayrı bir gözle denetlenir ve gerekiyorsa düzeltilir:
+ * müşterinin verdiği bilgiyi tekrar sorma, bizim söylediğimizi tekrarlama, varsayım, hesap, yasak ifadeler, son mesaja cevap.
+ * Sorun yoksa metin aynen döner. Hata olursa (ağ vb.) orijinal metin kullanılır.
+ */
+export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; convo: string; draft: string }): Promise<{ text: string; issues: string[] }> {
+  const { anthropicKey } = await readIntegrations();
+  if (!anthropicKey || !input.draft.trim()) return { text: input.draft, issues: [] };
+  const task = `Sen bir kalite kontrolcüsün. Aşağıda müşteriyle ${input.channel} yazışması ve satış asistanının müşteriye göndermek üzere hazırladığı cevap var. Cevabı şu hatalar için denetle:
+1) Müşterinin ZATEN verdiği bir bilgiyi (saat, tarih, isim, numara, paket, tercih, "WhatsApp'tan yazın" gibi) tekrar soruyor ya da "başka bir saatiniz var mı / özel bir saat varsa yazın" gibi tekrar istiyor mu? → o kısmı sil, sadece teyit et.
+2) Bizim yazışmada zaten söylediğimiz bir şeyi aynen tekrarlıyor mu (aynı fiyat listesi, aynı soru)? → kısalt.
+3) Müşterinin söylemediği bir şeyi varsayıyor mu (nikahın yeri, düğün olduğu, salon, gelin alma vb.)? → varsayımı kaldır.
+4) Hesap: birden fazla kalem toplanmışsa toplam doğru mu? Kapora: toplam 15.000 TL altı 1.000 TL, üstü 2.000 TL. Fiyatlar aşağıdaki bilgilerle uyumlu mu? → yanlışı düzelt.
+5) Yasak: yol/ulaşım/servis; "her ay 10 çift alıyoruz" (doğrusu "her ay bu kampanya fiyatından sadece 10 çift"); "10 yerin 10'u boş" gibi kalan yer çok olduğunu söyleyen cümle; "Harika bir soru / memnuniyetle / size yardımcı olmaktan mutluluk duyarım" gibi robotik laflar. → düzelt.
+6) Müşterinin SON mesajına gerçekten cevap veriyor mu? Müşteri "hayır / istemiyorum" dediyse ısrar ediyor mu? → düzelt.
+Sorun yoksa metni AYNEN döndür. Sorun varsa SADECE sorunlu kısmı düzelt; üslubu, emojileri ve geri kalan her şeyi koru, yeni bilgi ekleme.
+Sadece şu JSON'u yaz: {"sorunlar": ["kısa açıklama", ...], "metin": "son hali"}
+
+YAZIŞMA (eskiden yeniye):
+${input.convo.slice(-6000)}
+
+HAZIRLANAN CEVAP:
+${input.draft}`;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": anthropicKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 3000,
+      output_config: { effort: "low" },
+      system: [{ type: "text", text: "İŞLETME BİLGİLERİ (fiyat/kural kontrolü için):\n" + FACTS, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: task }],
+    }),
+    signal: AbortSignal.timeout(45_000),
+  }).catch(() => null);
+  if (!res?.ok) return { text: input.draft, issues: [] };
+  const j = (await res.json().catch(() => null)) as { content?: { type: string; text?: string }[] } | null;
+  const raw = (j?.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("");
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return { text: input.draft, issues: [] };
+  try {
+    const o = JSON.parse(m[0]) as { sorunlar?: unknown; metin?: unknown };
+    const text = typeof o.metin === "string" && o.metin.trim().length > 5 ? o.metin.trim() : input.draft;
+    const issues = Array.isArray(o.sorunlar) ? o.sorunlar.filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 5) : [];
+    return { text: fixTenCouples(text).slice(0, 1500), issues };
+  } catch {
+    return { text: input.draft, issues: [] };
+  }
 }
