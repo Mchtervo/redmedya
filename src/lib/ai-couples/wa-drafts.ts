@@ -9,7 +9,7 @@ import path from "path";
 import { dataPath, reloadPersistentEnv } from "@/lib/data-dir";
 import { siteConfig } from "@/config/site";
 import { getTelegramWebhookSecret } from "@/lib/ai-couples/auth";
-import { getCouple } from "@/lib/ai-couples/store";
+import { getCouple, mutateCouple } from "@/lib/ai-couples/store";
 import { callPanelHook } from "@/lib/ai-couples/integrations";
 
 const FILE = dataPath("ai-wa-drafts.json");
@@ -245,6 +245,11 @@ export async function approveDraft(id: string, opts: { text?: string; via?: "tel
   const r = await callPanelHook("wa", { coupleId: d.coupleId, text: d.text });
   if (!r.ok) {
     await release("pending");
+    // n8n mesajı göndermeden önce kayda yazar; gönderim başarısızsa o kayıt "gönderilemedi" olsun (asistan gitmiş saymasın)
+    await mutateCouple(d.coupleId, (cc) => {
+      const idx = [...cc.messages].map((m, i) => ({ m, i })).reverse().find(({ m }) => m.direction === "out" && m.text === d.text && Date.now() - Date.parse(m.at) < 10 * 60_000)?.i;
+      return idx === undefined ? cc : { ...cc, messages: cc.messages.map((m, i) => (i === idx ? { ...m, text: `[GÖNDERİLEMEDİ] ${m.text}` } : m)) };
+    }).catch(() => null);
     const why = typeof r.data.error === "string" ? r.data.error : typeof r.data.reason === "string" ? r.data.reason : `hata ${r.status}`;
     return { ok: false, msg: `⚠️ ${d.name}: gönderilemedi (${why}). Tekrar basabilir ya da kendiniz yazabilirsiniz.`, draft: d };
   }

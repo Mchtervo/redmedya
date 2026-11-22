@@ -53,6 +53,8 @@ export async function PATCH(request: Request, { params }: Ctx) {
     }
     // Belirli mesajı geri çekildi işaretle / işareti kaldır (id ile)
     const RT = "[GERİ ÇEKİLDİ] ";
+    const failId = str(body.failId, 60);
+    if (failId) next = { ...next, messages: next.messages.map((m) => (m.id === failId && !m.text.startsWith("[GÖNDERİLEMEDİ]") ? { ...m, text: "[GÖNDERİLEMEDİ] " + m.text } : m)), updatedAt: now.toISOString() };
     const retractId = str(body.retractId, 60);
     const unretractId = str(body.unretractId, 60);
     if (retractId || unretractId) {

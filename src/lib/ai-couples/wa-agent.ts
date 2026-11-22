@@ -208,7 +208,7 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { us
   const lastOutIdx = c.messages.map((m) => m.direction).lastIndexOf("out");
   const recentCustomer = c.messages.slice(lastOutIdx + 1).filter((m) => m.direction === "in").map((m) => m.text).join(" ");
   if (r.action === "send") r = { ...r, text: fixCourtesy(r.text, recentCustomer) };
-  const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
+  const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]") && !m.text.startsWith("[GÖNDERİLEMEDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
   if (r.action === "send") {
     const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text });
     if (rv.issues.length) r = { ...r, text: rv.text, note: [r.note, `🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`].filter(Boolean).join(" · ").slice(0, 400) };
@@ -230,7 +230,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
   const kontenjan = months.filter((m) => m.monthKey.startsWith("2027")).map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : m.remaining}`).join(" | ") || "bilinmiyor";
 
   const convo = c.messages
-    .filter((m) => (m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]"))
+    .filter((m) => (m.channel === "whatsapp" || m.channel === "dugun_com" || m.channel === "sms" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]") && !m.text.startsWith("[GÖNDERİLEMEDİ]"))
     .slice(-24)
     .map((m) => {
       const who = (m.channel === "instagram" ? "[Instagram DM] " : "") + (m.direction === "in" ? "MÜŞTERİ" : m.kind === "reply" ? "EKİP (insan)" : "BİZ");
