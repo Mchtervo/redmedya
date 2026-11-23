@@ -8,6 +8,7 @@ import { isWaManual } from "@/lib/ai-couples/automation";
 import { forwardManual, manualExtras } from "@/lib/ai-couples/wa-manual";
 import { readCouples } from "@/lib/ai-couples/store";
 import { upcomingCapacity } from "@/lib/ai-couples/capacity";
+import { maybeReconcile } from "@/lib/ai-couples/wa-reconcile";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,8 @@ export async function GET(request: Request) {
   }
   // Onay bekleyen cevap önerileri 45 dk'yı geçtiyse sahibine hatırlat (bir kez)
   void remindStaleDrafts().catch(() => 0);
+  // WhatsApp kopukken / webhook kaçırınca kayda geçmeyen mesajları topla (15 dakikada bir, arka planda)
+  maybeReconcile();
   // automation: arama otomasyonu (n8n A) günlük sınır ve arama arası süreyi buradan okur
   return NextResponse.json({ ok: true, actions, automation: auto });
 }

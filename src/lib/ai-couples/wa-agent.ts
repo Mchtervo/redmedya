@@ -3,6 +3,8 @@
  * mesajlar) ve gerçek takvimi bilerek kısa bir cevap üretir — ya da sahibine devreder.
  * Sadece metin üretir; gönderimi n8n yapar. Anahtar: DATA_DIR/ai-integrations.json (anthropicKey).
  */
+import { docNote } from "@/lib/ai-couples/doc-note";
+import { CALLS_OFF_UNTIL, callsOff } from "@/lib/ai-couples/calls-off";
 import type { AiCouple } from "@/types/ai-couples";
 import { readIntegrations } from "@/lib/ai-couples/integrations";
 import { checkDate, upcomingCapacity, readCapacityConfig } from "@/lib/ai-couples/capacity";
@@ -99,6 +101,21 @@ Müşterinin hitabı, kayıtlı düğün tarihi, geçmiş özeti, bugünün tari
 ${FACTS}
 (2027 kalan yer sayıları en alttaki güncel durum bölümünde. Drone hediyesi o ayın kalan son yerlerine — kalan yer sayısını oradan söyle.)
 
+# STRATEJİ — USTA SATIŞÇI GİBİ DÜŞÜN (her cevaptan önce; yanit_ver'in "strateji" alanına yaz)
+Cevabı yazmadan önce şu dört şeyi netleştir:
+1) EVRE — müşteri şu an nerede? (a) yeni tanışma, ihtiyacı bilinmiyor  (b) ihtiyaç belli, fiyat henüz verilmedi  (c) fiyat / fiyat listesi verildi, karar bekleniyor  (d) itiraz var: pahalı / rakip daha ucuz / eşime soracağım / düşüneceğim  (e) olumlu, kapanışa yakın  (f) kapora / rezervasyon aşaması.
+2) ASIL MESELE — müşteriyi karardan alıkoyan gerçek şey ne? (bütçe, güven, eşinin onayı, tarih belirsizliği, neyin dahil olduğunu bilmemek, başka teklifle kıyas…) Yazmadıysa yazışmadan tahmin et; emin değilsen tek bir soruyla öğren.
+3) BU MESAJIN TEK HEDEFİ — müşteriyi bir sonraki evreye taşıyacak TEK adım ne? Örnek: (a)→ tarihi ve ne istediğini öğren; (b)→ ihtiyacına uyan TEK paketi fiyat düşüşüyle ver; (c)→ listeden aklına yatanı sor / takıldığı yeri öğren, fiyatı baştan sayma; (d)→ itirazı kısa ve saygılı karşıla, değeri bir cümleyle hatırlat, kapıyı açık bırak; (e)→ tarihini ayırmayı teklif et; (f)→ sahibine devret.
+4) NE YAPMAMALI — bu evrede yanlış olan ne? Verilmiş fiyatı tekrar saymak, sorulmuş soruyu tekrar sormak, karar aşamasındaki müşteriye yeni paket yığmak, "düşüneceğim" diyene baskı yapmak, cevap vermeyene aynı cümleyle tekrar yazmak.
+Bir mesajda TEK hedef olur. Hedefe hizmet etmeyen cümleyi yazma. Müşteri bir adım geri attıysa (soğudu, erteledi) sen de bir adım geri at: rahatlat, saygı göster, kapıyı açık bırak.
+
+# BELGELER VE FOTOĞRAFLAR (çok önemli)
+- Yazışmada "[PDF] …" ya da "[belge] …" ile başlayan BİZ / EKİP satırı = o dosyayı müşteriye GÖNDERDİK demektir. Fiyat listesi PDF'i gittiyse FİYATLAR MÜŞTERİDE: "fiyatlarımızı ileteyim mi", "size fiyat çıkarayım", "yeniden fiyatlandıralım" DEME; fiyat hiç verilmemiş gibi davranma. Doğrusu: "Listeye göz atabildiniz mi, aklınıza yatan paket oldu mu?" diye oradan devam etmek; müşteri belirli bir paketi sorarsa sadece onu fiyat düşüşüyle söyle.
+- Satırda "İÇERİK: …" varsa dosyanın içinde ne olduğu orada yazıyor — onu yazışmanın parçası gibi bil ve kullan (ör. gönderdiğimiz özel paket teklifi, müşterinin attığı rakip teklifi, dekont).
+- Müşterinin gönderdiği dosyada İÇERİK yoksa ("[sesli mesaj]", "[video]", içeriksiz "[fotoğraf]" / "[belge]") ne olduğunu BİLMİYORSUN: tahmin etme, sahibine devret.
+- Müşteri rakip firmanın teklifini (belge / ekran görüntüsü) attıysa İÇERİK'teki rakamlara göre RAKİP FİYATI kuralını uygula; rakibi kötüleme.
+- Müşteri dekont / ödeme belgesi attıysa: teşekkür et, sahibine devret (reason: "Dekont gönderdi: tutar …").
+
 # ÖNCE ANLA (çok önemli)
 - Cevap yazmadan önce müşterinin SON mesajını ve önceki mesajlarını dikkatle oku: Ne soruyor? Ne istiyor, ne istemiyor? Daha önce ne söyledi (tarih, paket, bütçe, istemediği şey)?
 - Müşteri yazım hatalı, Türkçe karaktersiz, kısaltmalı ya da sesli-yazı gibi yazabilir ("slm", "kdr", "dugun", "nolur", "tmm", "abi") — anlamını çıkar, bunu düzeltme/yorum yapma.
@@ -191,8 +208,9 @@ function dynamicPrompt(c: AiCouple, kontenjan: string, drone: number): string {
 - Bugün: ${today}
 - Hitap: ${h || "(isim belirsiz — 'Merhaba' de, isim kullanma)"}
 - Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}
+- Şu an saat: ${new Date().toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" })}
 - İletişim tercihi: ${c.prefersWhatsapp ? "WHATSAPP — müşteri yazışmayı tercih etti. ARAMA TEKLİF ETME, 'uygun saatiniz varsa arayalım' / 'hangi saatte arayalım' DEME; her şeyi buradan hallet." : c.callbackRequested && c.callbackAt ? `arama saati belli (${new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })}) — tekrar saat sorma` : "belirtmedi"}
-- Geçmiş özeti: ${historyForAgent(c)}
+${callsOff(new Date()) ? `- ARAMA ŞU AN YAPILAMIYOR (${new Date(CALLS_OFF_UNTIL).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })} sonrasına kadar): "sizi arayalım / arayacağız / hangi saatte arayalım" DEME, o saatten önce arama sözü verme. Her şeyi buradan yazışarak hallet. Müşteri kendisi aranmak isterse: "Şu an hatlarımızda yoğunluk var, en erken ${new Date(CALLS_OFF_UNTIL).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long" })} akşamı arayabiliriz; isterseniz buradan hemen yardımcı olayım" de.\n` : ""}- Geçmiş özeti: ${historyForAgent(c)}
 - 2027 KALAN YER (ay bazında): ${kontenjan}
 - Drone hediyesi: ayın kalan son yerlerine (yukarıdaki kalan yer listesi)${drone ? "" : ""}`;
 }
@@ -208,12 +226,13 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { us
   const lastOutIdx = c.messages.map((m) => m.direction).lastIndexOf("out");
   const recentCustomer = c.messages.slice(lastOutIdx + 1).filter((m) => m.direction === "in").map((m) => m.text).join(" ");
   if (r.action === "send") r = { ...r, text: fixCourtesy(r.text, recentCustomer) };
-  const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]") && !m.text.startsWith("[GÖNDERİLEMEDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
+  const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]") && !m.text.startsWith("[GÖNDERİLEMEDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${docNote(m.text).replace(/\s+/g, " ").slice(0, 700)}`).join("\n");
+  const known = `Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}. İletişim tercihi: ${c.prefersWhatsapp ? "WhatsApp (aranmak istemiyor)" : "belirtmedi"}. Geçmiş: ${historyForAgent(c)}`;
   if (r.action === "send") {
-    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text });
+    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text, known });
     if (rv.issues.length) r = { ...r, text: rv.text, note: [r.note, `🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`].filter(Boolean).join(" · ").slice(0, 400) };
   } else if (r.action === "handoff" && r.draft) {
-    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.draft });
+    const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.draft, known });
     if (rv.issues.length) r = { ...r, draft: rv.text };
   }
   // Sonnet 5.5: girdi $2/M, önbellek okuma $0.10/M, önbellek yazma ~$2.5/M, çıktı $10/M
@@ -235,7 +254,7 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
     .map((m) => {
       const who = (m.channel === "instagram" ? "[Instagram DM] " : "") + (m.direction === "in" ? "MÜŞTERİ" : m.kind === "reply" ? "EKİP (insan)" : "BİZ");
       const t = new Date(m.at).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-      return `[${t}] ${who}: ${m.text.replace(/\s+/g, " ").slice(0, 700)}`;
+      return `[${t}] ${who}: ${docNote(m.text).replace(/\s+/g, " ").slice(0, 950)}`;
     })
     .join("\n");
 
@@ -263,15 +282,16 @@ async function generateInner(c: AiCouple, usage: WaUsage): Promise<WaAgentResult
       input_schema: {
         type: "object",
         properties: {
+          strateji: { type: "string", description: "ÖNCE bunu doldur (müşteriye gitmez): 'Evre: … | Asıl mesele: … | Bu mesajın hedefi: … | Kaçınılacak: …' — kısa, tek satır" },
           action: { type: "string", enum: ["send", "handoff", "skip"] },
-          text: { type: "string", description: "send ise müşteriye gidecek WhatsApp metni" },
+          text: { type: "string", description: "send ise müşteriye gidecek WhatsApp metni — stratejideki TEK hedefe hizmet etmeli" },
           reason: { type: "string", description: "handoff/skip ise kısa sebep (sahibine not)" },
           draft: { type: "string", description: "handoff ise sahibine önerilen cevap taslağı (isteğe bağlı)" },
           bekletme: { type: "string", description: "handoff ise müşteriye gidecek kısa bekletme mesajı" },
           sahibine_not: { type: "string", description: "send ise sahibinin MUTLAKA bilmesi gereken bir şey olduysa (ör. müşteri tarihi 24 saat tutmamızı kabul etti, paket seçti) 1 cümle" },
           ozet: { type: "string", description: "Sahibi için gidişatın TEK cümlelik özeti — baştan anlatma, şu an nerede: ne istedi, ne verildi, sırada ne var. Örn: '14 Ağustos için fotoğraf+klip istedi, 9.000 TL + gelin alma önerildi, kapora bekleniyor.'" },
         },
-        required: ["action", "ozet"],
+        required: ["strateji", "action", "ozet"],
       },
     },
   ];
@@ -424,7 +444,7 @@ export function fixTenCouples(text: string): string {
  * müşterinin verdiği bilgiyi tekrar sorma, bizim söylediğimizi tekrarlama, varsayım, hesap, yasak ifadeler, son mesaja cevap.
  * Sorun yoksa metin aynen döner. Hata olursa (ağ vb.) orijinal metin kullanılır.
  */
-export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; convo: string; draft: string }): Promise<{ text: string; issues: string[] }> {
+export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; convo: string; draft: string; known?: string }): Promise<{ text: string; issues: string[] }> {
   const { anthropicKey } = await readIntegrations();
   if (!anthropicKey || !input.draft.trim()) return { text: input.draft, issues: [] };
   const task = `Sen bir kalite kontrolcüsün. Aşağıda müşteriyle ${input.channel} yazışması ve satış asistanının müşteriye göndermek üzere hazırladığı cevap var. Cevabı şu hatalar için denetle:
@@ -437,10 +457,15 @@ export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; co
 7) Uzunluk: cevap WhatsApp'ta 380, Instagram'da 320 karakteri geçiyorsa özünü koruyarak KISALT (aynı şeyi iki kez söyleyen cümleleri birleştir, aciliyeti tek cümleye indir) — ama fiyat DÜŞÜŞÜNÜ ("normalde 7.000, şu an 5.000") ASLA silme, kısaltırken de koru; müşterinin istemediği paketleri sayıyorsa çıkar.
 8) Kapora/rezervasyon: müşteri tarihi VE paketi netleştirip olumlu bir şey demeden kapora ya da "ayıralım mı" teklif ediliyorsa o cümleyi SİL. Rakip fiyatı söyleyen müşteriye uzun savunma yapılıyorsa kısalt (şu 3 cümle yeter: fiyat kampanyalı + ekipman/tecrübeye göre fiyat politikası; düşük fiyatta ekipmana ve tecrübeye dikkat edin, yoksa telefonla çekilmiş gibi olur; değerlendirirseniz buradayız — ekipman uyarısını SİLME).
 9) Müşterinin SON mesajına gerçekten cevap veriyor mu? Yazışmada müşterinin sorup bizim hiç cevaplamadığımız bir soru kaldıysa (ör. çekim yeri), cevapta o da kısaca var mı? Yoksa ekle. Müşteri "hayır / istemiyorum" dediyse ısrar ediyor mu? → düzelt.
+10) Yazışmada BİZ tarafında "[PDF]" / "[belge]" fiyat listesi ya da fiyat içeren bir mesaj varsa fiyatlar müşteriye VERİLMİŞTİR: cevap "fiyat ileteyim mi / size fiyat çıkarayım / fiyatlandıralım" diyerek fiyat hiç verilmemiş gibi davranıyor mu? → o kısmı "listeye göz atabildiniz mi, aklınıza yatan paket oldu mu" anlamında düzelt. Müşterinin belirli bir paket sorusuna fiyat söylemek serbest.
+11) Cevap, müşteri sormadığı halde "sizi arayalım / arayacağız / hangi saatte arayalım" diyor mu ve yazışmada müşteri "WhatsApp'tan yazın / buradan yazın" demiş mi? → arama teklifini sil.
 Sorun yoksa metni AYNEN döndür. Sorun varsa SADECE sorunlu kısmı düzelt; üslubu, emojileri ve geri kalan her şeyi koru, yeni bilgi ekleme.
 Sadece şu JSON'u yaz: {"sorunlar": ["kısa açıklama", ...], "metin": "son hali"}
 
-YAZIŞMA (eskiden yeniye):
+${input.known ? `MÜŞTERİ HAKKINDA BİLİNENLER (telefon görüşmeleri, diğer kanallar — bunlar da "müşterinin söylediği / bizim verdiğimiz" bilgi sayılır; 3. maddede varsayım SAYMA, 1. ve 10. maddede bunlara da bak):
+${input.known.slice(0, 2500)}
+
+` : ""}YAZIŞMA (eskiden yeniye):
 ${input.convo.slice(-6000)}
 
 HAZIRLANAN CEVAP:

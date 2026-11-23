@@ -5,6 +5,7 @@
  * Kara liste, rezervasyon yapan, ilgilenmeyen, son durumdan sonra yazmış çift → GÖNDERİLMEZ.
  * Her hatırlatma bir kez gider (metindeki işaretten anlaşılır).
  */
+import { isDelivered } from "@/lib/ai-couples/doc-note";
 import type { AiCapacityInfo, AiCouple } from "@/types/ai-couples";
 import { hitapFor } from "@/lib/ai-couples/hitap";
 
@@ -17,8 +18,9 @@ const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz",
 const ts = (iso: string) => Date.parse(iso);
 const blocked = (c: AiCouple) => c.contactLocked || c.status === "won" || c.status === "lost";
 const sentAfter = (c: AiCouple, mark: string, since: number) =>
-  c.messages.some((m) => m.direction === "out" && m.text.includes(mark) && ts(m.at) >= since);
-const wroteAfter = (c: AiCouple, since: number) => c.messages.some((m) => m.direction === "in" && ts(m.at) >= since);
+  c.messages.some((m) => m.direction === "out" && isDelivered(m) && m.text.includes(mark) && ts(m.at) >= since);
+// ">": "düşüneyim" mesajının kendisi (aynı an) sayılmaz — yoksa WhatsApp'tan "düşüneyim" diyene hatırlatma hiç gitmezdi
+const wroteAfter = (c: AiCouple, since: number) => c.messages.some((m) => m.direction === "in" && ts(m.at) > since + 1000);
 
 function greet(c: AiCouple): string {
   const h = hitapFor(c.name).hitap;
@@ -61,7 +63,7 @@ export function isDepositReminderDue(c: AiCouple, now: Date): boolean {
   const age = now.getTime() - since;
   if (age < 20 * 3600_000 || age > 4 * DAY) return false;
   if (wroteAfter(c, since)) return false;
-  const waAfterCall = c.messages.some((m) => m.direction === "out" && m.channel === "whatsapp" && ts(m.at) >= since);
+  const waAfterCall = c.messages.some((m) => m.direction === "out" && m.channel === "whatsapp" && isDelivered(m) && ts(m.at) >= since);
   if (!waAfterCall) return false;
   return !sentAfter(c, DEPOSIT_MARK, since);
 }

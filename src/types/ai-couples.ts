@@ -63,6 +63,8 @@ export type AiMessageRecord = {
   text: string;
   /** Yapay zekâ bu mesajla konuşmayı sahibine devretti (bekletme mesajı) */
   handoff?: boolean;
+  /** WhatsApp mesaj kimliği (aynı mesaj iki kez yazılmasın; belge/fotoğraf indirilebilsin) */
+  waId?: string;
 };
 
 export type AiTimelineEvent = {

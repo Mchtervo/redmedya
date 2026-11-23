@@ -4,6 +4,7 @@
  * böylece arama, SMS ve WhatsApp birbirinden haberdar çalışır.
  * Saf fonksiyonlar — sunucu ve tarayıcıda çalışır.
  */
+import { docNote } from "@/lib/ai-couples/doc-note";
 import type { AiCouple } from "@/types/ai-couples";
 import { followCallNote, followStepText, isFollowCallDue } from "@/lib/ai-couples/followup";
 import { CALL_WINDOW, isWithinCallWindow, OUTCOME_LABEL, istanbulParts, isFollowUpCallDue } from "@/lib/ai-couples/rules";
@@ -142,13 +143,16 @@ export function historyForAgent(c: AiCouple): string {
       parts.push(
         e.x.outcome === "no_answer"
           ? `${callNo}. arama açılmadı.`
-          : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}${e.x.summary ? ` — özet: ${e.x.summary.split("\n")[0].replace(/\s+/g, " ").slice(0, 220)}` : ""}.`
+          : `${callNo}. aramada görüşüldü (${OUTCOME_LABEL[e.x.outcome]})${n?.paket ? `, ilgilendiği paket: ${n.paket}` : ""}${n?.cekimTuru ? `, çekim türü: ${n.cekimTuru}` : ""}${n?.ekstralar ? `, ekstralar: ${n.ekstralar}` : ""}${n?.tarihTut ? ", TARİHİ 24 SAAT TUTMA SÖZÜ VERİLDİ" : ""}${n?.itiraz ? `, itirazı: ${n.itiraz}` : ""}${e.x.summary ? ` — özet: ${e.x.summary.split("\n")[0].replace(/\s+/g, " ").slice(0, 220)}` : ""}.`
       );
     } else if (e.m.channel === "instagram") {
       const t = e.m.text.replace(/\s+/g, " ").slice(0, 140);
       parts.push(e.m.direction === "in" ? `Çift Instagram DM'den yazdı: "${t}".` : `Instagram DM'den cevap yazdık: "${t}".`);
     } else if (e.m.direction === "out" && e.m.kind === "welcome" && e.m.channel === "whatsapp") {
-      parts.push(e.m.text.startsWith("Tamamdır") ? "Çift WhatsApp'tan bu saati yazdı, onay mesajı gönderildi." : "WhatsApp'tan \"sizi 0312'li numaramızdan arayacağız\" haberi gönderildi.");
+      parts.push(e.m.text.startsWith("Tamamdır") ? "Çift WhatsApp'tan bu saati yazdı, onay mesajı gönderildi." : /aray[ıa]/i.test(e.m.text) ? "WhatsApp'tan \"sizi 0312'li numaramızdan arayacağız\" haberi gönderildi." : "WhatsApp'tan karşılama + 2027 kampanya fiyatları gönderildi (fotoğraf 5.000, fotoğraf + klip 9.000, fotoğraf + klip + albüm 14.000 TL).");
+    } else if (/^\[(PDF|belge|fotoğraf)\]/.test(e.m.text)) {
+      const t = docNote(e.m.text).replace(/\s+/g, " ").slice(0, 420);
+      parts.push(e.m.direction === "out" ? `WhatsApp'tan dosya gönderdik: ${t}.` : `Çift WhatsApp'tan dosya gönderdi: ${t}.`);
     } else if (e.m.direction === "out" && e.m.kind === "ai") {
       parts.push(`WhatsApp'ta (yapay zekâ) cevap yazdık: "${e.m.text.replace(/\s+/g, " ").slice(0, 120)}".`);
     } else if (e.m.direction === "out" && e.m.text.startsWith("[✓")) {
@@ -160,7 +164,9 @@ export function historyForAgent(c: AiCouple): string {
         e.m.channel === "sms" ? "Düğün.com'dan karşılama SMS'i gönderildi." :
         e.m.channel === "dugun_com" ? "Düğün.com'dan karşılama e-postası gönderildi." :
         e.m.text.includes("iki kez ulaşmaya") ? "WhatsApp'tan son hatırlatma mesajı gönderildi." :
-        "WhatsApp'tan fiyat listesi ve kampanya bilgisi gönderildi."
+        /(zamsız fiyattan yararlanmanız|son kez kısaca hatırlatıyorum|buradan birlikte netleştirelim|düşünmek istediğinizi söylemiştiniz|sizin adınıza ayırmıştık|göz atabildiniz)/.test(e.m.text) ? "WhatsApp'tan hatırlatma mesajı gönderildi (cevap gelmedi)." :
+        /TL/.test(e.m.text) ? `WhatsApp'tan fiyat bilgisi gönderildi: "${e.m.text.replace(/\s+/g, " ").slice(0, 200)}".` :
+        `WhatsApp'tan yazdık: "${e.m.text.replace(/\s+/g, " ").slice(0, 140)}".`
       );
     } else {
       parts.push(`Çift WhatsApp'tan yazdı: "${e.m.text.replace(/\s+/g, " ").slice(0, 120)}".`);

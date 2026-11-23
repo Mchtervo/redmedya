@@ -4,6 +4,7 @@
  * Güvenlik: kara liste / rezervasyon / ilgilenmiyor / mesaj iptal / test → cevap yok;
  * sahibi son 12 saatte elle yazdıysa → yapay zekâ karışmaz; çift başına günde en fazla 12 otomatik cevap.
  */
+import { isDelivered } from "@/lib/ai-couples/doc-note";
 import { NextResponse } from "next/server";
 import { requireAiApi } from "@/lib/ai-couples/auth";
 import { bad } from "@/lib/ai-couples/http";
@@ -39,15 +40,15 @@ export async function POST(request: Request, { params }: Ctx) {
   if (c.status === "lost") return skip("ilgilenmiyor / kaybedildi");
   if (c.messagesPaused) return skip("otomatik mesaj iptal");
 
-  const last = c.messages.at(-1);
+  const last = c.messages.filter(isDelivered).at(-1);
   if (!last || last.direction !== "in") return skip("son mesaj müşteriden değil (zaten cevaplandı)");
   // Müşteri art arda yazdıysa sadece EN SON mesajın akışı cevap verir (hepsini birlikte okur)
   if (typeof body.text === "string" && body.text && norm(last.text) !== norm(body.text)) return skip("arkasından yeni mesaj geldi — son mesajla birlikte cevaplanacak");
 
   const now = Date.now();
-  const ownerRecent = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && !m.text.startsWith("[✓") && now - Date.parse(m.at) < 12 * 3600_000);
+  const ownerRecent = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && isDelivered(m) && !m.text.startsWith("[✓") && now - Date.parse(m.at) < 12 * 3600_000);
   // Yapay zekâ konuşmayı sahibine devrettiyse (bekletme mesajı gitti), sahibi yazana kadar 2 saat karışma
-  const lastHandoff = [...c.messages].reverse().find((m) => m.kind === "ai" && m.handoff);
+  const lastHandoff = [...c.messages].reverse().find((m) => m.kind === "ai" && m.handoff && isDelivered(m));
   if (lastHandoff && now - Date.parse(lastHandoff.at) < 2 * 3600_000) {
     const ownerAfter = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && Date.parse(m.at) > Date.parse(lastHandoff.at));
     if (!ownerAfter) return NextResponse.json({ ok: true, action: "handoff", reason: "Devrettiğiniz müşteri tekrar yazdı — hâlâ sizi bekliyor.", quiet: true, name: c.name, phone: c.phone });

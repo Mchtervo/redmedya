@@ -8,6 +8,8 @@
  * Sahibi Instagram'dan elle yazarsa o sohbete 12 saat karışmaz.
  * Kayıt: DATA_DIR/ai-ig-threads.json
  */
+import { docNote, isDelivered } from "@/lib/ai-couples/doc-note";
+import { CALLS_OFF_UNTIL, callsOff } from "@/lib/ai-couples/calls-off";
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 import { dataPath } from "@/lib/data-dir";
@@ -202,7 +204,20 @@ export async function onIgEcho(igsid: string, text: string, at: string, appId: s
   const { appId: ours } = await metaCfg();
   if (appId && ours && String(appId) === String(ours)) return; // bizim gönderdiğimiz (zaten kayıtlı)
   // Onaylanıp gönderilen öneri de yankı olarak döner (app_id her zaman gelmiyor) → metni bir öneriyle aynıysa SAHİBİNİN yazısı değildir
-  if ((await draftTexts().catch(() => new Set<string>())).has(normDraftText(text))) return;
+  if ((await draftTexts().catch(() => new Set<string>())).has(normDraftText(text))) {
+    await new Promise((r) => setTimeout(r, 8000)); // onaylı gönderim kendi kaydını yazsın
+    let added = false;
+    await patchThread(igsid, (x) => {
+      if (x.messages.some((m) => m.dir === "out" && normDraftText(m.text) === normDraftText(text) && Math.abs(Date.parse(m.at) - Date.parse(at)) < 30 * 60_000)) return x;
+      added = true;
+      return { ...x, messages: [...x.messages, { at, dir: "out" as const, text: text.slice(0, 2000), by: "ai" as const }] };
+    });
+    if (added) {
+      await cancelPendingDrafts(`ig:${igsid}`).catch(() => 0);
+      await syncToCouple(igsid);
+    }
+    return;
+  }
   await patchThread(igsid, (x) => ({ ...x, ownerUntil: new Date(Date.now() + 12 * 3600_000).toISOString(), messages: [...x.messages, { at, dir: "out" as const, text: text.slice(0, 2000), by: "owner" as const }] }));
   await syncToCouple(igsid);
 }
@@ -301,7 +316,8 @@ async function replyThread(igsid: string): Promise<void> {
     const lo = t.messages.map((m) => m.dir).lastIndexOf("out");
     r.text = fixCourtesy(r.text, t.messages.slice(lo + 1).filter((m) => m.dir === "in").map((m) => m.text).join(" "));
     const convoTxt = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 500)}`).join("\n");
-    const rv = await reviewDraft({ channel: "Instagram", convo: convoTxt, draft: r.text });
+    const kc = t.coupleId ? await getCouple(t.coupleId).catch(() => undefined) : undefined;
+    const rv = await reviewDraft({ channel: "Instagram", convo: convoTxt, draft: r.text, known: kc ? `Panelde kayıtlı müşteri (${kc.name}${kc.weddingDate ? `, düğün ${kc.weddingDate}` : ""}). Geçmiş: ${historyForAgent(kc)}` : undefined });
     if (rv.issues.length) {
       r.text = rv.text;
       reviewNote = `\n🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`;
@@ -427,9 +443,9 @@ async function generate(t: IgThread): Promise<Gen> {
   const couple = t.coupleId ? await getCouple(t.coupleId).catch(() => undefined) : undefined;
   const waLast = couple
     ? couple.messages
-        .filter((m) => m.channel === "whatsapp" && !m.text.startsWith("["))
+        .filter((m) => m.channel === "whatsapp" && isDelivered(m) && !m.text.startsWith("[✓"))
         .slice(-6)
-        .map((m) => `${m.direction === "in" ? "Müşteri" : "Biz"}: ${m.text.replace(/\s+/g, " ").slice(0, 160)}`)
+        .map((m) => `${m.direction === "in" ? "Müşteri" : "Biz"}: ${docNote(m.text).replace(/\s+/g, " ").slice(0, 260)}`)
         .join(" | ")
     : "";
   const known = couple
@@ -442,7 +458,7 @@ async function generate(t: IgThread): Promise<Gen> {
 - Telefon numarası: ${t.phone ? `ALINDI (${displayPhone(t.phone)}) — artık isteme, teşekkür et` : "henüz alınmadı"}
 - İletişim tercihi: ${t.prefersWa ? "WHATSAPP — arama saati SORMA. Numara alındıysa: 'Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍' de; alınmadıysa numarasını iste." : "belirtmedi"}
 - Arama saati: ${t.prefersWa ? "(WhatsApp istedi — sorma)" : ""}${!t.prefersWa && t.callAt ? `BELLİ — ${new Date(t.callAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })} (onayla, tekrar sorma)` : !t.prefersWa && t.phone ? "henüz bilinmiyor — bir kez sor" : t.prefersWa ? "" : "-"}
-- Kalan yer (ay: kalan/toplam): ${kontenjan}${known}
+${callsOff(new Date()) ? `- ARAMA ŞU AN YAPILAMIYOR (${new Date(CALLS_OFF_UNTIL).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })} sonrasına kadar). Bu sürede AKIŞ değişir: "sizi arayalım / hangi saatte arayalım" DEME, arama saati SORMA. Numarayı "fiyat listemizi ve detayları WhatsApp'tan iletelim" diye iste; numara alındıysa "Tamamdır, birazdan WhatsApp'tan yazıyoruz 🤍" de. Müşteri özellikle aranmak isterse en erken o saatten sonra arayabileceğimizi söyle.\n` : ""}${couple?.prefersWhatsapp && !t.prefersWa ? "- Bu müşteri daha önce WhatsApp'tan yazışmayı tercih ettiğini söyledi: arama teklif etme, arama saati sorma.\n" : ""}- Kalan yer (ay: kalan/toplam): ${kontenjan}${known}
 - Konuşmanın şu anki aşaması: ${t.stage ? IG_STAGES[t.stage] : "yeni"}${t.summary ? ` — ${t.summary}` : ""}
 - Daha önce selamlaştık mı: ${t.messages.some((m) => m.dir === "out") ? "EVET — tekrar 'merhaba/hayırlı olsun' ile baştan BAŞLAMA, kaldığın yerden devam et" : "hayır, bu ilk cevap"}`;
   const convo = t.messages.slice(-20).map((m) => `${m.dir === "in" ? "MÜŞTERİ" : m.by === "owner" ? "EKİP (insan)" : "BİZ"}: ${m.text.replace(/\s+/g, " ").slice(0, 600)}`).join("\n");

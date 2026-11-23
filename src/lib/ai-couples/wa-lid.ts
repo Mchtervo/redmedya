@@ -102,3 +102,13 @@ export function shouldAlertLid(key: string): boolean {
   if (alerted.size > 500) alerted.clear();
   return true;
 }
+
+/** Bilinen eşleşme: kod → telefon (yoksa undefined) */
+export function lidPhone(lid: string): Promise<string | undefined> {
+  return withMap(async (m) => ({ out: m[lid]?.phone }));
+}
+
+/** Kesin bilinen eşleşmeyi kaydet (ör. aynı mesaj hem numara hem kodla kayıtlı) */
+export function rememberLid(lid: string, phone: string, how: string): Promise<void> {
+  return withMap(async (m) => (m[lid]?.phone === phone ? { out: undefined } : { map: { ...m, [lid]: { phone, at: new Date().toISOString(), how } }, out: undefined }));
+}

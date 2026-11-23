@@ -8,6 +8,7 @@
  *  4. Ilık ("düşüneyim" / cevapsız) çifte tam 7 gün sonra 1 kez takip mesajı.
  *  5. Kontenjan rakamı her zaman GERÇEK sayıdır; azalmadıysa "azaldı" denmez.
  */
+import { isDelivered } from "@/lib/ai-couples/doc-note";
 import { isFollowCallDue } from "@/lib/ai-couples/followup";
 import { hitapFor } from "@/lib/ai-couples/hitap";
 import type {
@@ -368,9 +369,13 @@ export function detectInboundIntent(text: string): InboundIntent {
   if (!asking && /(ilgilenmiyor|butce(miz)? (uymuyor|yetmiyor|uygun degil)|vazgectik|dusunmuyoruz)/.test(t)) {
     return "not_interested";
   }
+  // Fiyat / bilgi soran müşteri "düşünüyor" sayılmaz ("fotoğraf + klip düşünüyoruz, fiyat nedir?"); "WhatsApp'tan konuşalım" da değil
+  const priceAsk = /(fiyat|ne kadar|kac (para|tl|lira)|ucret(i| ne)|bilgi al)/.test(t);
   if (
-    /(dusun|danisayim|danisip|konusup don|konusalim|haber verir|haber ede|donus yapar|donerim|doneriz|donecegim|sonra yaz|bakip don|bir bakalim|bakip haber|degerlendir|kararsiz|karar ver|netlestir|emin degil|simdilik bakiyoruz|arastiriyoruz|daha erken|biraz zaman|aklimizda)/.test(t) ||
-    /(nisanli|esim|esime|esimle|kocam|karim|sevgilim|ailem|annem|babam|kayinvalide|damat|gelin)\w*\s+(ile\s+|bir\s+)?(sor|danis|konus|karar)/.test(t)
+    !priceAsk &&
+    /(dusuney|dusunel|dusunece|dusunup|dusunmem|dusunmek ist|bi(r)? dusun|danisayim|danisip|konusup don|haber verir|haber ede|donus yapar|donerim|doneriz|donecegim|sonra yaz|bakip don|bir bakalim|bakip haber|degerlendir|kararsiz|karar ver|netlestir|emin degil|simdilik bakiyoruz|arastiriyoruz|daha erken|biraz zaman|aklimizda)/.test(t) ||
+    /(nisanli|esim|esime|esimle|kocam|karim|sevgilim|ailem|annem|babam|kayinvalide|damat|gelin)\w*\s+(ile\s+|bir\s+|da\s+|de\s+|bi\s+)?(sor|danis|konus|karar)/.test(t) ||
+    /(donus (yap|sagla)|geri don|size don|olumlu olursa|haber ederim|haber veririm|haber verecegim)/.test(t)
   ) {
     return "thinking";
   }
@@ -389,7 +394,7 @@ function followUpTime(c: AiCouple, now: Date): boolean {
 
 /** Takip zamanı geldi ve 1 haftalık tekrar araması henüz yapılmadı → ARA. */
 export function isFollowUpCallDue(c: AiCouple, now: Date): boolean {
-  if (c.callsPaused) return false; // arama iptal → takip WhatsApp'tan (isFollowUpDue)
+  if (c.callsPaused || c.prefersWhatsapp) return false; // arama iptal / WhatsApp'ı tercih etti → takip WhatsApp'tan (isFollowUpDue)
   if (!followUpTime(c, now)) return false;
   const since = new Date(c.followUpAt as string).getTime();
   return !c.calls.some((x) => new Date(x.at).getTime() >= since);
@@ -432,7 +437,7 @@ export function isSecondCallDue(c: AiCouple, now: Date): boolean {
   if (c.inboundAt && Date.parse(c.inboundAt) > first) return false; // geri aradı, sahibi konuştu → tekrar arama yok
   const after = c.messages.filter((m) => new Date(m.at).getTime() >= first);
   if (after.some((m) => m.direction === "in" && m.channel !== "instagram")) return false;                 // WhatsApp'tan döndü → arama yok
-  if (!after.some((m) => m.direction === "out" && m.channel === "whatsapp")) return false; // önce WhatsApp gitmiş olmalı
+  if (!after.some((m) => m.direction === "out" && m.channel === "whatsapp" && isDelivered(m))) return false; // önce WhatsApp gitmiş olmalı
   if (!isGoodCallWindow(now)) return false;
   if (n === 1) return now.getTime() - last >= SECOND_CALL_GAP_MS;
   return istDay(now.getTime()) > istDay(last); // 3. ve 4. deneme başka bir gün

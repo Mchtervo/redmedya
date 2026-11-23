@@ -3,6 +3,7 @@
  * Sahibi düğmeye basar (ya da öneriye "gönder" yazar) → panelin WhatsApp yolu (n8n P1) ile gider.
  * Kayıt: DATA_DIR/ai-wa-drafts.json (son 300 öneri).
  */
+import { isDelivered } from "@/lib/ai-couples/doc-note";
 import { randomUUID } from "crypto";
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
@@ -238,7 +239,7 @@ export async function approveDraft(id: string, opts: { text?: string; via?: "tel
   if (!c) block = "Müşteri kaydı bulunamadı.";
   else if (c.contactLocked) block = "Müşteri kara listede (iletişim istemiyor) — göndermedim.";
   else if (c.messagesPaused) block = "Bu müşteriye mesajlar iptal edilmiş — göndermedim.";
-  else if (c.messages.some((m) => m.direction === "out" && Date.parse(m.at) > Date.parse(d.createdAt))) {
+  else if (c.messages.some((m) => m.direction === "out" && m.channel === "whatsapp" && isDelivered(m) && !m.text.startsWith("[✓") && Date.parse(m.at) > Date.parse(d.createdAt))) {
     block = "Bu öneriden sonra müşteriye zaten mesaj gitmiş (siz yazmış olabilirsiniz) — çift mesaj olmasın diye göndermedim.";
   }
   if (block) {

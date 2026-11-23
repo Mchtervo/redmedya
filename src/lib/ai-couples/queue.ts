@@ -3,6 +3,8 @@
  * Kuyruk yalnızca KURALLARA UYAN işleri döndürür; kara liste, saat dışı,
  * arama hakkı dolmuş çiftler hiç görünmez.
  */
+import { isDelivered } from "@/lib/ai-couples/doc-note";
+import { listPendingDrafts } from "@/lib/ai-couples/wa-drafts";
 import { siteConfig } from "@/config/site";
 import type { AiCouple, AiQueueAction } from "@/types/ai-couples";
 import { capacitySpeech, getCapacityForDate, monthKeyOf, readCapacityConfig, upcomingCapacity } from "@/lib/ai-couples/capacity";
@@ -24,6 +26,7 @@ import { hitapFor, selamFor } from "@/lib/ai-couples/hitap";
 import { buildDepositReminder, buildThinkingNudge, isDepositReminderDue, isThinkingNudgeDue } from "@/lib/ai-couples/nudges";
 import { buildFollowLast, buildFollowMsg, buildFollowMsg2, isFollowCallDue, isFollowLastDue, isFollowMsg2Due, isFollowMsgDue } from "@/lib/ai-couples/followup";
 import { readAutomation } from "@/lib/ai-couples/automation";
+import { CALLS_OFF_UNTIL, callsOff } from "@/lib/ai-couples/calls-off";
 
 export const CATALOG_PDF = `${siteConfig.url}/redmedia-2027-fiyat-listesi.pdf`;
 
@@ -67,17 +70,13 @@ export function isUrgentLead(c: AiCouple, now: Date): boolean {
   return !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < 2 * 3600_000;
 }
 
-/** Sesli asistan kredisi bitti: bu zamana kadar arama yapılamaz (n8n A da aynı saate kadar bekliyor).
- *  Bu sürede yeni talebe "sizi arayacağız" denmez; fiyat bilgisi WhatsApp'tan gider. Süre dolunca eski düzen kendiliğinden döner. */
-export const CALLS_OFF_UNTIL = Date.parse("2026-11-24T15:20:00Z");
-export const callsOff = (now: Date) => now.getTime() < CALLS_OFF_UNTIL;
 
 /** Yeni form / web talebine aramadan önce WhatsApp haberi gitmeli mi? (henüz aranmamış, hiç yazılmamış, son 12 saatte gelmiş)
  *  Arama kapalıyken Düğün.com talepleri de dahil (yoksa bir gün hiç dönüş almazlar). */
 function needsPreCallNotice(c: AiCouple, now: Date): boolean {
   if (c.source !== "meta_form" && c.source !== "web" && !(callsOff(now) && c.source === "dugun_com")) return false;
   if (c.status !== "new" || c.calls.length || c.contactLocked || c.messagesPaused) return false;
-  if (c.messages.some((m) => m.direction === "out")) return false;
+  if (c.messages.some((m) => m.direction === "out" && isDelivered(m))) return false; // gönderilemeyen karşılama tekrar denenir
   return now.getTime() - Date.parse(c.createdAt) < 12 * 3600_000;
 }
 
@@ -141,7 +140,8 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     if (!cb || !cb.text.includes("WhatsApp'tan yazdı") || !c.callbackRequested || !c.callbackAt) continue;
     if (Date.parse(c.callbackAt) <= now.getTime() || c.messagesPaused || c.contactLocked) continue;
     if (Date.parse(c.callbackAt) < CALLS_OFF_UNTIL) continue; // arama kapalı: söz verilmez (cevabı asistan önerisi / siz yazarsınız)
-    if (c.messages.some((m) => m.direction === "out" && m.at >= cb.at)) continue;
+    if (c.messages.some((m) => m.direction === "out" && isDelivered(m) && m.at >= cb.at)) continue;
+    if (!isWithinCallWindow(new Date(c.callbackAt))) continue; // arama saatleri dışında bir saat → "o saatte arıyoruz" sözü verilmez
     const label = new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
     actions.push({ type: "whatsapp", kind: "welcome", night: true, coupleId: c.id, name: c.name, phone: c.phone, text: `Tamamdır, ${label} civarında sizi 0312 963 23 47 numaramızdan arıyoruz 🤍`, reason: "WhatsApp'tan saat verdi — onay" });
   }
@@ -162,8 +162,22 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     });
   }
 
+  // WhatsApp kısıtlanmasın: otomatik hatırlatmalar (7. gün takibi dahil) arası en az 10 dk, günde en fazla 15,
+  // ve HER KUYRUK TURUNDA EN FAZLA 1 hatırlatma (bir turda 20 mesaj birden çıkmasın).
+  const isAutoReminder = (m: AiCouple["messages"][number]) => m.direction === "out" && m.channel === "whatsapp" && (m.kind === "other" || m.kind === "follow_up") && !m.text.startsWith("[");
+  const autoOut = couples.flatMap((c) => c.messages.filter(isAutoReminder).map((m) => Date.parse(m.at)));
+  const lastAuto = autoOut.length ? Math.max(...autoOut) : 0;
+  const todayStart = new Date(now.toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) + "T00:00:00+03:00").getTime();
+  // WhatsApp 22 Kasım'da kısıtlandı: 7 Aralık'a kadar temkinli (15 dk arayla, günde en fazla 8), sonra 10 dk / 15
+  const careful = now.getTime() < Date.parse("2026-12-07T00:00:00+03:00");
+  let reminderRoom = now.getTime() - lastAuto >= (careful ? 15 : 10) * 60_000 && autoOut.filter((t) => t >= todayStart).length < (careful ? 8 : 15);
+  // Cevap önerisi sahibinin onayını bekleyen müşteriye o sırada otomatik hatırlatma gitmez (iki ayrı mesaj çakışmasın)
+  const draftWaiting = new Set((await listPendingDrafts().catch(() => [])).map((d) => d.coupleId));
+
   // 2) 7. gün takip mesajları
   for (const c of couples) {
+    if (!reminderRoom) break;
+    if (draftWaiting.has(c.id)) continue;
     if (!isFollowUpDue(c, now) || !canContact(c, "whatsapp", now).allowed) continue;
     const cap = await getCapacityForDate(c.weddingDate, cfg);
     actions.push({
@@ -175,17 +189,15 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       text: buildFollowUpMessage(c, cap),
       reason: "Ilık — 7 gün doldu",
     });
+    reminderRoom = false;
   }
 
   // 2b) Kapora hatırlatması ("tarihi tutalım" dedi, ~20 saat geçti) ve "düşüneyim" diyene 3. gün hatırlatması
-  // WhatsApp kısıtlanmasın: otomatik hatırlatmalar arası en az 10 dk, günde en fazla 15 (kampanya ve sahibinin cevapları hariç)
-  const autoOut = couples.flatMap((c) => c.messages.filter((m) => m.direction === "out" && m.channel === "whatsapp" && m.kind === "other" && !m.text.startsWith("[")).map((m) => Date.parse(m.at)));
-  const lastAuto = autoOut.length ? Math.max(...autoOut) : 0;
-  const todayStart = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }) + "T00:00:00+03:00").getTime();
-  const reminderRoom = now.getTime() - lastAuto >= 10 * 60_000 && autoOut.filter((t) => t >= todayStart).length < 15;
   for (const c of couples) {
     if (!reminderRoom) break;
+    if (draftWaiting.has(c.id)) continue;
     if (!canContact(c, "whatsapp", now).allowed) continue;
+    const before = actions.length;
     if (isDepositReminderDue(c, now)) {
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildDepositReminder(c), reason: "Tarih tuttu — kapora hatırlatması" });
     } else if (isThinkingNudgeDue(c, now)) {
@@ -201,12 +213,14 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
       const cap = await getCapacityForDate(c.weddingDate, cfg);
       actions.push({ type: "whatsapp", kind: "other", coupleId: c.id, name: c.name, phone: c.phone, text: buildFollowLast(c, cap), reason: "Teklif sonrası cevap yok — son mesaj" });
     }
+    if (actions.length > before) reminderRoom = false; // bu turda tek hatırlatma
   }
 
   // 3) Aranacaklar: yeni gelenler (eskiden yeniye) + "tekrar arayın" diyenler
   const months = await upcomingCapacity(14, cfg);
   const testCallbacks = all.filter((c) => c.sourceRef === "test" && isCallbackDue(c, now));
-  const callable = [...couples, ...testCallbacks]
+  // Aramalar kapalıyken (kredi bitti) arama işi verilmez — n8n boşuna denemesin, "arıyoruz" kaydı düşmesin
+  const callable = (callsOff(now) ? [] : [...couples, ...testCallbacks])
     .filter((c) => !c.callsPaused)
     // WhatsApp'tan son 24 saatte yazan çift yazışmanın içinde: kendisi saat istemediyse ARAMA (WhatsApp'tan devam)
     .filter((c) => isCallbackDue(c, now) || !c.messages.some((m) => m.direction === "in" && m.channel !== "instagram" && now.getTime() - Date.parse(m.at) < 24 * 3600_000)) // Instagram DM: aranmak için numara verdi → arama engellenmez

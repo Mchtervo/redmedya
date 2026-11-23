@@ -7,6 +7,7 @@
  * "Düşüneyim" diyenin kendi takibi var (3. gün mesaj, 7. gün arama). Kara liste / rezervasyon / ilgilenmiyor / panelden iptal → yok.
  * Gün sayıları panelden (follow-days). Saf fonksiyonlar (tarayıcıda da çalışır).
  */
+import { isClosingText, isDelivered } from "@/lib/ai-couples/doc-note";
 import type { AiCapacityInfo, AiCallRecord, AiCouple, AiMessageRecord } from "@/types/ai-couples";
 import { followDays } from "@/lib/ai-couples/follow-days";
 import { hitapFor } from "@/lib/ai-couples/hitap";
@@ -52,28 +53,41 @@ const isReminder = (m: AiMessageRecord) => REMINDER_MARKS.some((k) => m.text.inc
 const lastAnswered = (c: AiCouple) => [...c.calls].reverse().find((x) => x.outcome !== "no_answer");
 
 /** Takibin dayanağı: çiftin son cevabından sonra bizim attığımız SON (hatırlatma olmayan) WhatsApp mesajı */
-export function followAnchor(c: AiCouple): { msg: AiMessageRecord; at: number; call?: AiCallRecord } | null {
+export function followAnchor(c: AiCouple, nowMs = Date.now()): { msg: AiMessageRecord; at: number; call?: AiCallRecord } | null {
   if (c.sourceRef === "test") return null;
   if (c.contactLocked || c.status === "won" || c.status === "lost" || c.status === "thinking") return null;
   if ((c.note ?? "").includes("Numara hatalı")) return null;
-  const msgs = c.messages;
-  if (!msgs.length || msgs[msgs.length - 1].direction === "in") return null; // çift yazdı → siz dönün
+  const msgs = c.messages.filter(isDelivered); // gönderilemeyen / geri çekilen mesaj gitmiş sayılmaz
+  if (!msgs.length) return null;
+  // Çift yazdıysa siz dönersiniz. İstisna: son yazdığı sadece kapanış / teşekkürse ("Tamamdır teşekkürler") ve 36 saat geçtiyse
+  // cevap beklemiyordur → takip, onun son mesajından itibaren devam eder (müşteri kaybolmasın).
+  let end = msgs.length - 1;
+  let clockFrom = 0;
+  if (msgs[end].direction === "in") {
+    if (nowMs - Date.parse(msgs[end].at) < 36 * 3600_000) return null;
+    clockFrom = Date.parse(msgs[end].at);
+    while (end >= 0 && msgs[end].direction === "in") {
+      if (!isClosingText(msgs[end].text)) return null; // soru / istek var → siz dönün
+      end--;
+    }
+  }
   let anchor: AiMessageRecord | null = null;
-  for (let i = msgs.length - 1; i >= 0; i--) {
+  for (let i = end; i >= 0; i--) {
     const m = msgs[i];
     if (m.direction === "in") break;
-    if (m.channel !== "whatsapp" || m.text.startsWith("[") || isReminder(m)) continue;
+    if (m.channel !== "whatsapp" || (m.text.startsWith("[") && !m.text.startsWith("[✓")) || isReminder(m)) continue;
     anchor = m;
     break;
   }
   if (!anchor) return null;
-  // Son arama mesajdan sonraysa ve "sonra arayın" planı varsa o yürür
-  if (c.callbackRequested) return null;
-  return { msg: anchor, at: Date.parse(anchor.at), call: lastAnswered(c) };
+  if (anchor.handoff) return null; // "hemen bakıp dönüyorum" dedik → müşteri SİZİ bekliyor, hatırlatma gitmez
+  // "Sonra arayın" planı varsa o yürür (plan 2 günden eskiyse ya da aramalar iptalse takip devam eder — müşteri askıda kalmasın)
+  if (c.callbackRequested && !c.callsPaused && !(c.callbackAt && nowMs - Date.parse(c.callbackAt) > 2 * DAY)) return null;
+  return { msg: anchor, at: Math.max(Date.parse(anchor.at), clockFrom), call: lastAnswered(c) };
 }
 
 const sentAfter = (c: AiCouple, since: number, test: (m: AiMessageRecord) => boolean) =>
-  c.messages.some((m) => m.direction === "out" && Date.parse(m.at) >= since && test(m));
+  c.messages.some((m) => m.direction === "out" && isDelivered(m) && Date.parse(m.at) >= since && test(m));
 const ageDays = (since: number, now: Date) => (now.getTime() - since) / DAY;
 const calledAfter = (c: AiCouple, since: number) => c.calls.some((x) => Date.parse(x.at) > since);
 
