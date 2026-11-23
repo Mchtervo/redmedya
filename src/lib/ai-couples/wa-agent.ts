@@ -3,6 +3,9 @@
  * mesajlar) ve gerçek takvimi bilerek kısa bir cevap üretir — ya da sahibine devreder.
  * Sadece metin üretir; gönderimi n8n yapar. Anahtar: DATA_DIR/ai-integrations.json (anthropicKey).
  */
+import { ensureOfferPoints } from "@/lib/ai-couples/offer-text";
+import { getCapacityForDate } from "@/lib/ai-couples/capacity";
+import { isDelivered } from "@/lib/ai-couples/doc-note";
 import { docNote } from "@/lib/ai-couples/doc-note";
 import { CALLS_OFF_UNTIL, callsOff } from "@/lib/ai-couples/calls-off";
 import type { AiCouple } from "@/types/ai-couples";
@@ -70,7 +73,8 @@ SALON KALEMLERİ: "Salona giriş ve ilk dans klibi" sadece giriş + ilk dansın 
 RAKİP FİYATI / "daha ucuz bulduk" (ör. "4 bin teklif aldık"): SADECE şu 3 kısa cümle (fiyatı istediği kaleme göre yaz), başka açıklama YOK, rakibi ismen kötüleme, indirim YAPMA, kapora isteme: "Fiyatımız zaten kampanyalı (normalde 7.000, şu an 5.000 TL); profesyonel ekipman ve 7-8 yıllık tecrübeye göre hesaplanmış net bir fiyat politikamız var. Düşük fiyatta fotoğrafçının ekipmanına ve tecrübesine mutlaka dikkat edin, ekipman zayıfsa fotoğraflar telefonla çekilmiş gibi olur. Değerlendirirseniz buradayız 😊"
 SATIŞ SIRASI: Müşteri doğrudan fiyat SORMADIYSA önce ne istediğini anla (hangi etkinlik, ne tür çekim, klip/albüm istiyor mu) — kısa sorularla. Sonra uygun paketi İÇERİĞİYLE anlat ve ek hizmetleri ADLARIYLA, ısrar etmeden öner: "İsterseniz gelin almayı, kuaför hazırlığını, salona giriş ve ilk dansı da ekleyebiliriz" (sadece söylediği etkinliğe uyanları). Fiyat politikasını (normalden düşen kampanya fiyatı, %40 zam, kalan yer) EN SONDA söyle. Müşteri fiyat sorduysa istediği kalemin fiyatını hemen ver.
 NE İSTEDİYSE ONU SÖYLE: Müşteri ne istediğini söylediyse ("sadece dijital fotoğraf", "albüm yok", "klip istemiyoruz") SADECE o kalemin fiyatını ver; istemediği paketleri sayma.
-UZUNLUK: Kısa yaz — WhatsApp'ta en fazla ~380 karakter (3-4 kısa cümle), Instagram'da ~320. Bir mesajda tek konu; her şeyi aynı anda anlatma. İlk fiyat mesajında aciliyeti TEK kısa cümleyle ver (ör. "Kampanya fiyatı, %40 zam gelmeden geçerli"); 10 çift + 31 Aralık + %40 + drone hepsini aynı mesaja yığma.
+TEKLİF MESAJI (ZORUNLU — ASLA ATLAMA): Müşteriye paket fiyatını YAZIYLA ilk kez verdiğin mesaj "teklif mesajı"dır ve şu DÖRDÜNÜ MUTLAKA içerir: (1) PAKET İÇERİĞİ — o pakette ne var (poz sınırı yok, çekilenlerin tümü teslim; klip varsa 1,5–2 dk sinematik klip; albüm varsa 1 büyük + 2 aile albümü 30x60, 22 rötuşlu fotoğraf; çekim ortalama 1,5 saat). (2) EK HİZMETLER — müşterinin etkinliğine uyanları ADLARIYLA ve fiyat düşüşüyle ("gelin alma klibi, kuaför hazırlık çekimi, salona giriş ve ilk dans klibi 5.000 yerine 4.000 TL"). (3) "Her ay bu kampanya fiyatından sadece 10 çift alıyoruz" + o ayın kalan yeri 5 ve altındaysa sayısı. (4) "Bu yerlerden ayırtan çiftlerimize dış çekimde drone çekimi hediye". Fiyat listesi PDF'i daha önce gitmiş olsa bile bu dördü yazışmada henüz YAZIYLA söylenmediyse, fiyat konuştuğun ilk mesajda söyle. Bu dördü yazışmada bir kez söylendikten sonra her mesajda tekrarlama.
+UZUNLUK: Teklif mesajı ~750 karaktere kadar olabilir (kısa satırlar, okunaklı). Onun DIŞINDAKİ mesajlar kısa: WhatsApp'ta en fazla ~380 karakter (3-4 kısa cümle), Instagram'da ~320; bir mesajda tek konu.
 KAPORA / REZERVASYON ZAMANI: Kapora ya da "tarihinizi ayıralım mı" teklifini SADECE müşteri tarihi VE paketi netleştirip olumlu bir şey dediğinde yap ("tamam", "olur", "nasıl ayırtıyoruz", "anlaşalım"). Fiyat sorulan, kararsız, pazarlık yapan ya da başka yerle karşılaştıran müşteriye kapora/rezervasyon teklif ETME.
 NEZAKET: Müşteri özür dilerse ("kusura bakmayın, geç döndüm") "Estağfurullah, hiç sorun değil" de — "Rica ederim" sadece TEŞEKKÜRE cevaptır.
 CEVAPSIZ SORU BIRAKMA: Yazışmada müşterinin sorup bizim CEVAPLAMADIĞIMIZ bir soru varsa (ör. "çekim yerleriniz nerede" sorulmuş ama sonraki mesajımız başka konuya cevap vermiş), son mesajla birlikte onu da kısaca cevapla.
@@ -81,7 +85,7 @@ EK HİZMET UYUMU: Önerdiğin ek hizmet SADECE müşterinin söylediği etkinli�
 HESAP: Birden fazla kalemin toplamını, indirimli tutarı ya da kaporayı ASLA kafadan yazma; hesapla aracıyla hesapla (araç yoksa toplam yazma, kalemleri ayrı ayrı söyle).
 KALAN YER SÖYLEME KURALI: Bir ayda yerlerin yarısından fazlası boşsa (10'da 6 ve üstü boş) kalan sayıyı SÖYLEME — "10 yerin 10'u boş", "çok yerimiz var" gibi cümleleri ASLA kurma; sadece "her ay bu kampanya fiyatından sadece 10 çift alıyoruz, kampanya yerleri sınırlı" de. Kalan sayıyı yalnızca 5 ve altındaysa söyle ("Temmuz için 3 yer kaldı").
 EK HİZMET ÖNERİSİ: Önerdiğin ek hizmet mutlaka İNDİRİMLİ olanlardan olsun (listede parantezde normal fiyatı yazanlar) ve düşüşü söyle: "... 5.000 yerine 4.000 TL".
-DRONE HEDİYESİ: Konuşmada en fazla BİR kez, koşullu söyle ("kampanyadan ayırtırsanız dış çekimde drone hediye"); her mesajda tekrarlama, garanti verir gibi konuşma.
+DRONE HEDİYESİ: Teklif mesajında MUTLAKA söyle ("bu kampanya yerlerinden ayırtan çiftlerimize dış çekimde drone çekimi hediye"); söylendikten sonra her mesajda tekrarlama. Müşteri kararsız kaldığında bir kez daha hatırlatabilirsin.
 KAMPANYA YILI: "31 Aralık" derken yılı net söyle: 31 Aralık 2026. Tarih 24 saat ücretsiz tutulabilir; kesinleşmesi için 24 saat içinde kapora gönderilir. Rezervasyon için çiftin isimleri, iletişim numarası, çekim tarihi-saati ve seçilen paket gerekir.
 YAZILI KAYNAK: Kampanya bitişi (31 Aralık 2026), %40 zam, normal fiyatlar ve kalan yerler fiyat listemizde (PDF) yazılı. Müşteri "yazılı mı / belgesi var mı" derse: "Fiyat listemizde hepsi yazılı, size tekrar iletiyorum" de ve sahibine_not ile "Fiyat PDF’ini tekrar gönderin" yaz.
 PLATO: Sorulursa "2027 için anlaşmalı platomuz yok" de (plato ücreti pakete dahil değil, giriş ücretini çift platoya öder). Çift plato ÖNERİSİ isterse ("nereyi önerirsiniz", "plato önerin") şunları say: Esa Plato, No25 Plato, Anka Plato — "çiftlerimizin çok tercih ettiği yerler" diye, anlaşmalı olmadığını belirterek; sonra KARARI ÇİFTE BIRAK ("hangisi içinize sinerse, karar sizin"), birini dayatma. Çift belirli bir platonun linkini/sayfasını isterse SADECE onun Instagram linkini at: Esa Plato https://www.instagram.com/esaplato/ · No25 Plato https://www.instagram.com/no25plato/ · Anka Plato https://www.instagram.com/ankaplato/ . İstemedikçe link atma; sormadıkça plato önerme.
@@ -234,6 +238,20 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { us
   } else if (r.action === "handoff" && r.draft) {
     const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.draft, known });
     if (rv.issues.length) r = { ...r, draft: rv.text };
+  }
+  // TEKLİFİN ZORUNLU PARÇALARI: paket içeriği, ek hizmetler, "10 çift", drone hediyesi — asistan atladıysa burada eklenir
+  {
+    const sentBefore = c.messages.filter((m) => m.direction === "out" && isDelivered(m) && (m.channel === "whatsapp" || m.channel === "instagram")).map((m) => m.text);
+    const allText = c.messages.map((m) => m.text).join(" ").toLocaleLowerCase("tr-TR");
+    const hasWedding = /(düğün|dugun|salon|gelin alma)/.test(allText) || c.source === "dugun_com" ? true : /(nikah|nikâh|nişan|nisan|söz|kına)/.test(allText) ? false : undefined;
+    const cap = c.weddingDate ? await getCapacityForDate(c.weddingDate).catch(() => null) : null;
+    if (r.action === "send") {
+      const e = ensureOfferPoints(r.text, sentBefore, cap, { hasWedding });
+      if (e.added.length) r = { ...r, text: e.text, note: [r.note, `➕ Teklife eklendi: ${e.added.join(", ")}`].filter(Boolean).join(" · ").slice(0, 400) };
+    } else if (r.action === "handoff" && r.draft) {
+      const e = ensureOfferPoints(r.draft, sentBefore, cap, { hasWedding });
+      if (e.added.length) r = { ...r, draft: e.text };
+    }
   }
   // Sonnet 5.5: girdi $2/M, önbellek okuma $0.10/M, önbellek yazma ~$2.5/M, çıktı $10/M
   usage.usd = Math.round(((usage.input * 2 + usage.cacheRead * 0.1 + usage.cacheWrite * 2.5 + usage.output * 10) / 1e6) * 10000) / 10000;
@@ -454,7 +472,7 @@ export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; co
 4) Hesap: birden fazla kalem toplanmışsa toplam doğru mu? Kapora: toplam 15.000 TL altı 1.000 TL, üstü 2.000 TL. Fiyatlar aşağıdaki bilgilerle uyumlu mu? → yanlışı düzelt.
 5) Yasak: yol/ulaşım/servis; "her ay 10 çift alıyoruz" (doğrusu "her ay bu kampanya fiyatından sadece 10 çift"); "10 yerin 10'u boş" gibi kalan yer çok olduğunu söyleyen cümle; "Harika bir soru / memnuniyetle / size yardımcı olmaktan mutluluk duyarım" gibi robotik laflar. → düzelt.
 6) Nezaket: müşteri özür dilediyse (\"kusura bakmayın, geç döndüm\") \"Rica ederim\" YANLIŞ → \"Estağfurullah, hiç sorun değil\"; \"Rica ederim\" sadece teşekküre cevaptır.
-7) Uzunluk: cevap WhatsApp'ta 380, Instagram'da 320 karakteri geçiyorsa özünü koruyarak KISALT (aynı şeyi iki kez söyleyen cümleleri birleştir, aciliyeti tek cümleye indir) — ama fiyat DÜŞÜŞÜNÜ ("normalde 7.000, şu an 5.000") ASLA silme, kısaltırken de koru; müşterinin istemediği paketleri sayıyorsa çıkar.
+7) Uzunluk: TEKLİF MESAJI (paket fiyatı veren mesaj) 750 karaktere kadar olabilir ve içindeki paket içeriği, ek hizmetler, "her ay bu kampanya fiyatından sadece 10 çift" ve drone hediyesi cümlelerini ASLA silme/kısaltma. Bunun dışındaki cevap WhatsApp'ta 380, Instagram'da 320 karakteri geçiyorsa özünü koruyarak KISALT (aynı şeyi iki kez söyleyen cümleleri birleştir, aciliyeti tek cümleye indir) — ama fiyat DÜŞÜŞÜNÜ ("normalde 7.000, şu an 5.000") ASLA silme, kısaltırken de koru; müşterinin istemediği paketleri sayıyorsa çıkar.
 8) Kapora/rezervasyon: müşteri tarihi VE paketi netleştirip olumlu bir şey demeden kapora ya da "ayıralım mı" teklif ediliyorsa o cümleyi SİL. Rakip fiyatı söyleyen müşteriye uzun savunma yapılıyorsa kısalt (şu 3 cümle yeter: fiyat kampanyalı + ekipman/tecrübeye göre fiyat politikası; düşük fiyatta ekipmana ve tecrübeye dikkat edin, yoksa telefonla çekilmiş gibi olur; değerlendirirseniz buradayız — ekipman uyarısını SİLME).
 9) Müşterinin SON mesajına gerçekten cevap veriyor mu? Yazışmada müşterinin sorup bizim hiç cevaplamadığımız bir soru kaldıysa (ör. çekim yeri), cevapta o da kısaca var mı? Yoksa ekle. Müşteri "hayır / istemiyorum" dediyse ısrar ediyor mu? → düzelt.
 10) Yazışmada BİZ tarafında "[PDF]" / "[belge]" fiyat listesi ya da fiyat içeren bir mesaj varsa fiyatlar müşteriye VERİLMİŞTİR: cevap "fiyat ileteyim mi / size fiyat çıkarayım / fiyatlandıralım" diyerek fiyat hiç verilmemiş gibi davranıyor mu? → o kısmı "listeye göz atabildiniz mi, aklınıza yatan paket oldu mu" anlamında düzelt. Müşterinin belirli bir paket sorusuna fiyat söylemek serbest.

@@ -3,6 +3,7 @@
  * Kuyruk yalnızca KURALLARA UYAN işleri döndürür; kara liste, saat dışı,
  * arama hakkı dolmuş çiftler hiç görünmez.
  */
+import { OFFER_EXTRAS, OFFER_PACKAGES, offerScarcity } from "@/lib/ai-couples/offer-text";
 import { isDelivered } from "@/lib/ai-couples/doc-note";
 import { listPendingDrafts } from "@/lib/ai-couples/wa-drafts";
 import { siteConfig } from "@/config/site";
@@ -115,7 +116,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
         coupleId: c.id,
         name: c.name,
         phone: c.phone,
-        text: `${hi} ${ne} 2027 kampanya fiyatlarımız (%40 zam henüz yansımadı):\n• Fotoğraf: 7.000 yerine 5.000 TL\n• Fotoğraf + sinematik klip: 12.600 yerine 9.000 TL\n• Fotoğraf + klip + albüm: 19.600 yerine 14.000 TL\nHer ay bu kampanya fiyatından sadece 10 çift alıyoruz. ${soru}\n\nÇalışmalarımız: ${INSTAGRAM_URL}`,
+        text: `${hi} ${ne} 2027 kampanya fiyatlarımız (%40 zam henüz yansımadı):\n${OFFER_PACKAGES}\n\n${OFFER_EXTRAS}\n\n${offerScarcity(await getCapacityForDate(c.weddingDate, cfg))}\n\n${soru}\n\nÇalışmalarımız: ${INSTAGRAM_URL}`,
         reason: "Yeni talep — aramalar geçici kapalı, fiyat bilgisi WhatsApp'tan",
       });
       continue;
