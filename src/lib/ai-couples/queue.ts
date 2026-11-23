@@ -67,9 +67,15 @@ export function isUrgentLead(c: AiCouple, now: Date): boolean {
   return !c.calls.length && c.status === "new" && !isBackfill(c) && now.getTime() - Date.parse(c.createdAt) < 2 * 3600_000;
 }
 
-/** Yeni form / web talebine aramadan önce WhatsApp haberi gitmeli mi? (henüz aranmamış, hiç yazılmamış, son 12 saatte gelmiş) */
+/** Sesli asistan kredisi bitti: bu zamana kadar arama yapılamaz (n8n A da aynı saate kadar bekliyor).
+ *  Bu sürede yeni talebe "sizi arayacağız" denmez; fiyat bilgisi WhatsApp'tan gider. Süre dolunca eski düzen kendiliğinden döner. */
+export const CALLS_OFF_UNTIL = Date.parse("2026-11-24T15:20:00Z");
+export const callsOff = (now: Date) => now.getTime() < CALLS_OFF_UNTIL;
+
+/** Yeni form / web talebine aramadan önce WhatsApp haberi gitmeli mi? (henüz aranmamış, hiç yazılmamış, son 12 saatte gelmiş)
+ *  Arama kapalıyken Düğün.com talepleri de dahil (yoksa bir gün hiç dönüş almazlar). */
 function needsPreCallNotice(c: AiCouple, now: Date): boolean {
-  if (c.source !== "meta_form" && c.source !== "web") return false;
+  if (c.source !== "meta_form" && c.source !== "web" && !(callsOff(now) && c.source === "dugun_com")) return false;
   if (c.status !== "new" || c.calls.length || c.contactLocked || c.messagesPaused) return false;
   if (c.messages.some((m) => m.direction === "out")) return false;
   return now.getTime() - Date.parse(c.createdAt) < 12 * 3600_000;
@@ -98,6 +104,23 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     if (!needsPreCallNotice(c, now)) continue;
     const h = hitapFor(c.name).hitap;
     const hi = `Merhaba${h ? " " + h : ""}, RedMedia ekibindenim. Talebiniz bize ulaştı, teşekkür ederiz 🤍`;
+    if (callsOff(now)) {
+      const m = c.weddingDate?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const AY = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+      const ne = m ? `${Number(m[3])} ${AY[Number(m[2]) - 1]} ${m[1]} tarihindeki düğününüz için` : "Düğününüz için";
+      const soru = m ? "Hangi paketle ilgilendiğinizi yazarsanız tarihinizi hemen kontrol edeyim 🙂" : "Düğün tarihinizi yazarsanız müsaitliğinizi hemen kontrol edeyim 🙂";
+      actions.push({
+        type: "whatsapp",
+        kind: "welcome",
+        night: true,
+        coupleId: c.id,
+        name: c.name,
+        phone: c.phone,
+        text: `${hi} ${ne} 2027 kampanya fiyatlarımız (%40 zam henüz yansımadı):\n• Fotoğraf: 7.000 yerine 5.000 TL\n• Fotoğraf + sinematik klip: 12.600 yerine 9.000 TL\n• Fotoğraf + klip + albüm: 19.600 yerine 14.000 TL\nHer ay bu kampanya fiyatından sadece 10 çift alıyoruz. ${soru}\n\nÇalışmalarımız: ${INSTAGRAM_URL}`,
+        reason: "Yeni talep — aramalar geçici kapalı, fiyat bilgisi WhatsApp'tan",
+      });
+      continue;
+    }
     actions.push({
       type: "whatsapp",
       kind: "welcome",
@@ -117,6 +140,7 @@ export async function buildQueue(now = new Date(), limit = 20): Promise<AiQueueA
     const cb = [...c.timeline].reverse().find((e) => e.type === "callback");
     if (!cb || !cb.text.includes("WhatsApp'tan yazdı") || !c.callbackRequested || !c.callbackAt) continue;
     if (Date.parse(c.callbackAt) <= now.getTime() || c.messagesPaused || c.contactLocked) continue;
+    if (Date.parse(c.callbackAt) < CALLS_OFF_UNTIL) continue; // arama kapalı: söz verilmez (cevabı asistan önerisi / siz yazarsınız)
     if (c.messages.some((m) => m.direction === "out" && m.at >= cb.at)) continue;
     const label = new Date(c.callbackAt).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
     actions.push({ type: "whatsapp", kind: "welcome", night: true, coupleId: c.id, name: c.name, phone: c.phone, text: `Tamamdır, ${label} civarında sizi 0312 963 23 47 numaramızdan arıyoruz 🤍`, reason: "WhatsApp'tan saat verdi — onay" });
