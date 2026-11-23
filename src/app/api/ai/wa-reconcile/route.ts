@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { hours?: unknown; dry?: unknown; lid?: unknown; phone?: unknown; digest?: unknown };
   // Gizli kimliği (…@lid) bilinen bir numaraya elle bağla: { lid, phone }
   const phone = normalizePhone(typeof body.phone === "string" ? body.phone : "");
-  if (typeof body.lid === "string" && /^d+@lid$/.test(body.lid) && phone) await rememberLid(body.lid, phone, "elle eşleştirildi");
+  if (typeof body.lid === "string" && /^[0-9]+@lid$/.test(body.lid) && phone) await rememberLid(body.lid, phone, "elle eşleştirildi");
   if (body.digest === true) return NextResponse.json({ ok: true, lines: await unansweredDigest(true) });
   const hours = Number(body.hours);
   const rep = await reconcileWa({ hours: Number.isFinite(hours) && hours > 0 ? hours : 30, dry: body.dry === true });
