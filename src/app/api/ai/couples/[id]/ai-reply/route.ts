@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const last = c.messages.filter(isDelivered).at(-1);
   if (!last || last.direction !== "in") return skip("son mesaj müşteriden değil (zaten cevaplandı)");
   // Müşteri art arda yazdıysa sadece EN SON mesajın akışı cevap verir (hepsini birlikte okur)
-  if (typeof body.text === "string" && body.text && norm(last.text) !== norm(body.text)) return skip("arkasından yeni mesaj geldi — son mesajla birlikte cevaplanacak");
+  if (typeof body.text === "string" && body.text && !norm(last.text).startsWith(norm(body.text).slice(0, 60))) return skip("arkasından yeni mesaj geldi — son mesajla birlikte cevaplanacak");
 
   const now = Date.now();
   const ownerRecent = c.messages.some((m) => m.direction === "out" && m.kind === "reply" && isDelivered(m) && !m.text.startsWith("[✓") && now - Date.parse(m.at) < 12 * 3600_000);
