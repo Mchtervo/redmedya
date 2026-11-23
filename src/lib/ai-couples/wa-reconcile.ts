@@ -24,7 +24,7 @@ import { getCouple, mutateCouple, readCouples } from "@/lib/ai-couples/store";
 import { lidPhone, rememberLid, resolveLid } from "@/lib/ai-couples/wa-lid";
 import { describeWaMedia, type WaMediaMeta } from "@/lib/ai-couples/wa-media";
 import { docNote, isClosingText, isDelivered } from "@/lib/ai-couples/doc-note";
-import { createDraftAndNotify, hasPendingDraft } from "@/lib/ai-couples/wa-drafts";
+import { createDraftAndNotify, hasPendingDraft, matchOwnerReply } from "@/lib/ai-couples/wa-drafts";
 import { sendTelegramMessage } from "@/lib/lead-notify";
 import type { AiCouple } from "@/types/ai-couples";
 
@@ -309,7 +309,11 @@ export async function reconcileWa(opts: { hours?: number; dry?: boolean } = {}):
         backfill: true,
         ...(it.media ? { media: it.media } : {}),
       }, 80_000);
-      if (r.status === 200) touched.add(fresh.id);
+      if (r.status === 200) {
+        touched.add(fresh.id);
+        // Telefondan gönderdiğiniz mesaj bekleyen öneriyle aynıysa öneri kapanır (sonradan tekrar gönderilmesin)
+        if (it.fromMe) await matchOwnerReply(fresh.id, it.text).catch(() => null);
+      }
     }
 
     // Kaçan mesajı müşteriden olan ve hâlâ cevapsız duran çiftlere cevap önerisi
