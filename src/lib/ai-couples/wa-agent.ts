@@ -231,7 +231,8 @@ export async function generateWaReply(c: AiCouple): Promise<WaAgentResult & { us
   const recentCustomer = c.messages.slice(lastOutIdx + 1).filter((m) => m.direction === "in").map((m) => m.text).join(" ");
   if (r.action === "send") r = { ...r, text: fixCourtesy(r.text, recentCustomer) };
   const convo = c.messages.filter((m) => (m.channel === "whatsapp" || m.channel === "instagram") && !m.text.startsWith("[GERİ ÇEKİLDİ]") && !m.text.startsWith("[GÖNDERİLEMEDİ]")).slice(-20).map((m) => `${m.direction === "in" ? "MÜŞTERİ" : "BİZ"}: ${docNote(m.text).replace(/\s+/g, " ").slice(0, 700)}`).join("\n");
-  const known = `Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}. İletişim tercihi: ${c.prefersWhatsapp ? "WhatsApp (aranmak istemiyor)" : "belirtmedi"}. Geçmiş: ${historyForAgent(c)}`;
+  const kMonths = await upcomingCapacity(14).catch(() => []);
+  const known = knownFacts(c, kMonths.filter((m) => m.monthKey.startsWith("2027")).map((m) => `${m.monthLabel}: ${m.remaining <= 0 ? "DOLDU" : m.remaining}`).join(" | "));
   if (r.action === "send") {
     const rv = await reviewDraft({ channel: "WhatsApp", convo, draft: r.text, known });
     if (rv.issues.length) r = { ...r, text: rv.text, note: [r.note, `🔎 Kontrol düzeltti: ${rv.issues.join("; ")}`].filter(Boolean).join(" · ").slice(0, 400) };
@@ -462,9 +463,26 @@ export function fixTenCouples(text: string): string {
  * müşterinin verdiği bilgiyi tekrar sorma, bizim söylediğimizi tekrarlama, varsayım, hesap, yasak ifadeler, son mesaja cevap.
  * Sorun yoksa metin aynen döner. Hata olursa (ağ vb.) orijinal metin kullanılır.
  */
+/** Kalite kontrolcünün bilmesi gereken GERÇEK veriler (bunları "uydurma / varsayım" sanıp silmesin) */
+export function knownFacts(c: AiCouple, kontenjan: string): string {
+  const h = hitapFor(c.name).hitap;
+  return (
+    `Müşterinin kayıtlı adı: ${c.name}${h ? ` — doğru hitap "${h}" (cevapta bu hitabın kullanılması DOĞRUDUR, silme)` : ""}. ` +
+    `Düğün tarihi (kayıtta): ${c.weddingDate ?? "bilinmiyor"}. ` +
+    `İletişim tercihi: ${c.prefersWhatsapp ? "WhatsApp (aranmak istemiyor)" : "belirtmedi"}. ` +
+    `GERÇEK kalan kampanya yeri (takvimden): ${kontenjan || "bilinmiyor"} — cevaptaki kalan yer sayısı bununla uyumluysa DOĞRUDUR. ` +
+    `Tarih müsaitliği asistanın takvim aracından gelir; "tarihiniz müsait" cümlesini varsayım sayma.` +
+    ` Geçmiş: ${historyForAgent(c)}`
+  );
+}
+
 export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; convo: string; draft: string; known?: string }): Promise<{ text: string; issues: string[] }> {
   const { anthropicKey } = await readIntegrations();
   if (!anthropicKey || !input.draft.trim()) return { text: input.draft, issues: [] };
+  const offNote = callsOff(new Date())
+    ? `ARAMA ŞU AN YAPILAMIYOR: en erken ${new Date(CALLS_OFF_UNTIL).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul", weekday: "long", hour: "2-digit", minute: "2-digit" })} sonrasında aranabilir. Cevap bundan ÖNCEKİ bir saat için "sizi arıyoruz / arayacağız" diyorsa YANLIŞTIR → "şu an hatlarımızda yoğunluk var, en erken o zaman arayabiliriz; isterseniz buradan hemen yardımcı olayım" anlamında düzelt. Cevap zaten böyle diyorsa DOĞRUDUR, dokunma; arama saati sormuyorsa ekleme.`
+    : "";
+  const knownAll = [input.known, offNote].filter(Boolean).join("\n");
   const task = `Sen bir kalite kontrolcüsün. Aşağıda müşteriyle ${input.channel} yazışması ve satış asistanının müşteriye göndermek üzere hazırladığı cevap var. Cevabı şu hatalar için denetle:
 1) Müşterinin ZATEN verdiği bir bilgiyi (saat, tarih, isim, numara, paket, tercih, "WhatsApp'tan yazın" gibi) tekrar soruyor ya da "başka bir saatiniz var mı / özel bir saat varsa yazın" gibi tekrar istiyor mu? → o kısmı sil, sadece teyit et.
 2) Bizim yazışmada zaten söylediğimiz bir şeyi aynen tekrarlıyor mu (aynı fiyat listesi, aynı soru)? → kısalt.
@@ -480,8 +498,8 @@ export async function reviewDraft(input: { channel: "WhatsApp" | "Instagram"; co
 Sorun yoksa metni AYNEN döndür. Sorun varsa SADECE sorunlu kısmı düzelt; üslubu, emojileri ve geri kalan her şeyi koru, yeni bilgi ekleme.
 Sadece şu JSON'u yaz: {"sorunlar": ["kısa açıklama", ...], "metin": "son hali"}
 
-${input.known ? `MÜŞTERİ HAKKINDA BİLİNENLER (telefon görüşmeleri, diğer kanallar — bunlar da "müşterinin söylediği / bizim verdiğimiz" bilgi sayılır; 3. maddede varsayım SAYMA, 1. ve 10. maddede bunlara da bak):
-${input.known.slice(0, 2500)}
+${knownAll ? `MÜŞTERİ HAKKINDA BİLİNENLER (telefon görüşmeleri, diğer kanallar — bunlar da "müşterinin söylediği / bizim verdiğimiz" bilgi sayılır; 3. maddede varsayım SAYMA, 1. ve 10. maddede bunlara da bak):
+${knownAll.slice(0, 3200)}
 
 ` : ""}YAZIŞMA (eskiden yeniye):
 ${input.convo.slice(-6000)}
